@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    @apply flex flex-col items-center h-screen;
+
+    &>main {
+        @apply flex flex-col items-center flex-1;
+    }
+}
+
+h1 {
+    @apply text-5xl text-center font-bold;
+}
