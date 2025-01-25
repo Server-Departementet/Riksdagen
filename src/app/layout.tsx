@@ -23,8 +23,17 @@ export default function RootLayout({ children }: {
 }) {
     return (
         <html lang="sv" className={openSans.className}>
+
             <body>
+                <header className="p-3 ps-5">
+                    <img className="size-[4rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
+                </header>
+
                 {children}
+
+                <footer className="p-3">
+                    <p>© 2025 Viggo Ström & Axel Thornberg</p>
+                </footer>
             </body>
         </html>
     )

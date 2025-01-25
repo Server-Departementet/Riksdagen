@@ -2,14 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+@mixin col() {
+    @apply flex flex-col flex-nowrap items-start justify-start;
+}
+
+.col {
+    @include col();
+}
+
+@mixin row() {
+    @apply flex flex-row flex-nowrap items-start justify-start;
+}
+
+.row {
+    @include row();
+}
+
+html {
+    @include col();
+    @apply w-full min-h-screen justify-center bg-gray-700;
+}
+
 body {
-    @apply flex flex-col items-center h-screen;
+    @include col();
+    @apply w-full h-full items-center bg-white flex-1;
+
+    &>header {
+        @include row();
+        @apply top-0 sticky w-full bg-gray-800 text-white justify-between;
+    }
 
     &>main {
-        @apply flex flex-col items-center flex-1;
+        @include col();
+        @apply px-5 w-full items-center flex-1;
+    }
+
+    &>footer {
+        @include col();
+        @apply items-center w-full bg-gray-800 text-white;
     }
 }
 
+* {
+    @apply font-thin;
+}
+
 h1 {
-    @apply text-5xl text-center font-bold;
+    @apply text-5xl text-center font-semibold;
+}
+
+h2 {
+    @apply text-3xl text-center font-semibold;
 }
