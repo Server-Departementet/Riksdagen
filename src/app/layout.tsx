@@ -1,7 +1,8 @@
 import "./global.scss";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Open_Sans } from "next/font/google";
+import Image from "next/image";
+import Link from "next/link";
 
 export const metadata: Metadata = {
     title: "Riksdagen",
@@ -27,12 +28,18 @@ export default function RootLayout({ children }: {
 
             <body>
                 <header className="p-3 ps-5">
-                    <Image width={64} height={64} className="size-[4rem] rounded-lg" src="/icons/header-logo.png" alt="Logo"/>
+                    <div className="flex flex-row items-center gap-x-4">
+                        <Link href="/">
+                            <Image width={64} height={64} className="size-[3.5rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
+                        </Link>
+
+                        <p className="text-2xl font-medium">Regeringen</p>
+                    </div>
                 </header>
 
                 {children}
 
-                <footer className="p-3">
+                <footer className="p-3 mt-5">
                     <p>© 2025 Viggo Ström & Axel Thornberg</p>
                 </footer>
             </body>
