@@ -1,5 +1,6 @@
 import "./global.scss";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Open_Sans } from "next/font/google";
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: {
 
             <body>
                 <header className="p-3 ps-5">
-                    <img className="size-[4rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
+                    <Image width={64} height={64} className="size-[4rem] rounded-lg" src="/icons/header-logo.png" alt="Logo"/>
                 </header>
 
                 {children}

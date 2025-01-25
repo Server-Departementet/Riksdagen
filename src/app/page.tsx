@@ -45,7 +45,7 @@ export default function Page() {
                     <p>Hissminister</p>
                     <p>Säkerhetsminister</p>
                     <p>Osäkerhetsminister</p>
-                    <p>"Musik"minister</p>
+                    <p>&#34Musik&#34minister</p>
                     <p>Kistminister</p>
                     <p>Geogissningsminister</p>
                     <p>Odenminister</p>
@@ -61,7 +61,7 @@ export default function Page() {
                     <p>Vice-Oppositionsminister</p>
                     <p>Vice-Vice-Oppositionsminister-minister</p>
                     <p>Personlighetsminister</p>
-                    <p>ågluffarminister</p>
+                    <p>Tågluffarminister</p>
                     <p>Redaktionsminister</p>
                     <p>Norgeminister</p>
                     <p>Danmarksminister</p>
