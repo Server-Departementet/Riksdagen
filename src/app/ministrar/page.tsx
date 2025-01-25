@@ -1,9 +1,9 @@
-import { ministersWall } from "@/app/page";
+import ministerWall from "../minister-wall";
 
 export default function Page() {
     return (
         <main>
-            {ministersWall}
+            {ministerWall}
         </main>
     )
 }

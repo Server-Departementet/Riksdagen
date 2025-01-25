@@ -1,7 +1,6 @@
 import Minister from "@/types/minister";
 import ministersDB from "@/db/ministers.json";
 import { notFound } from "next/navigation";
-import URL from "node:url";
 
 export default async function Page({ params, }: {
     params: Promise<{ minister: string }>
