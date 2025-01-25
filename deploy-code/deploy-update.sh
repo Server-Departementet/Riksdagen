@@ -5,6 +5,7 @@
 
 # Checkout the branch or tag
 # If the branch or tag is not provided, default to main
+git fetch --all
 if [ "$1" == "tag" ]; then
     git checkout tags/$2
 elif [ "$1" == "branch" ]; then
