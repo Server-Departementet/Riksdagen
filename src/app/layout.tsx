@@ -5,16 +5,17 @@ import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-    title: "Riksdagen",
-    authors: [
-        { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
-        { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
-    ],
-    description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
-    icons: {
-        icon: "/icons/favicon.png",
-    }
-}
+  title: "Riksdagen",
+  authors: [
+    { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
+    { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
+    { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
+  ],
+  description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
+  icons: {
+    icon: "/icons/favicon.png",
+  },
+};
 
 const openSans = Open_Sans({
     subsets: ["latin"],
@@ -40,7 +41,7 @@ export default function RootLayout({ children }: {
                 {children}
 
                 <footer className="p-3 mt-5">
-                    <p>© 2025 Viggo Ström & Axel Thornberg</p>
+                    <p>© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>
                 </footer>
             </body>
         </html>
