@@ -6,7 +6,7 @@ export default async function Page({ params, }: {
     params: Promise<{ minister: string }>
 }) {
     const ministerID = (await params).minister;
-    console.log(ministerID);
+
     if (!ministersDB.hasOwnProperty(ministerID)) {
         // 404
         notFound();
