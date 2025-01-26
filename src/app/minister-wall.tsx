@@ -3,7 +3,7 @@ import ministersDB from "@/db/ministers.json";
 
 const ministerWall = (
     <section className="flex flex-col items-center mt-10" >
-        <Link href="/ministrar">
+        <Link href="/ministrar" className="no-underline">
             <h2 className="w-full text-center mb-1">Ministerposterna</h2>
         </Link>
 
