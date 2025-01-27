@@ -11,9 +11,9 @@ if [ "$1" == "tag" ]; then
 elif [ "$1" == "branch" ]; then
     git checkout $2
 else
-    git checkout main
+    git checkout origin/main
     # Inform user that the branch or tag is not provided
-    echo "Branch or tag is not provided. Defaulting to main branch."
+    echo "Branch or tag is not provided. Defaulting to origin/main branch."
 fi
 
 # Run yarn install
