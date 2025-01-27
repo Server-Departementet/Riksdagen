@@ -1,0 +1,287 @@
+{
+    "den-andra-typen-av-forsvarsminister-minister": {
+        "title": "Den-andra-typen-av-försvarsminister-minister",
+        "name": "Arvid",
+        "description": "Ansvarar för den andra typen av försvarsfrågor. Har aldrig vunnit i rätten."
+    },
+    "finansminister": {
+        "title": "Finansminister",
+        "name": "Arvid",
+        "description": "Ansvarar för statens finanser och ekonomiska politik."
+    },
+    "utbildningsminister": {
+        "title": "Utbildningsminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för utbildningsfrågor och skolpolitik."
+    },
+    "industriminister": {
+        "title": "Industriminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för industripolitik och näringslivsfrågor."
+    },
+    "citatminister": {
+        "title": "Citatminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för citat och visdomsord."
+    },
+    "transportminister": {
+        "title": "Transportminister",
+        "name": "Viggo S.E.S.",
+        "description": "Transportministern ansvarar för allt inom transport. Från tåg till pirror."
+    },
+    "ordinarieutrikesminister": {
+        "title": "Ordinarieutrikesminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för utrikespolitik och internationella relationer."
+    },
+    "suppleantutrikesminister": {
+        "title": "Suppleantutrikesminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ställföreträdande utrikesminister."
+    },
+    "lag-%20och-%20rattminister": {
+        "title": "Lag- och Rättminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för lag och rättsfrågor."
+    },
+    "domstolsminister": {
+        "title": "Domstolsminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för domstolsväsendet och rättskipning."
+    },
+    "befolkningsminister": {
+        "title": "Befolkningsminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för befolkningsfrågor och demografi."
+    },
+    "under-y-63-byggminister": {
+        "title": "Under-y-63-byggminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för byggfrågor under y-63."
+    },
+    "den-%20ena-%20broministern": {
+        "title": "Den ena broministern",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för broministerfrågor."
+    },
+    "forsvarsminister": {
+        "title": "Försvarsminister",
+        "name": "Emil S. Winroth",
+        "description": "Försvarsministern står för försvaret, som är separerat från militären för att inte skapa en maktinbalans."
+    },
+    "jordbruksminister": {
+        "title": "Jordbruksminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för jordbruksfrågor och landsbygdspolitik."
+    },
+    "sjukvardsminister": {
+        "title": "Sjukvårdsminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för sjukafrågor och ohälsosam politik. Företräder också folkhälsomyndigheten och meddelar dess rekommendationer."
+    },
+    "bokminister": {
+        "title": "Bokminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för litteratur och bokfrågor."
+    },
+    "hastminister": {
+        "title": "Hästminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för hästfrågor och hästsport."
+    },
+    "tagminister": {
+        "title": "Tågminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för tågtrafik och järnvägspolitik."
+    },
+    "musikminister": {
+        "title": "Musikminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för musikfrågor och kulturpolitik."
+    },
+    "metalminister": {
+        "title": "Metalminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för metalmusik och relaterade kulturfrågor."
+    },
+    "ministerminister": {
+        "title": "Ministerminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för ministerfrågor och samordning av ministerposter."
+    },
+    "inredningsminister": {
+        "title": "Inredningsminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för inredningsfrågor och design."
+    },
+    "flygminister": {
+        "title": "Flygminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för flygtrafik och luftfartspolitik."
+    },
+    "den-%20andra-%20broministern": {
+        "title": "Den andra broministern",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för broministerfrågor."
+    },
+    "humorminister": {
+        "title": "Humorminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för humor och underhållning."
+    },
+    "swiftminister": {
+        "title": "Swiftminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för Swift-programmering och relaterade frågor (folklore)."
+    },
+    "ravminister": {
+        "title": "Rävminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för rävfrågor och viltvård."
+    },
+    "ek-minister": {
+        "title": "EK-minister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för ekologi och miljöfrågor."
+    },
+    "modminister": {
+        "title": "Modminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för mod och tapperhet."
+    },
+    "schaktminister": {
+        "title": "Schaktminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för schaktning och byggfrågor."
+    },
+    "hissminister": {
+        "title": "Hissminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för hissar och vertikal transport."
+    },
+    "sakerhetsminister": {
+        "title": "Säkerhetsminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för säkerhetsfrågor och skydd."
+    },
+    "osakerhetsminister": {
+        "title": "Osäkerhetsminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för osäkerhetsfrågor och riskhantering."
+    },
+    "%22musik%22-minister": {
+        "title": "\"Musik\"minister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för musikfrågor inom citattecken."
+    },
+    "kistminister": {
+        "title": "Kistminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för kistor och begravningsfrågor."
+    },
+    "geogissningsminister": {
+        "title": "Geogissningsminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för geogissning och kartfrågor."
+    },
+    "odenminister": {
+        "title": "Odenminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för frågor relaterade till Oden."
+    },
+    "torminister": {
+        "title": "Torminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för frågor relaterade till Tor."
+    },
+    "lokeminister": {
+        "title": "Lokeminister",
+        "name": "Arvid",
+        "description": "Ansvarar för lokomotiv och järnvägsfrågor."
+    },
+    "idunminister": {
+        "title": "Idunminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för frågor relaterade till Idun."
+    },
+    "hustomtsminister": {
+        "title": "Hustomtsminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för hustomtar och folktro. Bor i din källare."
+    },
+    "mattminister": {
+        "title": "Mattminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för mattor och textilier."
+    },
+    "pythonminister": {
+        "title": "Pythonminister",
+        "name": "Axel Thornberg",
+        "description": "Ansvarar för Python-programmering och relaterade frågor."
+    },
+    "javascriptminister": {
+        "title": "Javascriptminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för JavaScript-programmering och relaterade frågor."
+    },
+    "typescriptminister": {
+        "title": "Typescriptminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för TypeScript-programmering och relaterade frågor."
+    },
+    "oppositionsminister": {
+        "title": "Oppositionsminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för oppositionens frågor och kritik."
+    },
+    "vice-oppositionsminister": {
+        "title": "Vice-Oppositionsminister",
+        "name": "Emil S. Winroth",
+        "description": "Ställföreträdande oppositionsminister."
+    },
+    "vice-vice-oppositionsminister-minister": {
+        "title": "Vice-Vice-Oppositionsminister-minister",
+        "name": "L. Emil A.",
+        "description": "Ställföreträdande vice-oppositionsminister."
+    },
+    "personlighetsminister": {
+        "title": "Personlighetsminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för personlighetsfrågor och psykologi."
+    },
+    "tagluffarminister": {
+        "title": "Tågluffarminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för tågluffning och resor."
+    },
+    "redaktionsminister": {
+        "title": "Redaktionsminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för redaktionella frågor och publicering."
+    },
+    "norgeminister": {
+        "title": "Norgeminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för frågor relaterade till Norge."
+    },
+    "danmarksminister": {
+        "title": "Danmarksminister",
+        "name": "A.J. Öhman",
+        "description": "Ansvarar för frågor relaterade till Danmark."
+    },
+    "mellanosternminister": {
+        "title": "Mellanösternminister",
+        "name": "Viggo S.E.S.",
+        "description": "Ansvarar för frågor relaterade till Mellanöstern."
+    },
+    "sparvagnsminister": {
+        "title": "Spårvagnsminister",
+        "name": "L. Emil A.",
+        "description": "Ansvarar för spårvagnar och kollektivtrafik."
+    },
+    "ovrigtminister": {
+        "title": "Övrigtminister",
+        "name": "Emil S. Winroth",
+        "description": "Ansvarar för övriga frågor som inte faller under andra ministerposter."
+    }
+}
