@@ -13,28 +13,19 @@ jobs:
 
             - name: Install Tailscale
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y tailscale
+                  sudo curl -fsSL https://tailscale.com/install.sh | sh
 
             - name: Authenticate with Tailscale
               env:
                   TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
               run: |
-                  sudo tailscale up --authkey=$TAILSCALE_AUTH_KEY --advertise-routes
-                  echo "Tailscale IPs: $(tailscale ip -4)"
+                  sudo tailscale up --authkey=$TAILSCALE_AUTH_KEY
 
-            - name: Add SSH private key
-              run: |
-                  mkdir -p ~/.ssh
-                  echo "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-                  chmod 600 ~/.ssh/id_rsa
-              shell: bash
-
-            - name: Deploy via SSH
+            - name: Deploy via Tailscale SSH
               env:
                   SERVER_IP: ${{ secrets.SERVER_TAILSCALE_IP }}
               run: |
-                  ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa user@$SERVER_IP << 'EOF'
+                  sudo tailscale ssh git@$SERVER_IP << 'EOF'
                   cd /var/www/
                   sudo bash deploy-code/deploy-update.sh branch origin/main
                   EOF
