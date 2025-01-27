@@ -6,12 +6,17 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "concurrently \"yarn server-entry-point\" \"yarn next-dev\"",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "concurrently \"yarn server-entry-point\" \"yarn next-start\"",
+    "next-dev": "next dev --turbopack",
+    "next-start": "next start",
+    "lint": "next lint",
+    "server-entry-point": "node ./server/main.ts"
   },
   "dependencies": {
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.7",
     "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
