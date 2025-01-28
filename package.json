@@ -6,15 +6,16 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"yarn server-entry-point\" \"yarn next-dev\"",
+    "dev": "concurrently \"yarn server-start\" \"yarn next-dev\"",
     "build": "next build",
-    "start": "concurrently \"yarn server-entry-point\" \"yarn next-start\"",
+    "start": "concurrently \"yarn server-start\" \"yarn next-start\"",
     "next-dev": "next dev --turbopack",
     "next-start": "next start",
     "lint": "next lint",
-    "server-entry-point": "node ./server/main.ts"
+    "server-start": "node ./server/main.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "concurrently": "^9.1.2",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
@@ -30,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
     "postcss": "^8",
+    "prisma": "^6.2.1",
     "sass": "^1.83.4",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
