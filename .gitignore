@@ -130,7 +130,7 @@ dist
 .pnp.*
 
 # Prisma
-prisma/migrations
+prisma/migrations/
 
 # Transpiled javascript
 server/*.js

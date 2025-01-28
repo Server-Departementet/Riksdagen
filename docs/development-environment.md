@@ -12,14 +12,14 @@ yarn install
 There are two options: single transpile and watch mode.
 
 ### Single transpile
-Suited for debugging and testing Next.
+Suited for debugging and testing Next. See [package-scripts.md](./package-scripts.md) for more information.
 
 ```bash
 yarn dev # Also runs Next
 ```
 
 ### Watch mode
-Suited for debugging and testing the Node server code.
+Suited for debugging and testing the Node server code. See [package-scripts.md](./package-scripts.md) for more information.
 
 > Warning! The watcher will run the code very often so take care in relation to database and API call rates.
 
