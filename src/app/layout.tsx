@@ -5,16 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Riksdagen",
-  authors: [
-    { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
-    { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
-    { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
-  ],
-  description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
-  icons: {
-    icon: "/icons/favicon.png",
-  },
+    title: "Riksdagen",
+    authors: [
+        { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
+        { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
+        { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
+    ],
+    description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
+    icons: {
+        icon: "/icons/favicon.png",
+    },
 };
 
 const openSans = Open_Sans({
@@ -29,12 +29,11 @@ export default function RootLayout({ children }: {
 
             <body>
                 <header className="p-3 ps-5">
-                    <div className="flex flex-row items-center gap-x-4">
-                        <Link href="/">
+                    <div className="flex flex-row">
+                        <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
                             <Image width={64} height={64} className="size-[3.5rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
+                            <p className="text-2xl font-medium">Riksdagen</p>
                         </Link>
-
-                        <p className="text-2xl font-medium">Regeringen</p>
                     </div>
                 </header>
 
