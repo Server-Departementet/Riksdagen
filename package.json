@@ -7,9 +7,10 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"yarn server-start\" \"yarn next-dev\"",
-    "build": "next build",
+    "build": "yarn install --force && yarn next-build",
     "start": "concurrently \"yarn server-start\" \"yarn next-start\"",
     "next-dev": "next dev --turbopack",
+    "next-build": "next build",
     "next-start": "next start",
     "lint": "next lint",
     "server-start": "node ./server/main.ts"
