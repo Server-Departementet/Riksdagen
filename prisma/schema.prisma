@@ -13,11 +13,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Human {
+  id       String @id @unique @default(cuid())
+  username String @unique
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @unique @default(cuid())
+  human        Boolean  @default(false)
+  username     String   @unique
+  nickname     String?
+  avatar       String?
+  refreshToken String?
+  listens      Listen[] // One user can have many listens
+}
+
+model Listen {
+  id         String   @id @unique
+  userId     String
+  trackId    String
+  user       User     @relation(fields: [userId], references: [id])
+  track      Track    @relation(fields: [trackId], references: [id])
+  artists    Artist[] @relation("ListenArtists") // Many-to-many relation with artists
+  listenedAt DateTime @default(now()) // Tracks when the listen occurred
+}
+
+model Track {
+  id       String   @id @unique @default(cuid())
+  title    String
+  duration Int
+  image    String
+  listens  Listen[] // One track can have many listens
+  artists  Artist[] @relation("TrackArtists") // Many-to-many relation with artists
+}
+
+model Artist {
+  id      String   @id @unique @default(cuid())
+  name    String   @unique
+  tracks  Track[]  @relation("TrackArtists") // One artist can have many tracks
+  listens Listen[] @relation("ListenArtists") // One artist can have many listens
 }
