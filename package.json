@@ -6,20 +6,23 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "yarn server:dev & yarn next:dev",
-    "build": "yarn install && yarn next:build",
-    "start": "yarn server:prod & yarn next:start",
+    "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
+    "build": "yarn install && yarn next:build && yarn server:build",
+    "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
     "next:dev": "next dev --turbopack",
     "next:build": "next build",
     "next:start": "next start",
-    "server:dev": "set NODE_ENV=development && node ./server/main.ts",
-    "server:prod": "set NODE_ENV=production && node ./server/main.ts",
+    "server:dev:watch": "set NODE_ENV=development && yarn ts-node-dev ./server/main.ts",
+    "server:dev": "set NODE_ENV=development && yarn tsc ./server/main.ts && node ./server/main.js",
+    "server:build": "set NODE_ENV=production && yarn tsc ./server/main.ts && node ./server/main.js",
+    "server:start": "set NODE_ENV=production && node ./server/main.js",
     "prisma:generate": "yarn prisma generate",
     "prisma:migrate": "yarn prisma migrate dev --name init",
     "lint": "next lint"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
+    "concurrently": "^9.1.2",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
     "next": "15.1.6",
@@ -37,6 +40,7 @@
     "prisma": "^6.2.1",
     "sass": "^1.83.4",
     "tailwindcss": "^3.4.1",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }
 }

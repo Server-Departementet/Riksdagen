@@ -131,3 +131,6 @@ dist
 
 # Prisma
 prisma/migrations
+
+# Transpiled javascript
+server/*.js

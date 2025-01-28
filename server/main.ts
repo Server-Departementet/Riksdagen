@@ -6,10 +6,13 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const write = async (name: string) => {
+const write = async () => {
     const user = await prisma.user.create({
         data: {
-            name: name,
+            username: "John Doe" + Date.now(),
+            nickname: "John",
+            avatar: "url",
+            refreshToken: "COol token",
         }
     });
 
@@ -21,7 +24,7 @@ const read = async () => {
     console.log(user);
 };
 
-write("John Doe")
+write()
     .catch(e => { throw e })
     .finally(async () => {
         await prisma.$disconnect();
