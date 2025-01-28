@@ -6,7 +6,7 @@
 yarn install
 ```
 
-3. .env setup. TODO
+1. [.env-setup.md](./.env-setup.md)
 
 ## Running in development mode
 There are two options: single transpile and watch mode.
@@ -38,7 +38,7 @@ yarn start
 ```
 
 # Server setup
-TODO
+See [server setup](./server-setup.md) for how to set up the server.
 
 ## GitHub workflow
 This repository has a [workflow](https://github.com/Server-Departementet/Riksdagen/actions/workflows/deploy-production.yml) ([file](../.github/workflows/deploy-production.yml)) that builds and deploys a branch or tag to the server. After the initial server setup this is the only thing needed to deploy new code.
