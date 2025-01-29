@@ -35,11 +35,11 @@ model Listen {
   user       User     @relation(fields: [userId], references: [id])
   track      Track    @relation(fields: [trackId], references: [id])
   artists    Artist[] @relation("ListenArtists") // Many-to-many relation with artists
-  listenedAt DateTime @default(now()) // Tracks when the listen occurred
+  listenedAt DateTime
 }
 
 model Track {
-  id       String   @id @unique @default(cuid())
+  id       String   @id @unique
   title    String
   duration Int
   image    String
@@ -48,7 +48,7 @@ model Track {
 }
 
 model Artist {
-  id      String   @id @unique @default(cuid())
+  id      String   @id @unique
   name    String   @unique
   tracks  Track[]  @relation("TrackArtists") // One artist can have many tracks
   listens Listen[] @relation("ListenArtists") // One artist can have many listens
