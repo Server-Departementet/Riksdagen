@@ -14,12 +14,11 @@ datasource db {
 }
 
 model Human {
-  id       String @id @unique @default(cuid())
-  username String @unique
+  id String @id @unique
 }
 
 model User {
-  id           String   @id @unique @default(cuid())
+  id           String   @id @unique
   human        Boolean  @default(false)
   username     String   @unique
   nickname     String?
