@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+
 export default function OAuthLayout({ children }: {
     children: React.ReactNode
 }) {
-    return (<>
+    return (<Suspense>
         {children}
-    </>)
+    </Suspense>)
 }

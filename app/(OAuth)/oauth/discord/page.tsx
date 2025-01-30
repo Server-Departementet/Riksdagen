@@ -3,11 +3,11 @@
 import { useSearchParams } from "next/navigation";
 
 export default function DiscordOAuthPage() {
-    const oauthCode = useSearchParams().get("code");
+    const oauthCode = useSearchParams();
 
     fetch("http://localhost:4000/api/oauth/discord", {
         method: "POST",
-        body: JSON.stringify({ code: oauthCode }),
+        body: JSON.stringify({ code: oauthCode.get("code") }),
         headers: {
             "Content-Type": "application/json",
         },
