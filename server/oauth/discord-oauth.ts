@@ -13,6 +13,7 @@ app.post("/api/oauth/discord", async (req: Request, res: any) => {
         return res.status(400).json({ error: "Invalid request" });
     }
 
+    // ENV validation
     if (
         !process.env.DISCORD_CLIENT_ID
         ||
@@ -20,6 +21,12 @@ app.post("/api/oauth/discord", async (req: Request, res: any) => {
     ) {
         return res.status(500).json({ error: "Internal server error" });
     }
+
+    const redirectURI = process.env.NODE_ENV === "development" ?
+        "http://localhost:3000/oauth/discord"
+        :
+        "https://server-riksdagen.tailad6f63.ts.net/oauth/discord"
+        ;
 
     const tokenResponseData = await fetch(
         "https://discord.com/api/oauth2/token",
@@ -30,7 +37,7 @@ app.post("/api/oauth/discord", async (req: Request, res: any) => {
                 "client_secret": process.env.DISCORD_CLIENT_SECRET,
                 "code": body.code,
                 "grant_type": "authorization_code",
-                "redirect_uri": "http://localhost:3000/oauth/discord",
+                "redirect_uri": redirectURI,
                 "scope": "identify",
             }).toString(),
             headers: {
