@@ -18,13 +18,14 @@ model Human {
 }
 
 model User {
-  id           String   @id @unique
-  human        Boolean  @default(false)
-  username     String   @unique
-  nickname     String?
-  avatar       String?
-  refreshToken String?
-  listens      Listen[] // One user can have many listens
+  id                  String   @id @unique
+  human               Boolean  @default(false)
+  username            String   @unique
+  displayName         String
+  avatar              String
+  discordRefreshToken String
+  spotifyRefreshToken String?
+  listens             Listen[] // One user can have many listens
 }
 
 model Listen {
@@ -48,7 +49,8 @@ model Track {
 
 model Artist {
   id      String   @id @unique
-  name    String   @unique
+  name    String
+  image   String
   tracks  Track[]  @relation("TrackArtists") // One artist can have many tracks
   listens Listen[] @relation("ListenArtists") // One artist can have many listens
 }
