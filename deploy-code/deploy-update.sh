@@ -16,14 +16,6 @@ else
     echo "Branch or tag is not provided. Defaulting to origin/main branch."
 fi
 
-# Run yarn install
-yarn install
-# If yarn install fails, exit the script
-if [ $? -ne 0 ]; then
-    echo "yarn install failed. Exiting the script."
-    exit 1
-fi
-
 # Run yarn build
 yarn build
 # If yarn build fails, exit the script

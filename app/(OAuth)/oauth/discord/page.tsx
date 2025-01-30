@@ -14,7 +14,7 @@ export default function DiscordOAuthPage() {
     })
         .then(response => {
             if (!response.ok) {
-                console.error("Error:", response.statusText);
+                throw new Error("Network response was not ok");
             }
             return response.json();
         })

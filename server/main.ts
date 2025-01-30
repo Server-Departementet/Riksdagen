@@ -3,8 +3,8 @@ const dotenv = require("dotenv");
 
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
-require("./discord/discord-bot.ts");
-require("./oauth/discord-oauth.ts");
+/// <reference path="discord/discord-bot.ts" />
+/// <reference path="oauth/discord-oauth.ts" />
 
 
 // // DB basics

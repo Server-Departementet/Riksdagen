@@ -7,18 +7,26 @@
   "private": true,
   "scripts": {
     "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
-    "build": "yarn install && yarn next:build && yarn server:build",
+    "build": "yarn node:env:production && yarn install && yarn next:build && yarn server:build",
     "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
+
     "next:dev": "next dev --turbopack",
     "next:build": "next build",
     "next:start": "next start",
-    "server:dev:watch": "set NODE_ENV=development && yarn ts-node-dev ./server/main.ts",
-    "server:dev": "set NODE_ENV=development && yarn tsc ./server/main.ts && node ./server/main.js",
-    "server:build": "set NODE_ENV=production && yarn tsc ./server/main.ts && node ./server/main.js",
-    "server:start": "set NODE_ENV=production && node ./server/main.js",
+    "next:lint": "next lint",
+
+    "server:transpile": "yarn tsc -p ./server/tsconfig.json",
+    "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch",
+    "server:dev": "yarn node:env:development && yarn server:transpile && node ./server/bundle.js",
+    "server:dev:watch": "yarn node:env:development && yarn server:transpile:watch",
+    "server:build": "yarn node:env:production && yarn server:transpile",
+    "server:start": "yarn node:env:production && node ./server/bundle.js",
+    
+    "node:env:development": "set NODE_ENV=development",
+    "node:env:production": "set NODE_ENV=production",
+
     "prisma:push": "yarn prisma migrate dev --name init",
-    "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push",
-    "lint": "next lint"
+    "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
@@ -42,7 +50,6 @@
     "prisma": "^6.2.1",
     "sass": "^1.83.4",
     "tailwindcss": "^3.4.1",
-    "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }
 }
