@@ -32,10 +32,10 @@ model Listen {
   id         String   @id @unique
   userId     String
   trackId    String
+  listenedAt DateTime
   user       User     @relation(fields: [userId], references: [id])
   track      Track    @relation(fields: [trackId], references: [id])
   artists    Artist[] @relation("ListenArtists") // Many-to-many relation with artists
-  listenedAt DateTime
 }
 
 model Track {
