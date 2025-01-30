@@ -6,8 +6,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "yarn concurrently \"yarn server:dev:watch\" \"yarn next:dev\"",
-    "build": "yarn node:env:production && yarn install && yarn next:build && yarn server:build",
+    "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
+    "build": "yarn install && yarn next:build && yarn server:build",
     "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
 
     "next:dev": "next dev --turbopack",
@@ -17,14 +17,11 @@
 
     "server:transpile": "yarn tsc -p ./server/tsconfig.json",
     "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch --preserveWatchOutput",
-    "server:dev": "yarn node:env:development && yarn server:transpile && node ./server/bundle.js",
-    "server:dev:watch": "yarn node:env:development && yarn server:transpile:watch",
-    "server:build": "yarn node:env:production && yarn server:transpile",
-    "server:start": "yarn node:env:production && node ./server/bundle.js",
+    "server:dev": "yarn server:transpile && node ./server/bundle.js",
+    "server:dev:watch": "node ./server/bundle.js && yarn server:transpile:watch",
+    "server:build": "yarn server:transpile",
+    "server:start": "node ./server/bundle.js",
     
-    "node:env:development": "set NODE_ENV=development",
-    "node:env:production": "set NODE_ENV=production",
-
     "prisma:push": "yarn prisma migrate dev --name init",
     "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
   },

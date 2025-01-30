@@ -3,9 +3,9 @@ const dotenv = require("dotenv");
 
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
+/// <reference path="extend/console.ts" />
 /// <reference path="discord/discord-bot.ts" />
 /// <reference path="oauth/discord-oauth.ts" />
-
 
 // // DB basics
 // const { PrismaClient } = require("@prisma/client");

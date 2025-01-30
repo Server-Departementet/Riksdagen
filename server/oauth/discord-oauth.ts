@@ -5,8 +5,15 @@ const port = 4000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use((_: any, res: any, next: any) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 
 app.post("/api/oauth/discord", async (req: Request, res: any) => {
+    console.info("Got request");
+
     const body: { code: string } = req.body as any; // TODO - reconsider this type assertion 
 
     if (!body || !body.code) {
@@ -22,14 +29,14 @@ app.post("/api/oauth/discord", async (req: Request, res: any) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 
-    const redirectURI = process.env.NODE_ENV === "development" ?
-        "http://localhost:3000/oauth/discord"
-        :
+    const redirectURI = process.env.ENV === "server" ?
         "https://server-riksdagen.tailad6f63.ts.net/oauth/discord"
+        :
+        "http://localhost:3000/oauth/discord"
         ;
 
     const tokenResponseData = await fetch(
-        "https://discord.com/api/oauth2/token",
+            "https://discord.com/api/oauth2/token",
         {
             method: "POST",
             body: new URLSearchParams({
