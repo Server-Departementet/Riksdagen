@@ -1,4 +1,4 @@
-import ministerWall from "./minister-wall"
+import ministerWall from "./(components)/minister-wall";
 
 export default function Page() {
     return (
