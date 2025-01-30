@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
+    "dev": "yarn concurrently \"yarn server:dev:watch\" \"yarn next:dev\"",
     "build": "yarn node:env:production && yarn install && yarn next:build && yarn server:build",
     "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
 
@@ -16,7 +16,7 @@
     "next:lint": "next lint",
 
     "server:transpile": "yarn tsc -p ./server/tsconfig.json",
-    "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch",
+    "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch --preserveWatchOutput",
     "server:dev": "yarn node:env:development && yarn server:transpile && node ./server/bundle.js",
     "server:dev:watch": "yarn node:env:development && yarn server:transpile:watch",
     "server:build": "yarn node:env:production && yarn server:transpile",
