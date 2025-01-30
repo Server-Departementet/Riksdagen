@@ -16,8 +16,8 @@
     "server:dev": "set NODE_ENV=development && yarn tsc ./server/main.ts && node ./server/main.js",
     "server:build": "set NODE_ENV=production && yarn tsc ./server/main.ts && node ./server/main.js",
     "server:start": "set NODE_ENV=production && node ./server/main.js",
-    "prisma:generate": "yarn prisma generate",
-    "prisma:migrate": "yarn prisma migrate dev --name init",
+    "prisma:push": "yarn prisma migrate dev --name init",
+    "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push",
     "lint": "next lint"
   },
   "dependencies": {
