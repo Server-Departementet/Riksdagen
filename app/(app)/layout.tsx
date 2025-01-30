@@ -4,8 +4,10 @@ import Link from "next/link";
 
 // Discord OAuth link
 const discordOAuthLink = process.env.NODE_ENV === "development" ?
-    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fdiscord&scope=identify" :
-    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=https%3A%2F%2Fserver-riksdagen.tailad6f63.ts.net%2Foauth%2Fdiscord&scope=identify";
+    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fdiscord&scope=identify"
+    :
+    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=https%3A%2F%2Fserver-riksdagen.tailad6f63.ts.net%2Foauth%2Fdiscord&scope=identify"
+    ;
 
 export default async function AppLayout({ children }: {
     children: React.ReactNode
