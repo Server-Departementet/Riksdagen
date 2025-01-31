@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=riksdagen
-ExecStart=/usr/lib/postgresql/17/bin/psql -D /var/lib/postgresql/17/main -c config_file=/etc/postgresql/17/main/postgresql.conf
+ExecStart=/usr/lib/postgresql/15/bin/pg_ctl start -D /var/lib/postgresql/15/main -l /var/log/postgresql/postgresql-15-main.log -s -o "-c config_file=/etc/postgresql/17/main/postgresql.conf"
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=always

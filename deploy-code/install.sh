@@ -49,10 +49,9 @@ if [ "$SKIP_INSTALL_CHECK" = false ]; then
         echo "PostgreSQL is already installed."
     else
         echo "PostgreSQL is not installed. Installing PostgreSQL..."
-        sudo apt install -y postgresql-common
-        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
-        sudo apt install -y postgresql-17
-        sudo apt install -y postgresql-17-client
+        sudo apt install -y postgresql postgresql-contrib
+        echo "Enabling PostgreSQL..."
+        sudo systemctl enable postgresql
     fi
 else
     echo "Skipping PostgreSQL install check."
@@ -150,8 +149,8 @@ set -a
 source /var/www/.env
 set +a
 
-# Set up PostgreSQL
-echo "Setting up PostgreSQL..."
+# Configure PostgreSQL
+echo "Configuring PostgreSQL..."
 sudo -i -u postgres psql -c "CREATE USER $POSTGRESQL_USER_NAME WITH PASSWORD '$POSTGRESQL_PASSWORD';"
 sudo -i -u postgres psql -c "CREATE DATABASE $POSTGRESQL_DB_NAME;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRESQL_DB_NAME TO $POSTGRESQL_USER_NAME;"

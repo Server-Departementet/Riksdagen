@@ -17,5 +17,4 @@ sudo systemctl status riksdagen-db-start.service
 
 journalctl -u riksdagen-yarn-start.service
 journalctl -u riksdagen-db-start.service
-
 ```
