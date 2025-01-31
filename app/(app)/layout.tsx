@@ -1,6 +1,7 @@
 import "./global.scss";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
 // Discord OAuth link
 const discordOAuthLink = process.env.ENV === "server" ?
@@ -31,6 +32,8 @@ export default async function AppLayout({ children }: {
             </Link>
         </header>
 
-        {children}
+        <Suspense>
+            {children}
+        </Suspense>
     </>)
 }
