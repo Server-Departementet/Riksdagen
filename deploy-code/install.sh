@@ -1,6 +1,18 @@
 # !/bin/bash
 
 # -f flag to force overwrite existing files
+FORCE_REINSTALL=false
+while getopts "f" opt; do
+  case $opt in
+    f)
+      FORCE_REINSTALL=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
 
 # Tailscale installation
 echo "Installing Tailscale..."
@@ -14,19 +26,32 @@ fi
 # Git installation
 echo "Checking if Git is installed..."
 if [ -x "$(command -v git)" ]; then
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing Git reinstallation..."
+    sudo apt install -y --reinstall git
+  else
     echo "Git is already installed."
+  fi
 else
-    echo "Git is not installed. Installing Git..."
-    sudo apt install -y git
+  echo "Git is not installed. Installing Git..."
+  sudo apt install -y git
 fi
+
+cd /var/www
 
 # ENV file exists
 if [ -f .env ]; then
-    echo ".env file exists."
-else
-    echo ".env file does not exist."
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing .env file overwrite..."
     echo "Enter the entire .env file content (end with an empty line):"
     cat > .env
+  else
+    echo ".env file exists."
+  fi
+else
+  echo ".env file does not exist."
+  echo "Enter the entire .env file content (end with an empty line):"
+  cat > .env
 fi
 
 # Load env
@@ -36,12 +61,17 @@ export $(grep -v '^#' .env | xargs)
 # PostgreSQL installation
 echo "Checking if PostgreSQL is installed..."
 if [ -x "$(command -v psql)" ]; then
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing PostgreSQL reinstallation..."
+    sudo apt install -y --reinstall postgresql-17
+  else
     echo "PostgreSQL is already installed."
+  fi
 else
-    echo "PostgreSQL is not installed. Installing PostgreSQL..."
-    sudo apt install -y postgresql-common
-    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-    sudo apt install -y postgresql-17
+  echo "PostgreSQL is not installed. Installing PostgreSQL..."
+  sudo apt install -y postgresql-common
+  sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+  sudo apt install -y postgresql-17
 fi
 
 # Configure PostgreSQL
@@ -52,39 +82,53 @@ sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRESQL_DB_NAM
 # Node.js installation > 20.x
 echo "Checking if Node.js (>20.x) is installed..."
 if [ -x "$(command -v node)" ] && [ "$(node -v | cut -d. -f1 | cut -c 2-)" -ge 20 ]; then
-    echo "Node.js $(node -v) is already installed."
-else
-    echo "Node.js is not installed. Installing Node.js..."
-    # Add NodeSource repository and install Node.js
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing Node.js reinstallation..."
     curl -fsSL https://deb.nodesource.com/setup_23.x | sudo -E bash -
-    sudo apt install -y nodejs
+    sudo apt install -y --reinstall nodejs
+  else
+    echo "Node.js $(node -v) is already installed."
+  fi
+else
+  echo "Node.js is not installed. Installing Node.js..."
+  curl -fsSL https://deb.nodesource.com/setup_23.x | sudo -E bash -
+  sudo apt install -y nodejs
 fi
 
 # Yarn installation
 echo "Checking if Yarn is installed..."
 if [ -x "$(command -v yarn)" ]; then
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing Yarn reinstallation..."
+    sudo npm install -g --force yarn
+  else
     echo "Yarn is already installed."
+  fi
 else
-    echo "Yarn is not installed. Installing Yarn..."
-    # Install yarn via npm
-    sudo npm install -g yarn
+  echo "Yarn is not installed. Installing Yarn..."
+  sudo npm install -g yarn
 fi
 
 # Clone the repository
 echo "Preparing to clone the repository..."
 # Check if the directory exists
 if [ -d "/var/www" ]; then
+  if [ "$FORCE_REINSTALL" = true ]; then
+    echo "Forcing repository re-clone..."
+    sudo rm -rf /var/www
+  else
     echo "The directory '/var/www' already exists."
     read -p "Do you want to delete the directory '/var/www' and clone the repository? (yes/no) " delete
     if [ "$delete" = "yes" ]; then
-        sudo rm -rf /var/www
+      sudo rm -rf /var/www
     elif [ "$delete" = "no" ]; then
-        echo "Repository cloning aborted. Exiting..."
-        exit 1
+      echo "Repository cloning aborted. Exiting..."
+      exit 1
     else
-        echo "Please enter yes/no. Repository cloning aborted. Exiting..."
-        exit 1
+      echo "Please enter yes/no. Repository cloning aborted. Exiting..."
+      exit 1
     fi
+  fi
 fi
 echo "Cloning the repository..."
 sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www 
