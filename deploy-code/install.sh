@@ -50,8 +50,23 @@ else
 fi
 
 # Clone the repository
+echo "Preparing to clone the repository..."
+# Check if the directory exists
+if [ -d "/var/www" ]; then
+    echo "The directory '/var/www' already exists."
+    read -p "Do you want to delete the directory '/var/www' and clone the repository? (yes/no) " delete
+    if [ "$delete" = "yes" ]; then
+        sudo rm -rf /var/www
+    elif [ "$delete" = "no" ]; then
+        echo "Repository cloning aborted. Exiting..."
+        exit 1
+    else
+        echo "Please enter yes/no. Repository cloning aborted. Exiting..."
+        exit 1
+    fi
+fi
 echo "Cloning the repository..."
-sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www
+sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www 
 cd /var/www
 # Install dependencies
 sudo yarn install
@@ -60,10 +75,12 @@ sudo yarn install
 # Set up the database. Confirm with 'yes' when prompted due to possible data loss.
 echo "Setting up the database..."
 read -p "This will reset the database. Are you sure you want to continue? (yes/no) " confirm
-if [ "$confirm" == "yes" ]; then
+if [ "$confirm" = "yes" ]; then
     sudo yarn db:reset
-else
+elif [ "$confirm" = "no" ]; then
     echo "Database setup aborted."
+else
+    echo "Please enter yes/no. Database setup aborted."
 fi
 
 # Add services to systemd
