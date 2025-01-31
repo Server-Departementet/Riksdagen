@@ -1,9 +1,9 @@
 # !/bin/bash
 
 # Tailscale installation
-read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
 echo "Installing Tailscale..."
-sudo bash $tailscale_script
+read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
+sudo $tailscale_script
 if [ $? -ne 0 ]; then
     echo "Tailscale installation failed. Exiting..."
     exit 1
@@ -31,7 +31,7 @@ fi
 # Node.js installation > 20.x
 echo "Checking if Node.js (>20.x) is installed..."
 if [ -x "$(command -v node)" ] && [ "$(node -v | cut -d. -f1 | cut -c 2-)" -ge 20 ]; then
-    echo "Node.js is already installed."
+    echo "Node.js $(node -v) is already installed."
 else
     echo "Node.js is not installed. Installing Node.js..."
     # Add NodeSource repository and install Node.js
@@ -50,8 +50,23 @@ else
 fi
 
 # Clone the repository
+echo "Preparing to clone the repository..."
+# Check if the directory exists
+if [ -d "/var/www" ]; then
+    echo "The directory '/var/www' already exists."
+    read -p "Do you want to delete the directory '/var/www' and clone the repository? (yes/no) " delete
+    if [ "$delete" = "yes" ]; then
+        sudo rm -rf /var/www
+    elif [ "$delete" = "no" ]; then
+        echo "Repository cloning aborted. Exiting..."
+        exit 1
+    else
+        echo "Please enter yes/no. Repository cloning aborted. Exiting..."
+        exit 1
+    fi
+fi
 echo "Cloning the repository..."
-sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www
+sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www 
 cd /var/www
 # Install dependencies
 sudo yarn install
@@ -60,10 +75,12 @@ sudo yarn install
 # Set up the database. Confirm with 'yes' when prompted due to possible data loss.
 echo "Setting up the database..."
 read -p "This will reset the database. Are you sure you want to continue? (yes/no) " confirm
-if [ "$confirm" == "yes" ]; then
-    sudo yarn db:reset
-else
+if [ "$confirm" = "yes" ]; then
+    sudo yarn prisma:reset
+elif [ "$confirm" = "no" ]; then
     echo "Database setup aborted."
+else
+    echo "Please enter yes/no. Database setup aborted."
 fi
 
 # Add services to systemd

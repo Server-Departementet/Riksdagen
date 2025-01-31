@@ -1,5 +1,5 @@
-import Minister from "@/types/minister";
-import ministersDB from "@/db/ministers.json";
+import Minister from "@root/types/minister";
+import ministersDB from "@root/db/ministers.json";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 

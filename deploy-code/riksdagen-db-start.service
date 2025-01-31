@@ -8,6 +8,7 @@ ExecStart=/usr/lib/postgresql/12/bin/postgres -D /var/lib/postgresql/12/main -c 
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=always
+RestartSec=3
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]

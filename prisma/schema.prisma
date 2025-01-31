@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Human {
+  id String @id @unique
+}
+
+model User {
+  id                  String   @id @unique
+  human               Boolean  @default(false)
+  username            String   @unique
+  displayName         String
+  avatar              String
+  discordRefreshToken String
+  spotifyRefreshToken String?
+  listens             Listen[] // One user can have many listens
+}
+
+model Listen {
+  id         String   @id @unique
+  userId     String
+  trackId    String
+  listenedAt DateTime
+  user       User     @relation(fields: [userId], references: [id])
+  track      Track    @relation(fields: [trackId], references: [id])
+  artists    Artist[] @relation("ListenArtists") // Many-to-many relation with artists
+}
+
+model Track {
+  id       String   @id @unique
+  title    String
+  duration Int
+  image    String
+  listens  Listen[] // One track can have many listens
+  artists  Artist[] @relation("TrackArtists") // Many-to-many relation with artists
+}
+
+model Artist {
+  id      String   @id @unique
+  name    String
+  image   String
+  tracks  Track[]  @relation("TrackArtists") // One artist can have many tracks
+  listens Listen[] @relation("ListenArtists") // One artist can have many listens
+}
