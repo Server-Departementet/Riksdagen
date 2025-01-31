@@ -1,10 +1,12 @@
 # Server setup
 
-Run [install script](../deploy-code/install.sh) on the server.
+1. Run [install script](../deploy-code/install.sh) on the server.
 ```bash
 sudo apt install -y curl
 sudo curl -sSL https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/install.sh | bash
 ```
+
+2. Set up the env file. See [env file](./.env-setup.md).
 
 <!-- 
 Debugging 
