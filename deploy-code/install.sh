@@ -71,16 +71,13 @@ cd /var/www
 # Install dependencies
 sudo yarn install
 
-# Database setup
-# Set up the database. Confirm with 'yes' when prompted due to possible data loss.
-echo "Setting up the database..."
-read -p "This will reset the database. Are you sure you want to continue? (yes/no) " confirm
-if [ "$confirm" = "yes" ]; then
-    sudo yarn prisma:reset
-elif [ "$confirm" = "no" ]; then
-    echo "Database setup aborted."
+# ENV file exists
+if [ -f .env ]; then
+    echo ".env file exists."
 else
-    echo "Please enter yes/no. Database setup aborted."
+    echo ".env file does not exist."
+    read -p "Enter the entire .env file content: " env_content
+    echo $env_content > .env
 fi
 
 # Add services to systemd

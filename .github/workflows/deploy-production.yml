@@ -26,7 +26,7 @@ jobs:
                   SERVER_IP: ${{ secrets.SERVER_TAILSCALE_IP }}
               run: |
                   sudo tailscale ssh git@$SERVER_IP << 'EOF'
-                  cd /var/www/
-                  sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/deploy-update.sh -o deploy-code/deploy-update.sh
-                  sudo bash deploy-code/deploy-update.sh branch origin/main
+                  sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/deploy-update.sh -o riksdagen-deploy-update.sh
+                  sudo bash riksdagen-deploy-update.sh branch origin/main
+                  sudo rm riksdagen-deploy-update.sh
                   EOF
