@@ -17,10 +17,12 @@
 
     "server:transpile": "yarn tsc -p ./server/tsconfig.json",
     "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch --preserveWatchOutput",
-    "server:dev": "yarn server:transpile && node ./server/bundle.js",
-    "server:dev:watch": "node ./server/bundle.js && yarn server:transpile:watch",
+    "server:node": "node ./server/bundle.js",
+    "server:node:watch": "node --watch ./server/bundle.js",
+    "server:dev": "yarn server:transpile && yarn server:node",
+    "server:dev:watch": "yarn concurrently \"yarn server:transpile:watch\" \"yarn server:node:watch\"",
     "server:build": "yarn server:transpile",
-    "server:start": "node ./server/bundle.js",
+    "server:start": "yarn server:node",
     
     "prisma:push": "yarn prisma migrate dev --name init",
     "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
