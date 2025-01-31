@@ -18,7 +18,7 @@ export default function DiscordOAuthPage() {
             return response.json();
         })
         .then(data => {
-            console.log("Success:", data);
+            console.info("Success:", data);
         })
         .catch(error => {
             console.error("Error:", error);

@@ -24,6 +24,7 @@ app.post("/api/oauth/discord", async (req: any, res: any) => {
 
     // Debounce time on requests
     if (Date.now() - lastRequest < 10) {
+        console.warn("Too many requests from client");
         return res.status(429).json({ error: "Too many requests" });
     }
     lastRequest = Date.now();
