@@ -32,8 +32,10 @@ export default async function AppLayout({ children }: {
             </Link>
         </header>
 
-        <Suspense>
-            {children}
-        </Suspense>
+        <div className="flex-1">
+            <Suspense>
+                {children}
+            </Suspense>
+        </div>
     </>)
 }
