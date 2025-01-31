@@ -1,28 +1,5 @@
 # !/bin/bash
 
-# -s flag to skip install checks
-
-# Install:
-# - Tailscale (via user provided script or skip)
-# - Git
-# - PostgreSQL
-# - Node.js > 22.x
-# - Yarn (via npm)
-# - 2 service files from the repo
-
-# Setup:
-# - ENV variables
-
-# Run:
-# - git clone
-# - yarn install
-# - yarn build
-# - postgresql setup
-# - prisma push
-# - start services
-
-# - Reboot
-
 # Flag handling
 SKIP_INSTALL_CHECK=false
 while getopts "s" opt; do
@@ -171,7 +148,7 @@ sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRESQL_DB_NAM
 # Yarn install
 sudo yarn install
 
-# Prisma push
+# Prisma setup
 sudo yarn prisma:push
 sudo yarn prisma:deploy
 
