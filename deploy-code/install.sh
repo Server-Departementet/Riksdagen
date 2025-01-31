@@ -50,12 +50,12 @@ if [ "$SKIP_INSTALL_CHECK" = false ]; then
     else
         echo "PostgreSQL is not installed. Installing PostgreSQL..."
         sudo apt install -y postgresql postgresql-contrib
-        echo "Enabling PostgreSQL..."
-        sudo systemctl enable postgresql
     fi
 else
     echo "Skipping PostgreSQL install check."
 fi
+echo "Enabling PostgreSQL..."
+sudo systemctl enable postgresql
 
 # Install Node.js
 if [ "$SKIP_INSTALL_CHECK" = false ]; then
@@ -106,20 +106,20 @@ sudo systemctl disable riksdagen-yarn-start
 sudo rm /etc/systemd/system/riksdagen-db-start.service
 sudo rm /etc/systemd/system/riksdagen-yarn-start.service
 echo "Installing services..."
-sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-db-start.service -o /etc/systemd/system/riksdagen-db-start.service
+# sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-db-start.service -o /etc/systemd/system/riksdagen-db-start.service
 sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-yarn-start.service -o /etc/systemd/system/riksdagen-yarn-start.service
 sudo systemctl daemon-reload
-sudo systemctl enable riksdagen-db-start
+# sudo systemctl enable riksdagen-db-start
 sudo systemctl enable riksdagen-yarn-start
-sudo systemctl start riksdagen-db-start
+# sudo systemctl start riksdagen-db-start
 sudo systemctl start riksdagen-yarn-start
 
 # Disable apache2 and nginx since they might be running and we only want tailscale funnel
 echo "Trying to stop and disable apache2 and nginx..."
-sudo systemctl stop apache2
-sudo systemctl disable apache2
-sudo systemctl stop nginx
-sudo systemctl disable nginx
+sudo systemctl stop -q apache2
+sudo systemctl disable -q apache2
+sudo systemctl stop -q nginx
+sudo systemctl disable -q nginx
 
 # Tailscale funnel on 3000
 echo "Starting Tailscale funnel on port 3000..."
