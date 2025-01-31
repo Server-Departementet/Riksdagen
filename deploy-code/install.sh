@@ -162,3 +162,7 @@ sudo yarn prisma:deploy
 
 # Yarn build
 sudo yarn build
+
+# Reboot
+echo "Rebooting..."
+sudo reboot
