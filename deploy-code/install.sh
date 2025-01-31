@@ -1,8 +1,8 @@
 # !/bin/bash
 
 # Tailscale installation
-read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
 echo "Installing Tailscale..."
+read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
 sudo bash $tailscale_script
 if [ $? -ne 0 ]; then
     echo "Tailscale installation failed. Exiting..."
@@ -31,7 +31,7 @@ fi
 # Node.js installation > 20.x
 echo "Checking if Node.js (>20.x) is installed..."
 if [ -x "$(command -v node)" ] && [ "$(node -v | cut -d. -f1 | cut -c 2-)" -ge 20 ]; then
-    echo "Node.js is already installed."
+    echo "Node.js $(node -v) is already installed."
 else
     echo "Node.js is not installed. Installing Node.js..."
     # Add NodeSource repository and install Node.js
