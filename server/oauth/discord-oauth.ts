@@ -11,10 +11,10 @@ app.use((_: any, res: any, next: any) => {
     next();
 });
 
-app.post("/api/oauth/discord", async (req: Request, res: any) => {
+app.post("/api/oauth/discord", async (req: any, res: any) => {
     console.info("Got request");
 
-    const body: { code: string } = req.body as any; // TODO - reconsider this type assertion 
+    const body: { code: string } = req.body;
 
     if (!body || !body.code) {
         return res.status(400).json({ error: "Invalid request" });
@@ -36,7 +36,7 @@ app.post("/api/oauth/discord", async (req: Request, res: any) => {
         ;
 
     const tokenResponseData = await fetch(
-            "https://discord.com/api/oauth2/token",
+        "https://discord.com/api/oauth2/token",
         {
             method: "POST",
             body: new URLSearchParams({
