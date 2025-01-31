@@ -1,28 +1,35 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DiscordOAuthPage() {
-    const oauthCode = useSearchParams();
+    const searchParams = useSearchParams();
+    const route = useRouter();
 
-    fetch("http://localhost:4000/api/oauth/discord", {
-        method: "POST",
-        body: JSON.stringify({ code: oauthCode.get("code") }),
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-        .then(response => {
-            if (!response.ok) throw new Error("Network response was not ok");
-            
-            return response.json();
+    useEffect(() => {
+        fetch("http://localhost:4000/api/oauth/discord", {
+            method: "POST",
+            body: JSON.stringify({ code: searchParams.get("code") }),
+            headers: {
+                "Content-Type": "application/json",
+            },
         })
-        .then(data => {
-            console.info("Success:", data);
-        })
-        .catch(error => {
-            console.error("Error:", error);
-        });
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+
+                return response.json();
+            })
+            .then(data => {
+                console.info("Success:", data);
+
+                // Redirect to home page
+                route.push("/?oauth=success");
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+    });
 
     return (
         <main>

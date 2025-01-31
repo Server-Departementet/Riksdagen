@@ -4,6 +4,7 @@ const express = require("express");
 const app = express();
 const port = 4000;
 let lastRequest = 0;
+const debounceTime = 500;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use((_: any, res: any, next: any) => { // CORS
@@ -23,7 +24,7 @@ const redirectURI = process.env.ENV === "server" ?
 app.post("/api/oauth/discord", async (req: any, res: any) => {
 
     // Debounce time on requests
-    if (Date.now() - lastRequest < 10) {
+    if (Date.now() - lastRequest < debounceTime) {
         console.warn("Too many requests from client");
         return res.status(429).json({ error: "Too many requests" });
     }
@@ -123,7 +124,7 @@ app.post("/api/oauth/discord", async (req: any, res: any) => {
             prisma.$disconnect();
         });
 
-    return res.status(200).json({ code: body.code });
+    return res.status(200).json({ success: "Logged in successfully" });
 });
 
 app.listen(port, () => {
