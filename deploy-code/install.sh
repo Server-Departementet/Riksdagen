@@ -99,19 +99,16 @@ fi
 
 # Install Services
 echo "Removing old services..."
-sudo systemctl stop riksdagen-db-start
-sudo systemctl stop riksdagen-yarn-start
-sudo systemctl disable riksdagen-db-start
-sudo systemctl disable riksdagen-yarn-start
-sudo rm /etc/systemd/system/riksdagen-db-start.service
-sudo rm /etc/systemd/system/riksdagen-yarn-start.service
+sudo systemctl stop -q riksdagen-db-start
+sudo systemctl stop -q riksdagen-yarn-start
+sudo systemctl disable -q riksdagen-db-start
+sudo systemctl disable -q riksdagen-yarn-start
+sudo rm -f /etc/systemd/system/riksdagen-db-start.service
+sudo rm -f /etc/systemd/system/riksdagen-yarn-start.service
 echo "Installing services..."
-# sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-db-start.service -o /etc/systemd/system/riksdagen-db-start.service
 sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-yarn-start.service -o /etc/systemd/system/riksdagen-yarn-start.service
 sudo systemctl daemon-reload
-# sudo systemctl enable riksdagen-db-start
 sudo systemctl enable riksdagen-yarn-start
-# sudo systemctl start riksdagen-db-start
 sudo systemctl start riksdagen-yarn-start
 
 # Disable apache2 and nginx since they might be running and we only want tailscale funnel
