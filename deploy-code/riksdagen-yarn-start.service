@@ -7,6 +7,7 @@ User=root
 WorkingDirectory=/var/www/
 ExecStart=/usr/bin/yarn start
 Restart=always
+RestartSec=3
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Environment=NODE_ENV=production
 

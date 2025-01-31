@@ -3,7 +3,7 @@
 # Tailscale installation
 echo "Installing Tailscale..."
 read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
-sudo bash $tailscale_script
+sudo $tailscale_script
 if [ $? -ne 0 ]; then
     echo "Tailscale installation failed. Exiting..."
     exit 1
@@ -76,7 +76,7 @@ sudo yarn install
 echo "Setting up the database..."
 read -p "This will reset the database. Are you sure you want to continue? (yes/no) " confirm
 if [ "$confirm" = "yes" ]; then
-    sudo yarn db:reset
+    sudo yarn prisma:reset
 elif [ "$confirm" = "no" ]; then
     echo "Database setup aborted."
 else
