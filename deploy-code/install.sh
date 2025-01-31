@@ -1,5 +1,8 @@
 # !/bin/bash
 
+# Save start cwd
+START_CWD=$(pwd)
+
 # Flag handling
 SKIP_INSTALL_CHECK=false
 while getopts "s" opt; do
@@ -163,6 +166,6 @@ sudo yarn prisma:deploy
 # Yarn build
 sudo yarn build
 
-# Reboot
-echo "Rebooting..."
-sudo reboot
+# Clean up
+cd $START_CWD
+echo "Done!"
