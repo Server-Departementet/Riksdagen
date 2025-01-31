@@ -25,6 +25,7 @@
     "server:start": "yarn server:node",
     
     "prisma:push": "yarn prisma migrate dev --name init",
+    "prisma:deploy": "yarn prisma migrate deploy",
     "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
   },
   "dependencies": {
