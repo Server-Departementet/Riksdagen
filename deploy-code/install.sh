@@ -43,14 +43,14 @@ cd /var/www
 if [ -f .env ]; then
   if [ "$FORCE_REINSTALL" = true ]; then
     echo "Forcing .env file overwrite..."
-    echo "Enter the entire .env file content (end with an empty line):"
+    read "Enter the entire .env file content (end with an empty line):"
     cat > .env
   else
     echo ".env file exists."
   fi
 else
   echo ".env file does not exist."
-  echo "Enter the entire .env file content (end with an empty line):"
+  read "Enter the entire .env file content (end with an empty line):"
   cat > .env
 fi
 
