@@ -47,8 +47,9 @@ if [ "$SKIP_INSTALL_CHECK" = false ]; then
     else
         echo "PostgreSQL is not installed. Installing PostgreSQL..."
         sudo apt install -y postgresql-common
-        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
         sudo apt install -y postgresql-17
+        sudo apt install -y postgresql-17-client
     fi
 else
     echo "Skipping PostgreSQL install check."
