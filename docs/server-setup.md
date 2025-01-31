@@ -1,19 +1,19 @@
+# Server setup
 
-[Service file](../deploy-code/riksdagen-yarn.service).
+Run [install script](../deploy-code/install.sh) on the server.
 ```bash
-sudo nano /etc/systemd/system/riksdagen-yarn.service
+sudo apt install -y curl
+sudo curl -sSL https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/install.sh | bash
 ```
 
-Start the service
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable riksdagen-yarn.service
-sudo systemctl start riksdagen-yarn.service
-```
-
+<!-- 
 Debugging 
 ```bash
-sudo systemctl status riksdagen-yarn.service
+sudo systemctl status riksdagen-yarn-start.service
+sudo systemctl status riksdagen-db-start.service
+
 # and/or
-journalctl -u riksdagen-yarn.service
-```
+
+journalctl -u riksdagen-yarn-start.service
+journalctl -u riksdagen-db-start.service
+``` -->
