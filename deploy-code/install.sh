@@ -25,7 +25,8 @@ if [ -x "$(command -v psql)" ]; then
 else
     echo "PostgreSQL is not installed. Installing PostgreSQL..."
     sudo apt install -y postgresql-common
-    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+    sudo apt install postgresql-17
 fi
 
 # Node.js installation > 20.x
