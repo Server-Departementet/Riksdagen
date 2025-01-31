@@ -39,21 +39,6 @@ fi
 
 cd /var/www
 
-# ENV file exists
-if [ -f .env ]; then
-  if [ "$FORCE_REINSTALL" = true ]; then
-    echo "Forcing .env file overwrite..."
-    echo "Enter the entire .env file content (end with an empty line):"
-    cat > .env
-  else
-    echo ".env file exists."
-  fi
-else
-  echo ".env file does not exist."
-  echo "Enter the entire .env file content (end with an empty line):"
-  cat > .env
-fi
-
 # Load env
 sudo apt install -y jq
 export $(grep -v '^#' .env | xargs)
