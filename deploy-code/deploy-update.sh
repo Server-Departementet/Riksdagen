@@ -1,4 +1,6 @@
-# Take args: branch or tag (default: main)
+# !/bin/bash
+
+# Takes args: branch or tag (default: main)
 # Example: ./deploy.sh tag v1.0.0
 # Example: ./deploy.sh branch main
 # Example: ./deploy.sh branch Welcome-Page
@@ -7,13 +9,16 @@
 # If the branch or tag is not provided, default to main
 git fetch --all
 if [ "$1" == "tag" ]; then
+    echo "Checking out $2 tag."
     git checkout -f tags/$2
+
 elif [ "$1" == "branch" ]; then
+    echo "Checking out $2 branch."
     git checkout -f $2
+
 else
-    git checkout -f origin/main
-    # Inform user that the branch or tag is not provided
     echo "Branch or tag is not provided. Defaulting to origin/main branch."
+    git checkout -f origin/main
 fi
 
 # Run yarn build
