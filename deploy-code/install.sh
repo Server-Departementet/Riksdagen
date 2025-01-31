@@ -1,5 +1,7 @@
 # !/bin/bash
 
+# -f flag to force overwrite existing files
+
 # Tailscale installation
 echo "Installing Tailscale..."
 read -p "Please provide your generated Tailscale Linux server install script: " tailscale_script
@@ -18,6 +20,19 @@ else
     sudo apt install -y git
 fi
 
+# ENV file exists
+if [ -f .env ]; then
+    echo ".env file exists."
+else
+    echo ".env file does not exist."
+    echo "Enter the entire .env file content (end with an empty line):"
+    cat > .env
+fi
+
+# Load env
+sudo apt install -y jq
+export $(grep -v '^#' .env | xargs)
+
 # PostgreSQL installation
 echo "Checking if PostgreSQL is installed..."
 if [ -x "$(command -v psql)" ]; then
@@ -26,8 +41,13 @@ else
     echo "PostgreSQL is not installed. Installing PostgreSQL..."
     sudo apt install -y postgresql-common
     sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-    sudo apt install postgresql-17
+    sudo apt install -y postgresql-17
 fi
+
+# Configure PostgreSQL
+sudo -i -u postgres psql -c "CREATE USER $POSTGRESQL_USER_NAME WITH PASSWORD '$POSTGRESQL_PASSWORD';"
+sudo -i -u postgres psql -c "CREATE DATABASE $POSTGRESQL_DB_NAME;"
+sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRESQL_DB_NAME TO $POSTGRESQL_USER_NAME;"
 
 # Node.js installation > 20.x
 echo "Checking if Node.js (>20.x) is installed..."
@@ -71,15 +91,6 @@ sudo git clone https://github.com/Server-Departementet/Riksdagen.git /var/www
 cd /var/www
 # Install dependencies
 sudo yarn install
-
-# ENV file exists
-if [ -f .env ]; then
-    echo ".env file exists."
-else
-    echo ".env file does not exist."
-    read -p "Enter the entire .env file content: " env_content
-    echo $env_content > .env
-fi
 
 # Yarn build
 echo "Building the project..."
