@@ -66,15 +66,6 @@ else
     echo "Database setup aborted."
 fi
 
-# Curl installation
-echo "Checking if Curl is installed..."
-if [ -x "$(command -v curl)" ]; then
-    echo "Curl is already installed."
-else
-    echo "Curl is not installed. Installing Curl..."
-    sudo apt install -y curl
-fi
-
 # Add services to systemd
 echo "Adding services to systemd..."
 # Download the service files

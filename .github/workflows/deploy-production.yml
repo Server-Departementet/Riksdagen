@@ -27,5 +27,6 @@ jobs:
               run: |
                   sudo tailscale ssh git@$SERVER_IP << 'EOF'
                   cd /var/www/
+                  sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/deploy-update.sh -o deploy-code/deploy-update.sh
                   sudo bash deploy-code/deploy-update.sh branch origin/main
                   EOF
