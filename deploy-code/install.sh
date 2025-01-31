@@ -80,6 +80,10 @@ else
     echo $env_content > .env
 fi
 
+# Yarn build
+echo "Building the project..."
+sudo yarn build
+
 # Add services to systemd
 echo "Adding services to systemd..."
 # Download the service files
