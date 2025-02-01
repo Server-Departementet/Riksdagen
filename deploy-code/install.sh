@@ -97,14 +97,18 @@ else
     echo "Skipping curl install check."
 fi
 
-# Install Services
+# Clean up old services
 echo "Removing old services..."
 sudo systemctl stop -q riksdagen-db-start
 sudo systemctl stop -q riksdagen-yarn-start
+sudo systemctl stop -q riksdagen-yarn
 sudo systemctl disable -q riksdagen-db-start
 sudo systemctl disable -q riksdagen-yarn-start
+sudo systemctl disable -q riksdagen-yarn
 sudo rm -f /etc/systemd/system/riksdagen-db-start.service
 sudo rm -f /etc/systemd/system/riksdagen-yarn-start.service
+sudo rm -f /etc/systemd/system/riksdagen-yarn.service
+# Install Services
 echo "Installing services..."
 sudo curl https://raw.githubusercontent.com/Server-Departementet/Riksdagen/refs/heads/main/deploy-code/riksdagen-yarn-start.service -o /etc/systemd/system/riksdagen-yarn-start.service
 sudo systemctl daemon-reload
