@@ -30,8 +30,6 @@ app.post("/api/oauth/discord", async (req: any, res: any) => {
     }
     lastRequest = Date.now();
 
-    console.info("Got request to /api/oauth/discord");
-
     const body: { code: string } = req.body;
 
     // Request validation
