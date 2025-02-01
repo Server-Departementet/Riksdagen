@@ -1,8 +1,5 @@
-import "./global.scss";
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
-import Image from "next/image";
-import Link from "next/link";
 
 export const metadata: Metadata = {
     title: "Riksdagen",
@@ -21,22 +18,12 @@ const openSans = Open_Sans({
     subsets: ["latin"],
 });
 
-export default function RootLayout({ children }: {
+export default async function RootLayout({ children }: {
     children: React.ReactNode
 }) {
     return (
         <html lang="sv" className={openSans.className}>
-
             <body>
-                <header className="p-3 ps-5">
-                    <div className="flex flex-row">
-                        <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
-                            <Image width={64} height={64} className="size-[3.5rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
-                            <p className="text-2xl font-medium">Riksdagen</p>
-                        </Link>
-                    </div>
-                </header>
-
                 {children}
 
                 <footer className="p-3 mt-5">

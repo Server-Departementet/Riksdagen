@@ -6,32 +6,50 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"yarn server-entry-point\" \"yarn next-dev\"",
-    "build": "next build",
-    "start": "concurrently \"yarn server-entry-point\" \"yarn next-start\"",
-    "next-dev": "next dev --turbopack",
-    "next-start": "next start",
-    "lint": "next lint",
-    "server-entry-point": "node ./server/main.ts"
+    "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
+    "build": "yarn install && yarn next:build && yarn server:build",
+    "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
+    
+    "next:dev": "next dev --turbopack",
+    "next:build": "next build",
+    "next:start": "next start",
+    "next:lint": "next lint",
+
+    "server:transpile": "yarn tsc -p ./server/tsconfig.json",
+    "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch --preserveWatchOutput",
+    "server:node": "node ./server/bundle.js",
+    "server:node:watch": "node --watch ./server/bundle.js",
+    "server:dev": "yarn server:transpile && yarn server:node",
+    "server:dev:watch": "yarn concurrently \"yarn server:transpile:watch\" \"yarn server:node:watch\"",
+    "server:build": "yarn server:transpile",
+    "server:start": "yarn server:node",
+
+    "prisma:push": "yarn prisma migrate dev --name init",
+    "prisma:deploy": "yarn prisma migrate deploy",
+    "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
   },
   "dependencies": {
+    "@prisma/client": "^6.3.0",
     "concurrently": "^9.1.2",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
+    "express": "^5.0.1",
     "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.12.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
     "postcss": "^8",
+    "prisma": "^6.3.0",
     "sass": "^1.83.4",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.7.3"
   }
 }

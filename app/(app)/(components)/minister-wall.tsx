@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ministersDB from "@/db/ministers.json";
+import ministersDB from "@root/db/ministers.json";
 
 const ministerWall = (
     <section className="flex flex-col items-center mt-10" >

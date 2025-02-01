@@ -1,26 +1,44 @@
-# Take args: branch or tag (default: main)
+# !/bin/bash
+
+# Takes args: branch or tag (default: main)
 # Example: ./deploy.sh tag v1.0.0
 # Example: ./deploy.sh branch main
 # Example: ./deploy.sh branch Welcome-Page
+
+cd /var/www
+
+# ENV file exists
+if [ -f .env ]; then
+    echo ".env file exists."
+else
+    echo ".env file does not exist. Exiting the script."
+    exit 1
+fi
 
 # Checkout the branch or tag
 # If the branch or tag is not provided, default to main
 git fetch --all
 if [ "$1" == "tag" ]; then
+    echo "Checking out $2 tag."
     git checkout -f tags/$2
+
 elif [ "$1" == "branch" ]; then
+    echo "Checking out $2 branch."
     git checkout -f $2
+
 else
-    git checkout -f origin/main
-    # Inform user that the branch or tag is not provided
     echo "Branch or tag is not provided. Defaulting to origin/main branch."
+    git checkout -f origin/main
 fi
 
-# Run yarn install
-yarn install
-# If yarn install fails, exit the script
+# Database setup
+# Set up the database. Confirm with 'yes' when prompted due to possible data loss.
+echo "Setting up the database..."
+echo "Running prisma:push"
+sudo yarn prisma:push
+sudo yarn prisma:deploy
 if [ $? -ne 0 ]; then
-    echo "yarn install failed. Exiting the script."
+    echo "Prisma push failed. Exiting..."
     exit 1
 fi
 
