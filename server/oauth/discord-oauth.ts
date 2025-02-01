@@ -15,9 +15,9 @@ app.use((_: any, res: any, next: any) => { // CORS
 
 // Where Discord sends the user after they authorize the app. Matches with discordOAuthLink in (app)/layout.tsx
 const redirectURI = process.env.ENV === "server" ?
-    "https://server-riksdagen.tailad6f63.ts.net/oauth/discord"
+    "https://server-riksdagen.tailad6f63.ts.net/api/oauth/discord"
     :
-    "http://localhost:3000/oauth/discord"
+    "http://localhost:3000/api/oauth/discord"
     ;
 
 // Endpoint for receiving Discord access and refresh tokens
@@ -68,7 +68,7 @@ app.post("/api/oauth/discord", async (req: any, res: any) => {
     );
 
     if (!tokenResponseData.ok) {
-        console.error("Token response not ok", tokenResponseData);
+        console.error("Token response not ok", await tokenResponseData.json());
         return res.status(500).json({ error: "Internal server error" });
     }
 
