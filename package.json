@@ -9,12 +9,10 @@
     "dev": "yarn concurrently \"yarn server:dev\" \"yarn next:dev\"",
     "build": "yarn install && yarn next:build && yarn server:build",
     "start": "yarn concurrently \"yarn server:start\" \"yarn next:start\"",
-    
     "next:dev": "next dev --turbopack",
     "next:build": "next build",
     "next:start": "next start",
     "next:lint": "next lint",
-
     "server:transpile": "yarn tsc -p ./server/tsconfig.json",
     "server:transpile:watch": "yarn tsc -p ./server/tsconfig.json --watch --preserveWatchOutput",
     "server:node": "node ./server/bundle.js",
@@ -23,7 +21,6 @@
     "server:dev:watch": "yarn concurrently \"yarn server:transpile:watch\" \"yarn server:node:watch\"",
     "server:build": "yarn server:transpile",
     "server:start": "yarn server:node",
-
     "prisma:push": "yarn prisma migrate dev --name init",
     "prisma:deploy": "yarn prisma migrate deploy",
     "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
