@@ -51,5 +51,4 @@ if [ $? -ne 0 ]; then
 fi
 
 # Reboot
-echo "Rebooting the system. Please wait..."
-sudo systemctl reboot
+echo "Please reboot the server to apply changes."
