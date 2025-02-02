@@ -1,5 +1,11 @@
-import type { Metadata } from "next";
+import "./global.scss";
+import Image from "next/image";
+import Link from "next/link";
+import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { Open_Sans } from "next/font/google";
+import type { Metadata } from "next";
+import { loginButton } from "./(components)/login-button";
 
 export const metadata: Metadata = {
     title: "Riksdagen",
@@ -18,12 +24,42 @@ const openSans = Open_Sans({
     subsets: ["latin"],
 });
 
+const redCircle = <div className="bg-red size-10"></div>
+
 export default async function RootLayout({ children }: {
     children: React.ReactNode
 }) {
-    return (
+    const user = await currentUser();
+
+    return (<ClerkProvider>
         <html lang="sv" className={openSans.className}>
             <body>
+                {/* Header */}
+                <header className="p-3 px-5 items-center">
+                    {/* Logo */}
+                    <div className="flex flex-row">
+                        <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
+                            <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
+
+                            <p className="text-2xl font-medium">Riksdagen</p>
+                        </Link>
+                    </div>
+
+                    <SignedOut>
+                        <SignInButton children={loginButton} />
+                    </SignedOut>
+                    <SignedIn>
+                        {/* <UserButton children={await loggedInButton()} /> */}
+                        <UserButton fallback={redCircle} showName appearance={{
+                            layout: { shimmer: false }, elements: {
+                                userButtonBox: "me-1 gap-3",
+                                userButtonAvatarBox: "size-10",
+                                userButtonOuterIdentifier: "text-white text-base font-normal",
+                            }
+                        }} />
+                    </SignedIn>
+                </header>
+
                 {children}
 
                 <footer className="p-3 mt-5">
@@ -31,5 +67,5 @@ export default async function RootLayout({ children }: {
                 </footer>
             </body>
         </html>
-    )
+    </ClerkProvider>)
 }
