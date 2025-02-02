@@ -2,40 +2,62 @@ import "./global.scss";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import { Open_Sans } from "next/font/google";
+import type { Metadata } from "next";
+import { loginButton, loggedInButton } from "./(components)/login-button";
 
-// Discord OAuth link
-const discordOAuthLink = process.env.ENV === "server" ?
-    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=https%3A%2F%2Fserver-riksdagen.tailad6f63.ts.net%2Fapi%2Foauth%2Fdiscord&scope=identify"
-    :
-    "https://discord.com/oauth2/authorize?client_id=1222824481571999856&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Foauth%2Fdiscord&scope=identify"
-    ;
+export const metadata: Metadata = {
+    title: "Riksdagen",
+    authors: [
+        { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
+        { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
+        { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
+    ],
+    description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
+    icons: {
+        icon: "/icons/favicon.png",
+    },
+};
+
+const openSans = Open_Sans({
+    subsets: ["latin"],
+});
 
 export default async function AppLayout({ children }: {
     children: React.ReactNode
 }) {
-    return (<>
-        {/* Header */}
-        <header className="p-3 px-5 items-center">
-            {/* Logo */}
-            <div className="flex flex-row">
-                <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
-                    <Image width={64} height={64} className="size-[3.5rem] rounded-lg" src="/icons/header-logo.png" alt="Logo" />
+    return (<ClerkProvider>
+        <html lang="sv" className={openSans.className}>
+            <body>
 
-                    <p className="text-2xl font-medium">Riksdagen</p>
-                </Link>
-            </div>
+                {/* Header */}
+                <header className="p-3 px-5 items-center">
+                    {/* Logo */}
+                    <div className="flex flex-row">
+                        <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
+                            <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
 
-            {/* Discord Login */}
-            <Link href={discordOAuthLink} id="discord-login-button-in-header" className="flex flex-row items-center justify-center gap-x-2 px-3 py-2 bg-[#5865f2] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg">
-                <Image width={24} height={24} src="/icons/discord-mark-white.svg" alt="Discord"></Image>
-                Login
-            </Link>
-        </header>
+                            <p className="text-2xl font-medium">Riksdagen</p>
+                        </Link>
+                    </div>
 
-        <div className="flex-1">
-            <Suspense>
-                {children}
-            </Suspense>
-        </div>
-    </>)
+
+                    <SignedOut>
+                        <SignInButton children={loginButton} />
+                    </SignedOut>
+                    <SignedIn>
+                        {/* <UserButton appearance={{ layout: { shimmer: false }, elements: { userButtonBox: "px-2 pe-3 py-2 bg-[#5865f2] rounded-lg", userButtonAvatarBox: "size-8", userButtonOuterIdentifier: "text-white font-normal text-base" } }} showName /> */}
+                        <UserButton children={loggedInButton} />
+                    </SignedIn>
+                </header>
+
+                <div className="flex-1">
+                    <Suspense>
+                        {children}
+                    </Suspense>
+                </div>
+            </body>
+        </html>
+    </ClerkProvider>)
 }

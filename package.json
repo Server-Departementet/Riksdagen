@@ -26,6 +26,7 @@
     "prisma:reset": "yarn prisma migrate reset --force && yarn prisma:push"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.10.6",
     "@prisma/client": "^6.3.0",
     "concurrently": "^9.1.2",
     "discord.js": "^14.17.3",
