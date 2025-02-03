@@ -2,10 +2,9 @@ import "./global.scss";
 import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { Open_Sans } from "next/font/google";
 import type { Metadata } from "next";
-import { loginButton } from "./(components)/login-button";
+import { loginButton, userButtonSkeleton } from "./(components)/login-button";
 
 export const metadata: Metadata = {
     title: "Riksdagen",
@@ -24,13 +23,10 @@ const openSans = Open_Sans({
     subsets: ["latin"],
 });
 
-const redCircle = <div className="bg-red size-10"></div>
 
 export default async function RootLayout({ children }: {
     children: React.ReactNode
 }) {
-    const user = await currentUser();
-
     return (<ClerkProvider>
         <html lang="sv" className={openSans.className}>
             <body>
@@ -49,8 +45,7 @@ export default async function RootLayout({ children }: {
                         <SignInButton children={loginButton} />
                     </SignedOut>
                     <SignedIn>
-                        {/* <UserButton children={await loggedInButton()} /> */}
-                        <UserButton fallback={redCircle} showName appearance={{
+                        <UserButton fallback={userButtonSkeleton} showName appearance={{
                             layout: { shimmer: false }, elements: {
                                 userButtonBox: "me-1 gap-3",
                                 userButtonAvatarBox: "size-10",
