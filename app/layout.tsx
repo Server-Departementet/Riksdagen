@@ -42,7 +42,9 @@ export default async function RootLayout({ children }: {
                     </div>
 
                     <SignedOut>
-                        <SignInButton children={loginButton} />
+                        <SignInButton>
+                            {loginButton}
+                        </SignInButton>
                     </SignedOut>
                     <SignedIn>
                         <UserButton fallback={userButtonSkeleton} showName appearance={{
