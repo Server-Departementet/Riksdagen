@@ -155,6 +155,7 @@ echo "Configuring PostgreSQL..."
 sudo -i -u postgres psql -c "CREATE USER $POSTGRESQL_USER_NAME WITH PASSWORD '$POSTGRESQL_PASSWORD';"
 sudo -i -u postgres psql -c "CREATE DATABASE $POSTGRESQL_DB_NAME;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRESQL_DB_NAME TO $POSTGRESQL_USER_NAME;"
+sudo -i -u postgres psql -c "ALTER USER $POSTGRESQL_USER_NAME WITH SUPERUSER;"
 
 # Yarn install
 sudo yarn install
