@@ -27,6 +27,10 @@ body {
     &>main {
         @extend .col;
         @apply px-5 w-full items-center flex-1;
+
+        &>section {
+            @apply w-full;
+        }
     }
 
     &>footer {
@@ -40,15 +44,19 @@ body {
 }
 
 h1 {
-    @apply text-5xl text-center font-bold;
+    @apply w-full text-5xl text-center font-bold;
 }
 
 h2 {
-    @apply text-3xl text-center font-semibold;
+    @apply w-full text-3xl text-center font-semibold;
 }
 
 h3 {
-    @apply text-2xl text-center font-medium;
+    @apply w-full text-2xl text-center font-medium;
+}
+
+h4 {
+    @apply w-full text-xl font-normal;
 }
 
 a {
