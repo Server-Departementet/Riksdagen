@@ -8,4 +8,3 @@ const prisma = new PrismaClient();
 
 /// <reference path="extend/console.ts" />
 /// <reference path="discord/discord-bot.ts" />
-/// <reference path="oauth/discord-oauth.ts" />
