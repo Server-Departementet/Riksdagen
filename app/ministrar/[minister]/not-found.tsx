@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 export default function NotFound() {
     const path = usePathname();
+    if (!path) return null;
+    
     const upOneLevel = path?.split("/").slice(0, -1).join("/") || "/";
 
     return (

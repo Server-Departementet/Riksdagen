@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import ministerWall from "./(components)/minister-wall";
+import ministerWall from "./components/minister-wall";
 import { useEffect } from "react";
 
 export default function Page() {

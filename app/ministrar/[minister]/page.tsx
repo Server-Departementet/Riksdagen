@@ -11,14 +11,14 @@ export default async function Page({ params, }: {
     params: Promise<{ minister: string }>
 }) {
     const ministerID = (await params).minister;
-    
+
     if (!ministersDB.hasOwnProperty(ministerID)) {
         // 404
         notFound();
     }
 
     const minister = (ministersDB as { [key: string]: Minister })[ministerID];
-    
+
     return (
         <main>
             <h1 className="mt-14">{minister.title || "Saknar titel"}</h1>

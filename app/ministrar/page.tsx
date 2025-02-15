@@ -1,4 +1,4 @@
-import ministerWall from "../(components)/minister-wall";
+import ministerWall from "@/components/minister-wall";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
