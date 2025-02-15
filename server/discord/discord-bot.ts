@@ -35,37 +35,37 @@ const startDiscordBot = () => {
             activities: [{ name: "Samlar data om Regeringen", type: ActivityType.Custom }],
         });
 
-        const quotesChannel = await client.channels.fetch(process.env.DISCORD_QUOTE_CHANNEL_ID);
-        if (quotesChannel) {
-            const messages = await quotesChannel.messages.fetch({ limit: 100 });
-            const quotes: Quote[] = messages.map((message: any) => {
-                const regex = /["“”'‘’]([^"“”'‘’]+)["“”'‘’]\s*-\s*([^,.]+)(?:[,.]\s*(.*))?/;
-                const match = message.content.match(regex);
+        // const quotesChannel = await client.channels.fetch(process.env.DISCORD_QUOTE_CHANNEL_ID);
+        // if (quotesChannel) {
+        //     const messages = await quotesChannel.messages.fetch({ limit: 100 });
+        //     const quotes: Quote[] = messages.map((message: any) => {
+        //         const regex = /["“”'‘’]([^"“”'‘’]+)["“”'‘’]\s*-\s*([^,.]+)(?:[,.]\s*(.*))?/;
+        //         const match = message.content.match(regex);
 
-                if (!match) {
-                    console.error("Could not parse message: ", message.content);
-                    return null;
-                }
+        //         if (!match) {
+        //             console.error("Could not parse message: ", message.content);
+        //             return null;
+        //         }
 
-                const quoteContent = match[1];
-                const creditedName = match[2];
-                const context = match[3] || null;
+        //         const quoteContent = match[1];
+        //         const creditedName = match[2];
+        //         const context = match[3] || null;
 
-                const quote: Quote = {
-                    quote: `\"${quoteContent}\"`,
-                    credited: creditedName,
-                    context: context,
-                    publisher: message.author.username,
-                    publisherID: message.author.id,
-                    date: new Date(message.createdTimestamp),
-                };
-                return quote;
-            });
+        //         const quote: Quote = {
+        //             quote: `\"${quoteContent}\"`,
+        //             credited: creditedName,
+        //             context: context,
+        //             publisher: message.author.username,
+        //             publisherID: message.author.id,
+        //             date: new Date(message.createdTimestamp),
+        //         };
+        //         return quote;
+        //     });
 
-            fs.writeFileSync("quotes.json", JSON.stringify(quotes.filter(Boolean), null, 2));
-        } else {
-            console.error("Could not find channel with id: ", process.env.DISCORD_QUOTE_CHANNEL_ID);
-        }
+        //     fs.writeFileSync("quotes.json", JSON.stringify(quotes.filter(Boolean), null, 2));
+        // } else {
+        //     console.error("Could not find channel with id: ", process.env.DISCORD_QUOTE_CHANNEL_ID);
+        // }
     });
 }
 
