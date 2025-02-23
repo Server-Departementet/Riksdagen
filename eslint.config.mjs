@@ -11,6 +11,10 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    // Exclude the server folder so that it uses its own config
+    ignores: ["server/**/*"],
+  },
 ];
 
 export default eslintConfig;
