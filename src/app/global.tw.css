@@ -16,7 +16,7 @@
     @apply flex flex-col w-full h-full items-center bg-white flex-1;
 
     & > header {
-      @apply flex flex-row top-0 sticky w-full bg-gray-800 text-white justify-between z-10;
+      @apply flex flex-row top-0 sticky w-full text-alt-foreground bg-gray-800 justify-between z-10;
     }
 
     & > main {
@@ -28,7 +28,7 @@
     }
 
     & > footer {
-      @apply flex flex-col items-center w-full bg-gray-800 text-white z-10;
+      @apply flex flex-col items-center w-full bg-gray-800 z-10;
     }
   }
 
@@ -67,14 +67,9 @@
     @apply w-full text-base font-normal select-none;
   }
 
-  a,
-  button {
-    @apply underline;
-  }
-
   a {
     &:hover {
-      @apply text-blue-800;
+      @apply text-blue-800 underline;
     }
   }
 }
@@ -155,6 +150,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-alt-foreground: var(--alt-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -202,8 +198,7 @@
 
 /* Clerk */
 .cl-userButtonBox {
-  @apply gap-x-3 me-2;
-  color: var(--alt-foreground);
+  @apply gap-x-3 me-2 text-alt-foreground;
 
   & .cl-userButtonOuterIdentifier {
     @apply text-sm font-normal;
