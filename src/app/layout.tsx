@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: {
         <header className="p-3 px-5 items-center">
           {/* Logo */}
           <div className="flex flex-row">
-            <Link href="/" className="flex flex-row items-center gap-x-4 no-underline">
+            <Link href="/" className="flex flex-row items-center gap-x-4">
               <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
 
               <p className="text-2xl font-medium">Riksdagen</p>

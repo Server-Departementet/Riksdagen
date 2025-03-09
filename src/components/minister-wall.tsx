@@ -7,7 +7,7 @@ const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, min
   return (
     <AccordionItem key={ministerID} value={ministerID}>
       {/* Minister Title */}
-      <AccordionTrigger>
+      <AccordionTrigger className="cursor-pointer">
         <span dangerouslySetInnerHTML={md(minister.title)}></span>
       </AccordionTrigger>
 
@@ -27,10 +27,12 @@ const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, min
 
 const ministerWall = (
   <section className="flex flex-col items-center mt-10" >
+    {/* Title */}
     <Link href="/ministrar" className="no-underline">
       <h2 className="w-full text-center mb-1">Ministerposterna</h2>
     </Link>
 
+    {/* Entries */}
     <Accordion className="w-10/12 max-w-prose" type="multiple">
       {ministerAccordionItems}
     </Accordion>
