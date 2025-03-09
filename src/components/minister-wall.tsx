@@ -17,7 +17,7 @@ const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, min
         <p>
           <span dangerouslySetInnerHTML={md(minister.description)}></span>
           {" "}
-          <Link href={`/ministrar/${ministerID}`}>Läs mer</Link>
+          <Link className="underline" href={`/ministrar/${ministerID}`}>Läs mer</Link>
           .
         </p>
       </AccordionContent>
