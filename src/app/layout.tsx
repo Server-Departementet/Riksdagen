@@ -32,13 +32,13 @@ export default async function AppLayout({ children }: {
         {/* Header */}
         <header className="p-3 px-5 items-center">
           {/* Logo */}
-          <div className="flex flex-row">
-            <Link href="/" className="flex flex-row items-center gap-x-4">
-              <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
+          <Link href="/" className="flex flex-row items-center gap-x-4 no-underline hover:text-inherit">
+            {/* Icon */}
+            <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
 
-              <p className="text-2xl font-medium">Riksdagen</p>
-            </Link>
-          </div>
+            {/* Title */}
+            <p className="text-2xl font-medium">Riksdagen</p>
+          </Link>
 
           <SignedOut>
             <SignInButton>

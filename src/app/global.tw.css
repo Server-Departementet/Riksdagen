@@ -51,6 +51,12 @@
   button {
     @apply underline;
   }
+
+  a {
+    &:hover {
+      @apply text-blue-800;
+    }
+  }
 }
 
 :root {
