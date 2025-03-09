@@ -6,7 +6,6 @@ import { marked } from "marked";
  * @returns - { __html: string } object to be used with React's dangerouslySetInnerHTML
  */
 const md = (text: string): TrustedHTML => {
-  console.log(marked.parseInline(text));
   return { __html: marked.parseInline(text) };
 };
 

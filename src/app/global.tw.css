@@ -2,35 +2,27 @@
 @plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
 
-.f-col {
-  @apply flex flex-col flex-nowrap items-start justify-start;
-}
-
-.f-row {
-  @apply flex flex-row flex-nowrap items-start justify-start;
-}
-
 html {
-  @apply f-col w-full min-h-screen justify-center bg-gray-700 font-thin;
+  @apply flex flex-col w-full min-h-screen justify-center bg-gray-700 font-thin;
 }
 
 body {
-  @apply f-col w-full h-full items-center bg-white flex-1;
+  @apply flex flex-col w-full h-full items-center bg-white flex-1;
 
   & > header {
-    @apply f-row top-0 sticky w-full bg-gray-800 text-white justify-between;
+    @apply flex flex-row top-0 sticky w-full bg-gray-800 text-white justify-between;
   }
 
   & > main {
-    @apply f-col px-5 w-full items-center flex-1;
+    @apply flex flex-col px-5 w-full items-center flex-1;
 
     & > section {
-      @apply f-col w-full;
+      @apply flex flex-col w-full;
     }
   }
 
   & > footer {
-    @apply f-col items-center w-full bg-gray-800 text-white;
+    @apply flex flex-col items-center w-full bg-gray-800 text-white;
   }
 }
 

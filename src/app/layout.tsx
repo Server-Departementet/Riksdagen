@@ -1,10 +1,14 @@
-import "./global.scss";
+import "@/app/global.tw.css";
 import { Open_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { loginButton, userButtonSkeleton } from "./components/login-button";
+import { loginButton, userButtonSkeleton } from "@/components/login-button";
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Riksdagen",
@@ -18,10 +22,6 @@ export const metadata: Metadata = {
     icon: "/icons/favicon.png",
   },
 };
-
-const openSans = Open_Sans({
-  subsets: ["latin"],
-});
 
 export default async function AppLayout({ children }: {
   children: React.ReactNode
