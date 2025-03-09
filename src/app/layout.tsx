@@ -1,14 +1,14 @@
 import "@/app/global.tw.css";
-import { Open_Sans } from "next/font/google";
+import { Manrope, Open_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { loginButton, userButtonSkeleton } from "@/components/login-button";
 
-const openSans = Open_Sans({
-  subsets: ["latin"],
-});
+/* Used in global css */
+const _manrope = Manrope({ subsets: ["latin"] });
+const _openSans = Open_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Riksdagen",
@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: {
   children: React.ReactNode
 }) {
   return (<ClerkProvider>
-    <html lang="sv" className={openSans.className}>
+    <html lang="sv">
       <body>
         {/* Header */}
         <header className="p-3 px-5 items-center">

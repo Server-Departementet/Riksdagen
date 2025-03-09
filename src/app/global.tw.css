@@ -4,7 +4,8 @@
 
 @layer base {
   * {
-    @apply font-thin;
+    @apply font-thin antialiased;
+    font-family: "Open Sans", sans-serif;
   }
 
   html {
@@ -32,19 +33,33 @@
   }
 
   h1 {
-    @apply w-full text-5xl text-center font-bold select-none;
+    @apply w-full text-5xl text-center font-black select-none;
+    font-family: "Manrope", sans-serif;
   }
 
   h2 {
-    @apply w-full text-3xl text-center font-semibold select-none;
+    @apply w-full text-3xl text-center font-black select-none;
+    font-family: "Manrope", sans-serif;
   }
 
   h3 {
-    @apply w-full text-2xl text-center font-medium select-none;
+    @apply w-full text-2xl text-center font-bold select-none;
+    font-family: "Manrope", sans-serif;
   }
 
   h4 {
     @apply w-full text-xl font-normal select-none;
+    font-family: "Manrope", sans-serif;
+  }
+
+  h5 {
+    @apply w-full text-lg font-normal select-none;
+    font-family: "Manrope", sans-serif;
+  }
+
+  h6 {
+    @apply w-full text-base font-normal select-none;
+    font-family: "Manrope", sans-serif;
   }
 
   a,
