@@ -1,5 +1,5 @@
 import "@/app/global.tw.css";
-import { Manrope, Open_Sans } from "next/font/google";
+import { Open_Sans, Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@c
 import { loginButton, userButtonSkeleton } from "@/components/login-button";
 
 /* Used in global css */
-const _manrope = Manrope({ subsets: ["latin"] });
+const _outfit = Outfit({ subsets: ["latin"] });
 const _openSans = Open_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -37,7 +37,7 @@ export default async function AppLayout({ children }: {
             <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
 
             {/* Title */}
-            <p className="text-2xl font-medium">Riksdagen</p>
+            <p className="text-2xl font-medium title-font">Riksdagen</p>
           </Link>
 
           <SignedOut>

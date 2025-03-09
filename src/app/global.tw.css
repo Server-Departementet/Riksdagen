@@ -32,34 +32,39 @@
     }
   }
 
+  .base-font {
+    font-family: "Open Sans", sans-serif;
+  }
+
+  .title-font {
+    font-family: "Outfit", sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Outfit", sans-serif;
+  }
   h1 {
-    @apply w-full text-5xl text-center font-black select-none;
-    font-family: "Manrope", sans-serif;
+    @apply w-full text-5xl text-center font-semibold select-none;
   }
-
   h2 {
-    @apply w-full text-3xl text-center font-black select-none;
-    font-family: "Manrope", sans-serif;
+    @apply w-full text-3xl text-center font-semibold select-none;
   }
-
   h3 {
-    @apply w-full text-2xl text-center font-bold select-none;
-    font-family: "Manrope", sans-serif;
+    @apply w-full text-2xl text-center font-semibold select-none;
   }
-
   h4 {
     @apply w-full text-xl font-normal select-none;
-    font-family: "Manrope", sans-serif;
   }
-
   h5 {
     @apply w-full text-lg font-normal select-none;
-    font-family: "Manrope", sans-serif;
   }
-
   h6 {
     @apply w-full text-base font-normal select-none;
-    font-family: "Manrope", sans-serif;
   }
 
   a,
