@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AppLayout({ children }: {
+export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
   return (<ClerkProvider>
@@ -47,11 +47,7 @@ export default async function AppLayout({ children }: {
           </SignedOut>
           <SignedIn>
             <UserButton fallback={userButtonSkeleton} showName appearance={{
-              layout: { shimmer: false }, elements: {
-                userButtonBox: "me-1 gap-3",
-                userButtonAvatarBox: "size-10",
-                userButtonOuterIdentifier: "text-white text-base font-normal",
-              }
+              layout: { shimmer: false },
             }} />
           </SignedIn>
         </header>

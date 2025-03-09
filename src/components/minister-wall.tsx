@@ -26,7 +26,7 @@ const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, min
 });
 
 const ministerWall = (
-  <section className="flex flex-col items-center mt-10" >
+  <section className="flex flex-col items-center mt-10 mb-5" >
     {/* Title */}
     <Link href="/ministrar" className="no-underline">
       <h2 className="w-full text-center mb-1">Ministerposterna</h2>

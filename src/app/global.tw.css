@@ -16,7 +16,7 @@
     @apply flex flex-col w-full h-full items-center bg-white flex-1;
 
     & > header {
-      @apply flex flex-row top-0 sticky w-full bg-gray-800 text-white justify-between;
+      @apply flex flex-row top-0 sticky w-full bg-gray-800 text-white justify-between z-10;
     }
 
     & > main {
@@ -28,7 +28,7 @@
     }
 
     & > footer {
-      @apply flex flex-col items-center w-full bg-gray-800 text-white;
+      @apply flex flex-col items-center w-full bg-gray-800 text-white z-10;
     }
   }
 
@@ -112,12 +112,14 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
-  --foreground: oklch(0.13 0.028 261.692);
+  --foreground: #333;
+  --alt-foreground: #f8f8f8;
 }
 
 .dark {
   --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  --foreground: #f8f8f8;
+  --alt-foreground: #333;
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
@@ -195,5 +197,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Clerk */
+.cl-userButtonBox {
+  @apply gap-x-3 me-2;
+  color: var(--alt-foreground);
+
+  & .cl-userButtonOuterIdentifier {
+    @apply text-sm font-normal;
+  }
+
+  & .cl-userButtonAvatarBox {
+    @apply size-9;
   }
 }
