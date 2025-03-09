@@ -1,9 +1,11 @@
-import Minister from "@root/types/minister";
-import ministersDB from "@root/db/ministers.json";
+import { Minister } from "@/types";
+import ministersDB from "@root/ministers.json";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { metadata as rootMetadata } from "@/app/layout";
 
 export const metadata: Metadata = {
+  ...rootMetadata,
   title: "Riksdagen - Minister",
 }
 

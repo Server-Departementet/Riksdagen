@@ -6,9 +6,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@r
 const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, minister]) => {
   return (
     <AccordionItem key={ministerID} value={ministerID}>
+      {/* Minister Title */}
       <AccordionTrigger>
         <span dangerouslySetInnerHTML={md(minister.title)}></span>
       </AccordionTrigger>
+
+      {/* Expanded Content */}
       <AccordionContent>
         <h4 className="mb-1" dangerouslySetInnerHTML={md(minister.name)}></h4>
         <p>
