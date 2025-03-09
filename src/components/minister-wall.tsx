@@ -1,7 +1,7 @@
 import Link from "next/link";
 import ministersDB from "@root/ministers.json";
 import md from "@/lib/markdown";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@radix-ui/react-accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, minister]) => {
   return (
