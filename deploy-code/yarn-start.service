@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/var/www/
+WorkingDirectory=/home/riksdagen/Riksdagen/
 ExecStart=/usr/bin/yarn start
 Restart=always
 RestartSec=3
