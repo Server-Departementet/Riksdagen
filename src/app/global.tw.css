@@ -28,7 +28,7 @@
     }
 
     & > footer {
-      @apply flex flex-col items-center w-full bg-gray-800 z-10;
+      @apply flex flex-col items-center w-full text-alt-foreground bg-gray-800 z-10;
     }
   }
 
