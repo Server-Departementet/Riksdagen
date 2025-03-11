@@ -107,14 +107,14 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
-  --foreground: #242424;
+  --foreground: #1d1e20;
   --alt-foreground: #f8f8f8;
 }
 
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: #f8f8f8;
-  --alt-foreground: #242424;
+  --alt-foreground: #1d1e20;
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
