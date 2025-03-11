@@ -16,15 +16,11 @@
     @apply flex flex-col w-full h-full items-center bg-white flex-1;
 
     & > header {
-      @apply flex flex-row top-0 sticky w-full text-alt-foreground bg-gray-800 justify-between z-10;
+      @apply flex flex-row justify-between items-center top-0 sticky w-full text-alt-foreground bg-gray-800;
     }
 
     & > main {
       @apply flex flex-col px-5 w-full items-center flex-1;
-
-      & > section {
-        @apply flex flex-col w-full;
-      }
     }
 
     & > footer {

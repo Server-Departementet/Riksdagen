@@ -3,7 +3,7 @@ import { Open_Sans, Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { loginButton, userButtonSkeleton } from "@/components/login-button";
 
 /* Used in global css */
@@ -30,11 +30,11 @@ export default async function RootLayout({ children }: {
     <html lang="sv">
       <body>
         {/* Header */}
-        <header className="p-3 px-5 items-center">
+        <header className="z-10 py-3 px-5">
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-underline hover:text-inherit">
             {/* Icon */}
-            <Image width={64} height={64} className="size-[3.5rem] rounded-lg text-" src="/icons/header-logo.png" alt="Logo" />
+            <Image width={64} height={64} className={`size-[3.5rem] rounded-lg`} src="/icons/header-logo.png" alt="Logo" />
 
             {/* Title */}
             <p className="text-2xl font-medium title-font">Riksdagen</p>
