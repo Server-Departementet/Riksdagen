@@ -55,9 +55,9 @@ export default async function RootLayout({ children }: {
                 <Icon.Menu size={44} />
               </SheetTrigger>
 
-              <SheetContent className="[&>button]:hidden">
+              <SheetContent className="[&>button]:hidden pt-1 pl-4">
                 {/* Header */}
-                <SheetHeader className="flex flex-row items-center justify-end gap-x-6 mr-1">
+                <SheetHeader className="flex flex-row items-center justify-between mx-1 pl-0">
                   <ClerkLogin />
 
                   {/* Close button */}
@@ -66,10 +66,14 @@ export default async function RootLayout({ children }: {
                   </SheetTrigger>
                 </SheetHeader>
 
-                {/* Description */}
-                <SheetDescription>
-                  <Link href={"/"}>Home</Link>
-                </SheetDescription>
+                {/* Main */}
+                <section className="flex flex-col gap-y-2">
+                  <Link href="">Text about stuff</Link>
+                  <Link href="">Text about stuff</Link>
+                  <Link href="">Text about stuff</Link>
+                  <Link href="">Text about stuff</Link>
+                  <Link href="">Text about stuff</Link>
+                </section>
 
                 <SheetTitle className="hidden">Menu</SheetTitle>
               </SheetContent>
