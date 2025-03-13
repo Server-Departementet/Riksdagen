@@ -1,6 +1,10 @@
-import { clerkMiddleware } from "@clerk/nextjs/server"
+import { clerkMiddleware, ClerkMiddlewareAuth } from "@clerk/nextjs/server";
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
-export default clerkMiddleware()
+export default clerkMiddleware((auth: ClerkMiddlewareAuth, req: NextRequest, event: NextFetchEvent) => {
+    
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
@@ -9,4 +13,4 @@ export const config = {
     // Always run for API routes
     "/(api|trpc)(.*)",
   ],
-}
+};

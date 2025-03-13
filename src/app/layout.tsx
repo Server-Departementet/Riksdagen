@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import * as Icon from "lucide-react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
 
@@ -67,10 +67,13 @@ export default async function RootLayout({ children }: {
                 </SheetHeader>
 
                 {/* Main */}
-                <section className="flex flex-col gap-y-2">
-                  <Link href="">Text about stuff</Link>
-                  <Link href="">Text about stuff</Link>
-                  <Link href="">Text about stuff</Link>
+                <section className="flex flex-col gap-y-3 mx-5 text-xl">
+                  <Link href="/">Hem</Link>
+                  <Link href="/road-and-rail">Minecraft Road & Rail Generator</Link>
+                  <Link href="https://vr-radio.tailad6f63.ts.net/" target="_blank" className="flex flex-row items-center gap-x-1">
+                    Viggos Radio
+                    <Icon.ExternalLink size={22} strokeWidth={1} color="#222"/>
+                  </Link>
                   <Link href="">Text about stuff</Link>
                   <Link href="">Text about stuff</Link>
                 </section>
