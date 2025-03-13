@@ -28,6 +28,16 @@
     }
   }
 
+  button,
+  a {
+    @apply cursor-pointer;
+  }
+  a {
+    &:hover {
+      @apply text-blue-800 underline;
+    }
+  }
+
   .base-font {
     font-family: "Open Sans", sans-serif;
   }
@@ -61,12 +71,6 @@
   }
   h6 {
     @apply w-full text-base font-normal select-none;
-  }
-
-  a {
-    &:hover {
-      @apply text-blue-800 underline;
-    }
   }
 }
 

@@ -3,8 +3,10 @@ import { Open_Sans, Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { loginButton, userButtonSkeleton } from "@/components/login-button";
+import * as Icon from "lucide-react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkLogin } from "@/components/login-button";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -40,17 +42,41 @@ export default async function RootLayout({ children }: {
             <p className="text-2xl font-medium title-font">Riksdagen</p>
           </Link>
 
-          <SignedOut>
-            <SignInButton>
-              {loginButton}
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <UserButton fallback={userButtonSkeleton} showName appearance={{
-              layout: { shimmer: false },
-            }} />
-          </SignedIn>
+          {/* Right group */}
+          <div className="flex flex-row items-center justify-between gap-x-6 mr-1">
+            {/* Account button */}
+            <div className="not-sm:hidden">
+              <ClerkLogin />
+            </div>
+
+            {/* Side bar */}
+            <Sheet>
+              <SheetTrigger className="hover:text-gray-300 active:text-gray-300">
+                <Icon.Menu size={44} />
+              </SheetTrigger>
+
+              <SheetContent className="[&>button]:hidden">
+                {/* Header */}
+                <SheetHeader className="flex flex-row items-center justify-end gap-x-6 mr-1">
+                  <ClerkLogin />
+
+                  {/* Close button */}
+                  <SheetTrigger>
+                    <Icon.X size={44} />
+                  </SheetTrigger>
+                </SheetHeader>
+
+                {/* Description */}
+                <SheetDescription>
+                  <Link href={"/"}>Home</Link>
+                </SheetDescription>
+
+                <SheetTitle className="hidden">Menu</SheetTitle>
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
+
 
         {children}
 
