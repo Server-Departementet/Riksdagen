@@ -21,10 +21,10 @@ export default function Custom404() {
       {/* Big background crowns */}
       <div className="absolute opacity-50 flex flex-col justify-center items-center gap-x-2">
         <div className="flex flex-row justify-center items-center gap-x-2">
-          <Image src={"icons/crown.svg"} height={230} width={230} alt="" />
-          <Image src={"icons/crown.svg"} height={230} width={230} alt="" />
+          <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
+          <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
         </div>
-        <Image src={"icons/crown.svg"} height={230} width={230} alt="" />
+        <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
       </div>
     </main>
   )
