@@ -68,13 +68,13 @@ export default async function RootLayout({ children }: {
                 {/* Nav */}
                 <nav className="flex flex-col gap-y-3 mx-5 text-xl">
                   <Link href="/">Hem</Link>
-                  <Link href="/road-and-rail">Minecraft Road & Rail Generator</Link>
+                  <Link href="/ministrar">Våra ministrar</Link>
+                  <Link href="/stadskicket">Stadsskicket</Link>
+                  <Link href="/rail-and-road">Minecraft Rail & Road Generator</Link>
                   <Link href="https://vr-radio.tailad6f63.ts.net/" target="_blank" className="flex flex-row items-center gap-x-1">
                     Viggos Radio
                     <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
                   </Link>
-                  <Link href="">Text about stuff</Link>
-                  <Link href="">Text about stuff</Link>
                 </nav>
 
                 <SheetTitle className="hidden">Menu</SheetTitle>

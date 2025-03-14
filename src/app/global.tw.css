@@ -58,6 +58,17 @@
     font-family: "Outfit", sans-serif;
   }
 
+  .markdown-parsed {
+    font-family: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    & * {
+      font-family: inherit;
+      font-weight: inherit;
+      font-size: inherit;
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -67,22 +78,22 @@
     font-family: "Outfit", sans-serif;
   }
   h1 {
-    @apply w-full text-5xl text-center font-semibold select-none;
+    @apply w-full text-5xl text-center font-semibold;
   }
   h2 {
-    @apply w-full text-3xl text-center font-semibold select-none;
+    @apply w-full text-3xl text-center font-semibold;
   }
   h3 {
-    @apply w-full text-2xl text-center font-semibold select-none;
+    @apply w-full text-2xl text-center font-semibold;
   }
   h4 {
-    @apply w-full text-xl font-normal select-none;
+    @apply w-full text-xl font-normal;
   }
   h5 {
-    @apply w-full text-lg font-normal select-none;
+    @apply w-full text-lg font-normal;
   }
   h6 {
-    @apply w-full text-base font-normal select-none;
+    @apply w-full text-base font-normal;
   }
 }
 

@@ -3,6 +3,7 @@ import ministersDB from "@root/ministers.json";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { metadata as rootMetadata } from "@/app/layout";
+import md from "@/lib/markdown";
 
 export const metadata: Metadata = {
   ...rootMetadata,
@@ -23,9 +24,9 @@ export default async function Page({ params, }: {
 
   return (
     <main>
-      <h1 className="mt-14">{minister.title || "Saknar titel"}</h1>
-      <h3 className="my-4">Hålls av {minister.name || "någon"}</h3>
-      <p>{minister.description}</p>
+      <h1 className="mt-14 font-bold" dangerouslySetInnerHTML={md(minister.title || "Saknar titel")}></h1>
+      <h3 className="my-4" dangerouslySetInnerHTML={md(`Hålls av ${minister.name || "..."}`)}></h3>
+      <p dangerouslySetInnerHTML={md(minister.description)}></p>
     </main>
   )
 }

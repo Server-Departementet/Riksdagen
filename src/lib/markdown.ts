@@ -6,7 +6,12 @@ import { marked } from "marked";
  * @returns - { __html: TrustedHTML } object to be used with React's dangerouslySetInnerHTML
  */
 const md = (text: string): { __html: TrustedHTML } => {
-  return { __html: marked.parseInline(text) };
+  const html: string = marked.parseInline(text) as string;
+
+  const wrapper = `<span class="markdown-parsed">${html}</span>`;
+
+  // Return the HTML object
+  return { __html: wrapper };
 };
 
 export default md;
