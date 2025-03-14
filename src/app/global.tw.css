@@ -9,7 +9,7 @@
   }
 
   html {
-    @apply flex flex-col w-full min-h-screen justify-center bg-white;
+    @apply flex flex-col w-full min-h-screen justify-center bg-gray-700;
     scrollbar-gutter: stable;
   }
 

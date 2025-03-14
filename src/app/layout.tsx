@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: {
     <html lang="sv">
       <body>
         {/* Header */}
-        <header className="z-10 py-3 px-5">
+        <header className="z-10 py-3 px-5 h-20">
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-underline hover:text-inherit">
             {/* Icon */}
@@ -45,9 +45,7 @@ export default async function RootLayout({ children }: {
           {/* Right group */}
           <div className="flex flex-row items-center justify-between gap-x-6 mr-1">
             {/* Account button */}
-            <div className="not-sm:hidden">
-              <ClerkLogin />
-            </div>
+            <ClerkLogin nameSide="left" className="not-sm:hidden" />
 
             {/* Side bar */}
             <Sheet>
@@ -55,28 +53,29 @@ export default async function RootLayout({ children }: {
                 <Icon.Menu size={44} />
               </SheetTrigger>
 
-              <SheetContent className="[&>button]:hidden pt-1 pl-4">
+              <SheetContent className="[&>button]:hidden">
                 {/* Header */}
-                <SheetHeader className="flex flex-row items-center justify-between mx-1 pl-0">
-                  <ClerkLogin />
+                <SheetHeader className="h-20 flex flex-row items-center justify-between px-6 -ml-0.5 bg-gray-800">
+                  {/* Login */}
+                  <ClerkLogin nameSide="right" className="text-background" />
 
                   {/* Close button */}
                   <SheetTrigger>
-                    <Icon.X size={44} />
+                    <Icon.X size={44} className="text-alt-foreground" />
                   </SheetTrigger>
                 </SheetHeader>
 
-                {/* Main */}
-                <section className="flex flex-col gap-y-3 mx-5 text-xl">
+                {/* Nav */}
+                <nav className="flex flex-col gap-y-3 mx-5 text-xl">
                   <Link href="/">Hem</Link>
                   <Link href="/road-and-rail">Minecraft Road & Rail Generator</Link>
                   <Link href="https://vr-radio.tailad6f63.ts.net/" target="_blank" className="flex flex-row items-center gap-x-1">
                     Viggos Radio
-                    <Icon.ExternalLink size={22} strokeWidth={1} color="#222"/>
+                    <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
                   </Link>
                   <Link href="">Text about stuff</Link>
                   <Link href="">Text about stuff</Link>
-                </section>
+                </nav>
 
                 <SheetTitle className="hidden">Menu</SheetTitle>
               </SheetContent>
