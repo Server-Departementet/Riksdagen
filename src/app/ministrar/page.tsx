@@ -1,4 +1,4 @@
-import ministerWall from "@/components/minister-wall";
+import { MinisterPosts } from "@/components/minister-posts";
 import { Metadata } from "next";
 import { metadata as rootMetadata } from "@/app/layout";
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main>
-      {ministerWall}
+      <MinisterPosts />
     </main>
   )
 }

@@ -2,8 +2,10 @@ import Link from "next/link";
 import ministersDB from "@root/ministers.json";
 import md from "@/lib/markdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Minister } from "@/types";
 
-const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, minister]) => {
+
+function AccordianItem(ministerID: string, minister: Minister) {
   return (
     <AccordionItem key={ministerID} value={ministerID}>
       {/* Minister Title */}
@@ -23,20 +25,22 @@ const ministerAccordionItems = Object.entries(ministersDB).map(([ministerID, min
       </AccordionContent>
     </AccordionItem>
   );
-});
+}
 
-const ministerWall = (
-  <section className="flex flex-col items-center mt-10 mb-5 w-full" >
-    {/* Title */}
-    <Link href="/ministrar" className="no-underline">
-      <h2 className="w-full text-center mb-1">Ministerposterna</h2>
-    </Link>
+export function MinisterPosts(
+  { className = "" }: { className?: string } = {}
+) {
+  return (
+    <section className={`flex flex-col items-center mt-10 mb-5 w-full ${className}`} >
+      {/* Title */}
+      <Link href="/ministrar" className="no-underline">
+        <h2 className="w-full text-center mb-1">Ministerposterna</h2>
+      </Link>
 
-    {/* Entries */}
-    <Accordion className="w-10/12 max-w-prose" type="multiple">
-      {ministerAccordionItems}
-    </Accordion>
-  </section>
-)
-
-export default ministerWall;
+      {/* Entries */}
+      <Accordion className="w-10/12 max-w-prose" type="multiple">
+        {Object.entries(ministersDB).map(([ministerID, minister]) => AccordianItem(ministerID, minister))}
+      </Accordion>
+    </section>
+  );
+}
