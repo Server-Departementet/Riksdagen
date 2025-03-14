@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Minister } from "@/types";
 
 
-function AccordianItem(ministerID: string, minister: Minister) {
+function MinisterPost(ministerID: string, minister: Minister) {
   return (
     <AccordionItem key={ministerID} value={ministerID}>
       {/* Minister Title */}
@@ -39,7 +39,7 @@ export function MinisterPosts(
 
       {/* Entries */}
       <Accordion className="w-10/12 max-w-prose" type="multiple">
-        {Object.entries(ministersDB).map(([ministerID, minister]) => AccordianItem(ministerID, minister))}
+        {Object.entries(ministersDB).map(([ministerID, minister]) => MinisterPost(ministerID, minister))}
       </Accordion>
     </section>
   );
