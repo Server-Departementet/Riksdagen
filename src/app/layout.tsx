@@ -3,10 +3,9 @@ import { Open_Sans, Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import * as Icon from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
+import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -47,42 +46,16 @@ export default async function RootLayout({ children }: {
             {/* Account button */}
             <ClerkLogin nameSide="left" className="not-sm:hidden" />
 
-            {/* Side bar */}
-            <Sheet>
-              <SheetTrigger className="hover:text-gray-300 active:text-gray-300">
-                <Icon.Menu size={44} />
-              </SheetTrigger>
-
-              <SheetContent className="[&>button]:hidden">
-                {/* Header */}
-                <SheetHeader className="h-20 flex flex-row items-center justify-between px-6 -ml-0.5 bg-gray-800">
-                  {/* Login */}
-                  <ClerkLogin nameSide="right" className="text-background" />
-
-                  {/* Close button */}
-                  <SheetTrigger>
-                    <Icon.X size={44} className="text-alt-foreground" />
-                  </SheetTrigger>
-                </SheetHeader>
-
-                {/* Nav */}
-                <nav className="flex flex-col gap-y-3 mx-5 text-xl">
-                  <Link href="/">Hem</Link>
-                  <Link href="/ministrar">Våra ministrar</Link>
-                  <Link href="/stadskicket">Stadsskicket</Link>
-                  <Link href="/rail-and-road">Minecraft Rail & Road Generator</Link>
-                  <Link href="https://vr-radio.tailad6f63.ts.net/" target="_blank" className="flex flex-row items-center gap-x-1">
-                    Viggos Radio
-                    <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
-                  </Link>
-                </nav>
-
-                <SheetTitle className="hidden">Menu</SheetTitle>
-              </SheetContent>
-            </Sheet>
+            {/* Sidebar */}
+            <Sidebar>
+              <SidebarLink href="/">Hem</SidebarLink>
+              <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
+              <SidebarLink href="/stadskick">Stadsskick</SidebarLink>
+              <SidebarLink href="/rail-and-road">Minecraft Rail & Road Generator</SidebarLink>
+              <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Viggos Radio</ExternalLink>
+            </Sidebar>
           </div>
         </header>
-
 
         {children}
 
