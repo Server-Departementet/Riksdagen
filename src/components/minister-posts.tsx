@@ -34,7 +34,7 @@ export function MinisterPosts(
     <section className={`flex flex-col items-center mt-10 mb-5 w-full ${className}`} >
       {/* Title */}
       <Link href="/ministrar" className="no-underline">
-        <h2 className="w-full text-center mb-1">Ministerposterna</h2>
+        <h2 className="w-full text-center mb-1">Ministerposter</h2>
       </Link>
 
       {/* Entries */}

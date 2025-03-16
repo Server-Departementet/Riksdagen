@@ -40,6 +40,7 @@ export function ExternalLink(
   );
 }
 
+/** Sidebar children are the links shown in the nav */
 export function Sidebar(
   {
     children
@@ -54,9 +55,9 @@ export function Sidebar(
         <Icon.Menu size={44} />
       </SheetTrigger>
 
-      <SheetContent className="[&>button]:hidden">
+      <SheetContent className="[&>button]:hidden flex flex-col items-start justify-start gap-0 [&>*]:w-full">
         {/* Header */}
-        <SheetHeader className="h-20 flex flex-row items-center justify-between px-6 -ml-0.5 bg-gray-800">
+        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 -ml-0.5 bg-gray-800">
           {/* Login */}
           <ClerkLogin nameSide="right" className="text-background" />
 
@@ -67,7 +68,7 @@ export function Sidebar(
         </SheetHeader>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-y-3 mx-5 text-xl">
+        <nav className="flex flex-col gap-y-3 px-5 text-xl overflow-y-scroll pt-4">
           {children}
         </nav>
 
