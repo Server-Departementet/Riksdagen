@@ -1,7 +1,7 @@
 import { clerkMiddleware, ClerkMiddlewareAuth } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
-export default clerkMiddleware((auth: ClerkMiddlewareAuth, req: NextRequest, event: NextFetchEvent) => {
+export default clerkMiddleware((_auth: ClerkMiddlewareAuth, _req: NextRequest, _event: NextFetchEvent) => {
     
   return NextResponse.next();
 });
