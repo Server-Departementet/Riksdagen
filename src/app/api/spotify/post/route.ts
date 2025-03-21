@@ -21,13 +21,13 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
     update: {
       name: track.album.name,
       url: track.album.external_urls.spotify,
-      image: track.album.images[0].url,
+      image: track.album.images[0]?.url || null,
     },
     create: {
       id: track.album.id,
       name: track.album.name,
       url: track.album.external_urls.spotify,
-      image: track.album.images[0].url,
+      image: track.album.images[0]?.url || null,
     },
   });
 
@@ -48,7 +48,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
     }
 
     const data = await response.json();
-    const image = data.images[0].url;
+
     const genres: string[] = data.genres;
 
     const genreConnect = genres.map((genre: string) => ({ name: genre }));
@@ -67,14 +67,14 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       update: {
         name: artist.name,
         url: artist.external_urls.spotify,
-        image: image,
+        image: data.images[0]?.url || null,
         genres: { set: genreConnect },
       },
       create: {
         id: artist.id,
         name: artist.name,
         url: artist.external_urls.spotify,
-        image: image,
+        image: data.images[0]?.url || null,
         genres: { connect: genreConnect },
       },
     });
@@ -87,7 +87,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       name: track.name,
       duration: track.duration_ms,
       url: track.external_urls.spotify,
-      image: track.album.images[0].url,
+      image: track.album.images[0]?.url || null,
       albumId: track.album.id,
       // Connect artists using their ids.
       artists: {
@@ -99,7 +99,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       name: track.name,
       duration: track.duration_ms,
       url: track.external_urls.spotify,
-      image: track.album.images[0].url,
+      image: track.album.images[0]?.url || null,
       albumId: track.album.id,
       artists: {
         connect: track.artists.map((artist: any) => ({ id: artist.id })),

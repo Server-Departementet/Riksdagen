@@ -31,7 +31,7 @@ model Track {
   name     String
   duration Int
   url      String
-  image    String
+  image    String?
   albumId  String
 
   album     Album       @relation(fields: [albumId], references: [id])
@@ -44,7 +44,7 @@ model Artist {
 
   name  String
   url   String
-  image String
+  image String?
 
   tracks Track[]
   genres Genre[]
@@ -55,7 +55,7 @@ model Album {
 
   name  String
   url   String
-  image String
+  image String?
 
   tracks Track[]
 }
