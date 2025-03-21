@@ -31,8 +31,20 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
     },
   });
 
+  // Check database for existing artists.
+  const artistsDB = new Set(
+    (
+      await prisma.artist.findMany({
+        where: {
+          id: { in: track.artists.map((artist: any) => artist.id) },
+        },
+        select: { id: true },
+      })
+    ).map((artist) => artist.id)
+  );
+
   // Upsert each Artist and handle Genre connections.
-  for (const artist of track.artists) {
+  for (const artist of track.artists.filter((artist: any) => !artistsDB.has(artist.id))) {
     // Fetch artist details from Spotify API.
     const response = await fetch(artist.href, {
       method: "GET",
@@ -157,7 +169,22 @@ export async function POST() {
       const data = await response.json();
 
       if (data.items && data.items.length > 0) {
-        for (const item of data.items) {
+        const trackPlaysDB = new Set(
+          (
+            await prisma.trackPlay.findMany({
+              select: { id: true },
+            })
+          ).map((play) => play.id)
+        );
+
+        data.items = data.items.filter((item: any) => !item.track.is_local);
+
+        data.items = data.items.map((item: any) => {
+          item.track.generatedId = generateDeterministicId(user.id, item.track, item.played_at);
+          return item;
+        });
+
+        for (const item of data.items.filter((item: any) => !trackPlaysDB.has(item.track.generatedId))) {
           try {
             const track = item.track;
             const playedAt = item.played_at;
