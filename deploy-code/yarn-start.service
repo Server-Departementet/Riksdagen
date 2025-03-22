@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/home/riksdagen/Riksdagen/
-ExecStart=/home/riksdagen/.nvm/versions/node/v23.9.0/bin/yarn start
+WorkingDirectory=/root/Riksdagen/
+ExecStart=/root/.nvm/versions/node/v23.9.0/bin/yarn start
 Restart=always
 RestartSec=3
-Environment=PATH=/home/riksdagen/.nvm/versions/node/v23.9.0/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/root/.nvm/versions/node/v23.9.0/bin:/usr/local/bin:/usr/bin:/bin
 Environment=NODE_ENV=production
 
 [Install]
