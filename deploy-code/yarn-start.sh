@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load NVM bin
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+[ -s "$NVM_BIN/nvm.sh" ] && \. "$NVM_BIN/nvm.sh" 
 
 cd /root/Riksdagen/
 yarn start
