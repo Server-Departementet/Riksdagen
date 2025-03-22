@@ -6,12 +6,12 @@ import { createHash } from "node:crypto";
 
 const prisma = new PrismaClient();
 
-function generateDeterministicId(userId: string, track: any, playedAt: string): string {
+function generateDeterministicId(userId: string, track: SpotifyApi.TrackObjectFull, playedAt: string): string {
   const uniqueString = `${userId}:${track.id}:${playedAt}`;
   return createHash("md5").update(uniqueString).digest("hex");
 }
 
-async function storeTrackPlay(userId: string, track: any, playedAt: string, token: string) {
+async function storeTrackPlay(userId: string, track: SpotifyApi.TrackObjectFull, playedAt: string, token: string) {
   // Generate a deterministic ID using userId, track.id, and playedAt timestamp.
   const deterministicId = generateDeterministicId(userId, track, playedAt);
 
@@ -36,7 +36,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
     (
       await prisma.artist.findMany({
         where: {
-          id: { in: track.artists.map((artist: any) => artist.id) },
+          id: { in: track.artists.map((artist: SpotifyApi.ArtistObjectSimplified) => artist.id) },
         },
         select: { id: true },
       })
@@ -44,7 +44,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
   );
 
   // Upsert each Artist and handle Genre connections.
-  for (const artist of track.artists.filter((artist: any) => !artistsDB.has(artist.id))) {
+  for (const artist of track.artists.filter((artist) => !artistsDB.has(artist.id))) {
     // Fetch artist details from Spotify API.
     const response = await fetch(artist.href, {
       method: "GET",
@@ -59,7 +59,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       continue;
     }
 
-    const data = await response.json();
+    const data: SpotifyApi.SingleArtistResponse = await response.json();
 
     const genres: string[] = data.genres;
 
@@ -103,7 +103,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       albumId: track.album.id,
       // Connect artists using their ids.
       artists: {
-        set: track.artists.map((artist: any) => ({ id: artist.id })),
+        set: track.artists.map((artist: SpotifyApi.ArtistObjectSimplified) => ({ id: artist.id })),
       },
     },
     create: {
@@ -114,7 +114,7 @@ async function storeTrackPlay(userId: string, track: any, playedAt: string, toke
       image: track.album.images[0]?.url || null,
       albumId: track.album.id,
       artists: {
-        connect: track.artists.map((artist: any) => ({ id: artist.id })),
+        connect: track.artists.map((artist: SpotifyApi.ArtistObjectSimplified) => ({ id: artist.id })),
       },
     },
   });
@@ -166,7 +166,7 @@ export async function POST() {
         continue;
       }
 
-      const data = await response.json();
+      const data: SpotifyApi.UsersRecentlyPlayedTracksResponse = await response.json();
 
       if (data.items && data.items.length > 0) {
         const trackPlaysDB = new Set(
@@ -177,14 +177,20 @@ export async function POST() {
           ).map((play) => play.id)
         );
 
-        data.items = data.items.filter((item: any) => !item.track.is_local);
+        data.items = data.items.filter((item) => !item.track.is_local);
 
-        data.items = data.items.map((item: any) => {
-          item.track.generatedId = generateDeterministicId(user.id, item.track, item.played_at);
-          return item;
-        });
+        data.items = data.items.map((item: SpotifyApi.PlayHistoryObject) => {
+          return {
+            ...item,
+            track: {
+              ...item.track,
+              generatedId: generateDeterministicId(user.id, item.track, item.played_at),
+            },
+          }
+        })
+          .filter((item) => !trackPlaysDB.has(item.track.generatedId));
 
-        for (const item of data.items.filter((item: any) => !trackPlaysDB.has(item.track.generatedId))) {
+        for (const item of data.items) {
           try {
             const track = item.track;
             const playedAt = item.played_at;
