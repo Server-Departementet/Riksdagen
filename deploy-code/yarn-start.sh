@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd /root/Riksdagen/
-${NVM_BIN}/yarn start
+/root/.nvm/versions/node/v23.10.0/bin/yarn start
