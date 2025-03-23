@@ -38,7 +38,7 @@
     &.global {
       @apply text-blue-500 underline;
     }
-    &:hover {
+    &:hover:not(.no-global) {
       @apply text-blue-800 underline;
     }
   }

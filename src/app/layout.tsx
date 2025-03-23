@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: {
         {/* Header */}
         <header className="z-10 py-3 px-5 h-20">
           {/* Logo */}
-          <Link href="/" className="flex flex-row items-center gap-x-4 no-underline text-[unset]">
+          <Link href="/" className="flex flex-row items-center gap-x-4 no-global">
             {/* Icon */}
             <Image width={64} height={64} className={`size-[3.5rem] rounded-lg`} src="/icons/regeringen/regeringen.svg" alt="Logo" />
 
