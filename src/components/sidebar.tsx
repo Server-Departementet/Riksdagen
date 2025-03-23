@@ -15,11 +15,11 @@ export function SidebarLink(
   }
 ) {
   return (
-    <SheetTrigger tabIndex={-1} className="unset">
-      <Link href={href} className={`w-full ${className}`}>
+    <Link href={href} className={`w-full ${className}`}>
+        <SheetTrigger className="[all:inherit] !w-full">
         {children}
-      </Link>
-    </SheetTrigger>
+      </SheetTrigger>
+    </Link>
   );
 }
 
@@ -35,12 +35,12 @@ export function ExternalLink(
   }
 ) {
   return (
-    <SheetTrigger tabIndex={-1} className="unset">
-      <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank">
+    <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank">
+      <SheetTrigger className="[all:inherit] !w-full">
         {children}
         <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
-      </Link>
-    </SheetTrigger>
+      </SheetTrigger>
+    </Link>
   );
 }
 
@@ -49,7 +49,7 @@ export function Sidebar(
   {
     children
   }: {
-    children: React.ReactNode[]
+    children: React.ReactNode
   }
 ) {
   return (<>
