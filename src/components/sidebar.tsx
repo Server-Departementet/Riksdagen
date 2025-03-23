@@ -18,7 +18,14 @@ export function SidebarLink(
   }
 ) {
   return (
-    <Link href={href} className={`w-full ${className}`}>
+    <Link href={href} className={`w-full ${className}`}
+      onClick={(e) => {
+        if (!e.target) return;
+        const target = e.target as HTMLAnchorElement | HTMLButtonElement;
+        if (target.tagName === "A") {
+          target.querySelector("button")?.click();
+        }
+      }}>
       <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
         {children}
       </SheetTrigger>
@@ -38,7 +45,14 @@ export function ExternalLink(
   }
 ) {
   return (
-    <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank">
+    <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank"
+      onClick={(e) => {
+        if (!e.target) return;
+        const target = e.target as HTMLAnchorElement | HTMLButtonElement;
+        if (target.tagName === "A") {
+          target.querySelector("button")?.click();
+        }
+      }}>
       <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
         {children}
         <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
