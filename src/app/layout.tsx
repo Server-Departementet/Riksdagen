@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   ],
   description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
   icons: {
-    icon: "/icons/favicon.png",
+    icon: "/icons/regeringen/regeringen-favicon.svg",
   },
 };
 
@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: {
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-underline hover:text-inherit">
             {/* Icon */}
-            <Image width={64} height={64} className={`size-[3.5rem] rounded-lg`} src="/icons/header-logo.png" alt="Logo" />
+            <Image width={64} height={64} className={`size-[3.5rem] rounded-lg`} src="/icons/regeringen/regeringen.svg" alt="Logo" />
 
             {/* Title */}
             <p className="text-2xl font-medium title-font">Riksdagen</p>
