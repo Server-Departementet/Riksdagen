@@ -91,13 +91,13 @@
     @apply w-full text-2xl text-center font-semibold;
   }
   h4 {
-    @apply w-full text-xl font-normal;
+    @apply w-full text-xl font-medium;
   }
   h5 {
-    @apply w-full text-lg font-normal;
+    @apply w-full text-lg font-medium;
   }
   h6 {
-    @apply w-full text-base font-normal;
+    @apply w-full text-base font-medium;
   }
 }
 
