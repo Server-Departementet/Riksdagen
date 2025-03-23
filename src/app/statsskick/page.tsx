@@ -16,46 +16,71 @@ export default function Page() {
         }
       </p>
 
-      <section className="flex flex-col gap-y-6 mt-10 max-w-prose">
-        {/* Intro bit */}
-        <div className="flex flex-col gap-y-2">
+      <section className="flex flex-col gap-y-7 mt-10 max-w-prose pb-20">
+        <div>
           <h4>Oss</h4>
 
-          <p>
-            Vi är en liten grupp vänner som kallar oss själva för <span className="italic">Regeringen</span> på ett skämtsamt sätt. Vi har utsett varandra till <Link className="global" href="/ministrar">ministrar</Link> inom diverse områden. Vi är uppe i {Object.keys(ministersDB).length} stycken! Dessutom har vi en kung, gud, talman och en diktator (som statschef bara).
-          </p>
+          <div className="flex flex-col gap-y-4">
+            <p>
+              Vi är en liten grupp vänner som kallar oss själva för <span className="italic">Regeringen</span> på ett skämtsamt sätt. Vi har utsett varandra till <Link className="global" href="/ministrar">ministrar</Link> inom diverse områden. Vi är uppe i {Object.keys(ministersDB).length} stycken! Dessutom har vi en kung, gud, talman och en diktator (som statschef bara).
+            </p>
 
-          <div>
-            <p>Vårt statsskicka kan <span className="italic">&quot;sammanfattas&quot;</span> som...<br /></p>
+            <div>
+              <p>Vårt statsskicka kan <span className="italic">&quot;sammanfattas&quot;</span> som...<br /></p>
 
-            <div className="bg-gray-700 rounded-md text-background font-normal italic py-1 pb-2 px-3 w-10/12">
-              Kommunistisk teokratisk absolut monarki med en diktatorisk statschef och ett rådgivande direktdemokratiskt organ.
+              <div className="bg-gray-700 rounded-md text-background font-normal italic py-1 pb-2 px-3 w-10/12">
+                Kommunistisk teokratisk absolut monarki med en diktatorisk statschef och ett rådgivande direktdemokratiskt organ.
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col">
+        <div>
           <h4>Namnet</h4>
-          <div className="flex flex-col gap-y-3">
+
+          <div className="flex flex-col gap-y-4">
             <p className="[&>span]:font-normal">
               Regeringen är vår Discord-server där vi, ministrarna, håller kontakt. Servern är uppdelad i olika kategorier, främst <span>RIKSDAGEN</span> och <span>DEPARTEMENT</span>.
             </p>
 
             <p className="[&>span]:font-normal">
-              Vi röstar och diskuterar olika beslut och lagförslag i kanalen #motioner som ligger under <span>RIKSDAGEN</span>. Kanalen <span>#domstolen</span> hittas även där. Där lägger, spårar och dokumentarer vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
+              Vi röstar och diskuterar olika beslut och lagförslag i kanalen #motioner som ligger under <span>RIKSDAGEN</span>. Kanalen <span>#domstolen</span> hittas även där. Där skapar, spårar och dokumentarer vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
             </p>
 
             <p className="[&>span]:font-normal">
               Under <span>DEPARTEMENT</span> ligger kanalerna för många av dem olika departementen som leds av respektive minister. Exempelvis har vi <span>#transport-departementet</span> där allt transportrelaterat diskuteras.
             </p>
+
+            <p className="[&>span]:font-normal">
+              Namnet Riksdagen använder vi annars för den här webbplatsen! Här hittar du informationen du läser samt mycket mer. Kika gärna runt!
+            </p>
           </div>
         </div>
 
         <div>
-          <h4 className="mb-1">Jämfört med Sverige</h4>
-          <p className="[&>span]:font-normal">
-            För den som minns hur det svenska stadsskicket innebär det några saker: Ett, vi som ministrar röstar i riksdagen på motioner, vilket är helt fel gentemot hur sverige gör. Två, vår domstol är ett utskott av riksdagen och är därmed ett politiskt organ vilket inte är fallet i Sverige. Tre, vi saknar statsminister
-          </p>
+          <h4>Jämfört med Sverige</h4>
+
+          <div className="flex flex-col gap-y-4">
+            <p className="[&>span]:font-normal">
+              Vet man hur det svenska statsskicket ser ut så får man säkert utslag av att höra allt detta:
+            </p>
+
+            <p className="[&>span]:font-normal">
+              Ett, vi som ministrar röstar i riksdagen på motioner, vilket är helt fel gentemot hur sverige gör.
+            </p>
+
+            <p className="[&>span]:font-normal">
+              Två, vår domstol är ett utskott av riksdagen och är därmed ett politiskt organ vilket inte är fallet i Sverige.
+            </p>
+
+            <p className="[&>span]:font-normal">
+              Tre, vi saknar statsminister men vi har en talman som saknar makt, samt en diktator som statschef men den positionen härleder ingen makt heller. Inte ens vår kung har någon makt (nej, kungen är inte vår statschef). Vår sanna ledare är såklart gud! Han heter Axel och är en av oss ministrar.
+            </p>
+
+            <p>
+              Vi har, likt Sverige, svenska som officiellt språk. Men, till skillnad från Sverige är våra minoritetsspråk: engelska, tyska, norska och finska. Dessutom har vi ett kyrkspråk: latin.
+            </p>
+          </div>
         </div>
       </section>
     </main>
