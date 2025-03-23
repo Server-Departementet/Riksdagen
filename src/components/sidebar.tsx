@@ -15,9 +15,11 @@ export function SidebarLink(
   }
 ) {
   return (
-    <Link href={href} className={`${className}`}>
-      {children}
-    </Link>
+    <SheetTrigger tabIndex={-1} className="unset">
+      <Link href={href} className={`w-full ${className}`}>
+        {children}
+      </Link>
+    </SheetTrigger>
   );
 }
 
@@ -33,10 +35,12 @@ export function ExternalLink(
   }
 ) {
   return (
-    <Link href={href} className={`flex flex-row items-center gap-x-1 ${className}`} target="_blank">
-      {children}
-      <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
-    </Link>
+    <SheetTrigger tabIndex={-1} className="unset">
+      <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank">
+        {children}
+        <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
+      </Link>
+    </SheetTrigger>
   );
 }
 
@@ -45,19 +49,19 @@ export function Sidebar(
   {
     children
   }: {
-    children: React.ReactNode
+    children: React.ReactNode[]
   }
 ) {
   return (<>
     {/* Side bar */}
-    <Sheet>
+    <Sheet modal={false}>
       <SheetTrigger className="hover:text-gray-300 active:text-gray-300">
         <Icon.Menu size={44} />
       </SheetTrigger>
 
       <SheetContent className="[&>button]:hidden flex flex-col items-start justify-start gap-0 [&>*]:w-full">
         {/* Header */}
-        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 -ml-0.5 bg-gray-800">
+        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 !w-[105%]" style={{ backgroundSize: "cover" }}>
           {/* Login */}
           <ClerkLogin nameSide="right" className="text-background" />
 
