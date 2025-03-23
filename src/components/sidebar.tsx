@@ -1,7 +1,10 @@
+"use client";
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import * as Icon from "lucide-react";
 import Link from "next/link";
 import { ClerkLogin } from "@/components/login-button";
+import { useState } from "react";
 
 export function SidebarLink(
   {
@@ -16,7 +19,7 @@ export function SidebarLink(
 ) {
   return (
     <Link href={href} className={`w-full ${className}`}>
-        <SheetTrigger className="[all:inherit] !w-full">
+      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
         {children}
       </SheetTrigger>
     </Link>
@@ -36,7 +39,7 @@ export function ExternalLink(
 ) {
   return (
     <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank">
-      <SheetTrigger className="[all:inherit] !w-full">
+      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
         {children}
         <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
       </SheetTrigger>
@@ -52,16 +55,23 @@ export function Sidebar(
     children: React.ReactNode
   }
 ) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (<>
     {/* Side bar */}
-    <Sheet modal={false}>
+    <Sheet open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <SheetTrigger className="hover:text-gray-300 active:text-gray-300">
         <Icon.Menu size={44} />
       </SheetTrigger>
 
+      {/* Background */}
+      {isOpen && (
+        <div className="absolute top-0 left-0 w-[100dvw] h-[100dvh] bg-black/50 animate-in fade-in duration-200 ease-in"></div>
+      )}
+
       <SheetContent className="[&>button]:hidden flex flex-col items-start justify-start gap-0 [&>*]:w-full">
         {/* Header */}
-        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 !w-[105%]" style={{ backgroundSize: "cover" }}>
+        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 !w-[101%]" style={{ backgroundSize: "cover" }}>
           {/* Login */}
           <ClerkLogin nameSide="right" className="text-background" />
 
@@ -72,7 +82,7 @@ export function Sidebar(
         </SheetHeader>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-y-3 px-5 text-xl overflow-y-scroll pt-4">
+        <nav className="flex flex-col gap-y-3 px-5 text-xl overflow-y-scroll pt-4 pb-6">
           {children}
         </nav>
 
