@@ -33,7 +33,11 @@
   a {
     @apply cursor-pointer;
   }
+
   a {
+    &.global {
+      @apply text-blue-500 underline;
+    }
     &:hover {
       @apply text-blue-800 underline;
     }

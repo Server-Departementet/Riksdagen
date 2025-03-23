@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ministersDB from "@root/ministers.json";
+import ministersDB from "@root/ministers.json" with { type: "json"};
 import md from "@/lib/markdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Minister } from "@/types";
@@ -19,7 +19,7 @@ function MinisterPost(ministerID: string, minister: Minister) {
         <p>
           <span dangerouslySetInnerHTML={md(minister.description)}></span>
           {" "}
-          <Link className="underline" href={`/ministrar/${ministerID}`}>Läs mer</Link>
+          <Link className="global" href={`/ministrar/${ministerID}`}>Läs mer</Link>
           .
         </p>
       </AccordionContent>
