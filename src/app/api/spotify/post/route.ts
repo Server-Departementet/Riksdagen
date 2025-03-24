@@ -169,7 +169,7 @@ export async function POST() {
       const data: SpotifyApi.UsersRecentlyPlayedTracksResponse = await response.json();
 
       if (data.items && data.items.length > 0) {
-        const trackPlaysDB = new Set(
+        const trackPlaysDB: Set<string> = new Set(
           (
             await prisma.trackPlay.findMany({
               select: { id: true },
