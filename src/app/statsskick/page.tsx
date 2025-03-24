@@ -26,7 +26,7 @@ export default function Page() {
             </p>
 
             <div>
-              <p>Vårt statsskicka kan <span className="italic">&quot;sammanfattas&quot;</span> som...<br /></p>
+              <p>Vårt statsskick kan <span className="italic">&quot;sammanfattas&quot;</span> som...<br /></p>
 
               <div className="bg-gray-700 rounded-md text-background font-normal italic py-1 pb-2 px-3 w-10/12">
                 Kommunistisk teokratisk absolut monarki med en diktatorisk statschef och ett rådgivande direktdemokratiskt organ.
@@ -44,11 +44,11 @@ export default function Page() {
             </p>
 
             <p className="[&>span]:font-normal">
-              Vi röstar och diskuterar olika beslut och lagförslag i kanalen #motioner som ligger under <span>RIKSDAGEN</span>. Kanalen <span>#domstolen</span> hittas även där. Där skapar, spårar och dokumentarer vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
+              Vi röstar och diskuterar olika beslut och lagförslag i kanalen <span>#motioner</span> som ligger under <span>RIKSDAGEN</span>. Kanalen <span>#domstolen</span> hittas även där. Där skapar, spårar och dokumenterar vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
             </p>
 
             <p className="[&>span]:font-normal">
-              Under <span>DEPARTEMENT</span> ligger kanalerna för många av dem olika departementen som leds av respektive minister. Exempelvis har vi <span>#transport-departementet</span> där allt transportrelaterat diskuteras.
+              Under <span>DEPARTEMENT</span> ligger kanalerna för många av de olika departementen som leds av respektive minister. Exempelvis har vi <span>#transport-departementet</span> där allt transportrelaterat diskuteras.
             </p>
 
             <p className="[&>span]:font-normal">
@@ -66,7 +66,7 @@ export default function Page() {
             </p>
 
             <p className="[&>span]:font-normal">
-              Ett, vi som ministrar röstar i riksdagen på motioner, vilket är helt fel gentemot hur sverige gör.
+              Ett, vi som ministrar röstar i riksdagen på motioner, vilket är helt fel gentemot hur Sverige gör.
             </p>
 
             <p className="[&>span]:font-normal">
@@ -78,7 +78,7 @@ export default function Page() {
             </p>
 
             <p>
-              Vi har, likt Sverige, svenska som officiellt språk. Men, till skillnad från Sverige är våra minoritetsspråk: engelska, tyska, norska och finska. Dessutom har vi ett kyrkspråk: latin.
+              Vi har, likt Sverige, svenska som officiellt språk. Men, till skillnad från Sverige, är våra minoritetsspråk: engelska, tyska, norska och finska. Dessutom har vi ett kyrkospråk: latin.
             </p>
           </div>
         </div>
