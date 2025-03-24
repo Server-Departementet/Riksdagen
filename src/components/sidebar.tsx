@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import * as Icon from "lucide-react";
 import Link from "next/link";
 import { ClerkLogin } from "@/components/login-button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function SidebarLink(
   {
@@ -70,6 +70,21 @@ export function Sidebar(
   }
 ) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Prevent pull-to-refresh when sidebar is open
+  useEffect(() => {
+    const preventPullToRefresh = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    if (isOpen) {
+      document.addEventListener("touchmove", preventPullToRefresh, { passive: false });
+    }
+
+    return () => {
+      document.removeEventListener("touchmove", preventPullToRefresh);
+    };
+  }, [isOpen]);
 
   return (<>
     {/* Side bar */}
