@@ -40,4 +40,9 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   }
+  },
+  "prisma": {
+    "seed": "node --experimental-transform-types prisma/seed.ts"
+  },
+  "type": "module"
 }
