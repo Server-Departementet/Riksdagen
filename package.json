@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.9",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.6.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-slot": "^1.1.2",
@@ -39,7 +39,12 @@
     "prisma": "^6.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.7.0"
+    }
   },
   "prisma": {
     "seed": "node --experimental-transform-types prisma/seed.ts"
