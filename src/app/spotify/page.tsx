@@ -1,9 +1,10 @@
-
-// import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import styles from "./spotify.module.css" with {type: "css"};
 import { TrackPlay } from "@/components/spotify/track-play";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
+import Link from "next/link";
 
 const client = clerkClient();
 
@@ -13,8 +14,14 @@ async function getUserData(userId: string) {
       userId: userId,
     },
     include: {
-      track: true,
+      track: {
+        include: {
+          artists: true,
+          album: true,
+        }
+      },
     },
+    take: 50, // TODO: remove
   });
 }
 
@@ -28,20 +35,28 @@ export default async function SpotifyPage() {
     <main>
       <h1 className="mt-10">Spotify Statistik</h1>
 
-      <Tabs className="mt-5 w-10/12" defaultValue="all">
-        <TabsList className="w-full">
-          <TabsTrigger value="all">
-            Totalt
-          </TabsTrigger>
-
-          {users.map(async user => (
-            <TabsTrigger key={user.id} value={user.id}>
-              {user.name}
+      <Tabs className="mt-5 mb-10 w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
+        {/* List */}
+        <TabsList className="w-full mb-1 flex flex-row">
+          {/* All */}
+          <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}>
+            <TabsTrigger tabIndex={-1} value="alla">
+              Totalt
             </TabsTrigger>
+          </Link>
+
+          {/* Users */}
+          {users.map(async user => (
+            <Link href={`?person=${encodeURIComponent(user.name || "alla")}`} key={user.id} className={`${styles.TabsTriggerLink} no-globals`}>
+              <TabsTrigger tabIndex={-1} value={encodeURIComponent(user.name || "alla") || user.id}>
+                {user.name || "Saknar namn"}
+              </TabsTrigger>
+            </Link>
           ))}
         </TabsList>
 
-        <TabsContent value="all">
+        {/* Totals */}
+        <TabsContent tabIndex={-1} value="alla" className="w-8/12">
           Lyssningstid:
           {
             users.map(async (user, i) => {
@@ -56,15 +71,16 @@ export default async function SpotifyPage() {
           }
         </TabsContent>
 
+        {/* User tabs */}
         {users.map(async (user, i) => {
           const data = await user.data;
 
           const tracks = data.map(play => play.track)
 
           return (
-            <TabsContent key={user.id + "-" + i} value={user.id}>
+            <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-8/12 flex flex-col gap-y-2">
               {tracks.map((track, i) =>
-                <TrackPlay key={track.id + "-" + user.id + "-" + i} track={track} />
+                <TrackPlay user={user} key={track.id + "-" + user.id + "-" + i} track={track} />
               )}
             </TabsContent>
           );

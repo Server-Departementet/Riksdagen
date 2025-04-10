@@ -1,0 +1,7 @@
+.TabsTriggerLink {
+  @apply flex-1;
+
+  &>*{
+    @apply size-full;
+  }
+}
