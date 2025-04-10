@@ -1,9 +1,21 @@
 import { clerkMiddleware, ClerkMiddlewareAuth } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
-export default clerkMiddleware((_auth: ClerkMiddlewareAuth, _req: NextRequest, _event: NextFetchEvent) => {
-    
-  return NextResponse.next();
+export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
+  const response = NextResponse.next();
+
+  // Spotify
+  if (req.nextUrl.pathname.startsWith("/spotify")) {
+    const user = await auth();
+
+    if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
+    }
+    else {
+      return notFound(req);
+    }
+  }
+
+  return response;
 });
 
 export const config = {
@@ -14,3 +26,7 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
+
+function notFound(req: NextRequest) {
+  return NextResponse.rewrite(new URL("/not-found", req.url));
+}
