@@ -35,13 +35,33 @@ const seedArtists = async () => {
       name: true,
       image: true,
       url: true,
+      genres: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
-  await prisma.artist.createMany({
-    data: remoteArtists,
-    skipDuplicates: true,
-  });
+  for (const artist of remoteArtists) {
+    const { genres, ...artistData } = artist;
+
+    await prisma.artist.upsert({
+      where: { id: artist.id },
+      update: {
+        ...artistData,
+        genres: {
+          connect: genres.map(genre => ({ name: genre.name })),
+        },
+      },
+      create: {
+        ...artistData,
+        genres: {
+          connect: genres.map(genre => ({ name: genre.name })),
+        },
+      },
+    });
+  }
 
   console.debug("Seeding artists complete.");
 };
@@ -74,13 +94,34 @@ const seedTracks = async () => {
       url: true,
       duration: true,
       albumId: true,
+      artists: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
-  await prisma.track.createMany({
-    data: remoteTracks,
-    skipDuplicates: true,
-  });
+  // Create each track with its artist relationships
+  for (const track of remoteTracks) {
+    const { artists, ...trackData } = track;
+
+    await prisma.track.upsert({
+      where: { id: track.id },
+      update: {
+        ...trackData,
+        artists: {
+          connect: artists.map(artist => ({ id: artist.id })),
+        },
+      },
+      create: {
+        ...trackData,
+        artists: {
+          connect: artists.map(artist => ({ id: artist.id })),
+        },
+      },
+    });
+  }
 
   console.debug("Seeding tracks complete.");
 };
@@ -107,7 +148,7 @@ const seedTrackPlays = async () => {
 
 
 await seedAlbums();
-await seedArtists();
 await seedGenres();
+await seedArtists();
 await seedTracks();
 await seedTrackPlays();
