@@ -5,11 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import Link from "next/link";
+import React from "react";
 
 const client = clerkClient();
 
 async function getUserData(userId: string) {
   return await prisma.trackPlay.findMany({
+    orderBy: {
+      playedAt: "desc",
+    },
     where: {
       userId: userId,
     },
@@ -76,11 +80,33 @@ export default async function SpotifyPage() {
           const data = await user.data;
 
           const tracks = data.map(play => play.track)
+          const totalMS = tracks.reduce((acc, track) => acc + track.duration, 0); // ms
+          const timeInDifferentUnits = {
+            s: totalMS / 1000,
+            min: totalMS / 60000,
+            h: totalMS / 3600000,
+            d: totalMS / 86400000,
+            w: totalMS / 604800000,
+            m: totalMS / 2419200000,
+            y: totalMS / 29030400000,
+          };
 
           return (
-            <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-8/12 flex flex-col gap-y-2">
+            <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-8/12 flex flex-col gap-y-3">
+              {/* Total times */}
+              <div className="flex flex-row gap-x-2">
+                Totalt:
+                {Object.entries(timeInDifferentUnits).map(([unit, time], i) =>
+                  <React.Fragment key={unit + "-" + i}>
+                    <span className="cursor-help" title={time.toString()}>{Math.floor(time)} {unit}</span>
+                    {i < Object.entries(timeInDifferentUnits).length - 1 && <span>/</span>}
+                  </React.Fragment>
+                )}
+              </div>
+
+              {/* Tracks */}
               {tracks.map((track, i) =>
-                <TrackPlay user={{ id: user.id, name: user.name || user.id }} track={track} tracks={tracks} key={track.id + "-" + user.id + "-" + i} />
+                <TrackPlay track={track} listeningTime={0} username={user.name} key={track.id + "-" + user.id + "-" + i} />
               )}
             </TabsContent>
           );

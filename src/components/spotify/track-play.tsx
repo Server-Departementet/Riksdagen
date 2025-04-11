@@ -1,34 +1,82 @@
-import type { Track } from "@prisma/client";
+// "use cache";
+
+import type { Track } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
+import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
+import { Vibrant } from "node-vibrant/node";
 
-export function TrackPlay({ user, track, tracks }: { user: { id: string, name: string }, track: Track, tracks: Track[] }) {
+export async function TrackPlay({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  return (
-    <Link href={track.url} className="flex flex-row gap-x-3 bg-zinc-100 rounded-xl no-global hover:text-blue-800" target="_blank" rel="noopener noreferrer">
-      {/* Image */}
-      {track.image ?
-        <Image width={96} height={96} src={track.image} alt="Låtbild" className="rounded-xl" />
-        :
-        <Image width={96} height={96} src={CrownSVG} alt="Låtbild" />
-      }
+  // const palette = track.image ? (await Vibrant.from(track.image).getPalette()) : null;
 
-      <div className="flex flex-col py-1">
-        {/* Title */}
-        <h4>{track.name}</h4>
-        {/* Duration */}
-        <p className="pl-1">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
-        {/* Listening time */}
-        {/* <p className="pl-1">{user.name} har lyssnat totalt {Math.floor(listeningTime / 60000)} min</p> */}
-        {/* Artist */}
-        {/* <p>{track.artists.join(", ")}</p> */}
-      </div>
-    </Link>
+  // const colors = [
+  //   palette?.DarkMuted?.hex,
+  //   palette?.Vibrant?.hex,
+  //   palette?.Muted?.hex,
+  //   palette?.DarkVibrant?.hex,
+  //   palette?.LightMuted?.hex,
+  //   palette?.LightVibrant?.hex,
+  // ];
+
+  return (
+    <div className="flex flex-row">
+      {/* <div className="flex flex-row rounded-xl">
+        {colors.map((color, i) => (
+          <div key={i} className="size-5" style={{ backgroundColor: color }}></div>
+        ))}
+      </div> */}
+
+      <Image width={128} height={128} className="rounded-[4px] h-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
+
+      <Link href={track.url} className="" target="_blank" rel="noopener noreferrer">
+        <Button tabIndex={-1} className="m-2 px-2.5">
+          <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
+          Öppna i Spotify
+        </Button>
+      </Link>
+    </div>
   );
 }
+
+// {/* Image */}
+// {track.image ?
+//   // 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design
+//   <Image width={128} height={128} className="rounded-[4px] h-full aspect-square" src={track.image} alt="Låtbild" />
+//   :
+//   // 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design
+//   <Image width={128} height={128} className="rounded-[4px] h-full translate-y-2 p-1" src={CrownSVG} alt="Låtbild" />
+// }
+
+// Track info
+// <div className="w-full">
+// {/* Title */}
+// <h5 className="">{track.name}</h5>
+// {/* Artists */}
+// <p className="font-semibold text-sm opacity-70 -mt-1">{track.artists.map(artist => artist.name).join(", ")}</p>
+// </div>
+
+
+// Stats
+// <div className="text-sm flex-1">
+//   {/* Duration */}
+//   <p>Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+//   {/* Listening time */}
+//   <p>{username ?? "Personen"} har lyssnat totalt {Math.floor(listeningTime / 60000)} min</p>
+// </div>
+
+
+// Spotify link
+// <Link href={track.url} className="" target="_blank" rel="noopener noreferrer">
+//   <Button className="m-2 px-2.5">
+//     <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
+//     Öppna i Spotify
+//   </Button>
+// </Link>
