@@ -1,4 +1,4 @@
-import type { Track as PrismaTrack } from "@prisma/client";
+import type { Album as PrismaAlbum, Artist as PrismaArtist, Track as PrismaTrack } from "@prisma/client";
 
 export type Minister = {
   title: string;
@@ -6,4 +6,4 @@ export type Minister = {
   description: string;
 };
 
-export type Track = PrismaTrack & {};
+export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };

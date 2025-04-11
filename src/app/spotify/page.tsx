@@ -21,7 +21,7 @@ async function getUserData(userId: string) {
         }
       },
     },
-    take: 50, // TODO: remove
+    take: 20, // TODO: remove
   });
 }
 
@@ -80,7 +80,7 @@ export default async function SpotifyPage() {
           return (
             <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-8/12 flex flex-col gap-y-2">
               {tracks.map((track, i) =>
-                <TrackPlay user={user} key={track.id + "-" + user.id + "-" + i} track={track} />
+                <TrackPlay user={{ id: user.id, name: user.name || user.id }} track={track} tracks={tracks} key={track.id + "-" + user.id + "-" + i} />
               )}
             </TabsContent>
           );

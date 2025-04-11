@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 
-export function TrackPlay({ user, track }: { user: object, track: Track }) {
+export function TrackPlay({ user, track, tracks }: { user: { id: string, name: string }, track: Track, tracks: Track[] }) {
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
@@ -22,10 +22,12 @@ export function TrackPlay({ user, track }: { user: object, track: Track }) {
       <div className="flex flex-col py-1">
         {/* Title */}
         <h4>{track.name}</h4>
-        {/* <p>{track.artists.join(", ")}</p> */}
         {/* Duration */}
         <p className="pl-1">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+        {/* Listening time */}
+        {/* <p className="pl-1">{user.name} har lyssnat totalt {Math.floor(listeningTime / 60000)} min</p> */}
         {/* Artist */}
+        {/* <p>{track.artists.join(", ")}</p> */}
       </div>
     </Link>
   );
