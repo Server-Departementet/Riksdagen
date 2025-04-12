@@ -1,4 +1,4 @@
-// "use cache";
+"use cache";
 
 import type { Track } from "@/types";
 import Link from "next/link";
@@ -8,20 +8,20 @@ import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml"
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import { Vibrant } from "node-vibrant/node";
 
+const getPalette = async (url: string | null, quality: number) => {
+  const v = url ? new Vibrant(url, { quality: quality, useWorker: true }) : null
+  return await v?.getPalette();
+}
+
 export async function TrackPlay({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
+  "use cache";
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  const getPalette = async (quality: number) => {
-    const v = track.image ? new Vibrant(track.image, { quality: quality, useWorker: true }) : null
-    return await v?.getPalette();
-  }
-
-  const palette = await getPalette(100);
-  // const bgColor = palette?.Vibrant?.hex || "var(--color-zinc-100)"; // Not very contrasty against black text but prettier
+  const palette = await getPalette(track.image || null, 100);
   const bgColor = palette?.LightVibrant?.hex || "var(--color-zinc-100)"; // Contrasty against black text
 
   return (
@@ -33,8 +33,17 @@ export async function TrackPlay({ track, listeningTime, username }: { track: Tra
       {/* Track info */}
       <h5 className="col-start-2 col-span-2">{track.name}</h5>
       {/* Artists */}
-      <p className="col-start-2 col-span-2 font-semibold text-sm opacity-70 -mt-1">{track.artists.map(artist => artist.name).join(", ")}</p>
+      <p className="col-start-2 col-span-2 font-semibold text-sm opacity-75 -mt-1">{track.artists.map(artist => artist.name).join(", ")}</p>
 
+      {/* Stats */}
+      <div className="row-span-2 text-sm flex-1">
+        {/* Duration */}
+        <p>Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+        {/* Listening time */}
+        <p>{username ?? "Personer"} har lyssnat totalt {Math.round(listeningTime / 60000)} min</p>
+        {/* Count */}
+        <p>Det motsvara {Math.round(listeningTime / track.duration)} av låten</p>
+      </div>
 
       {/* Spotify Link */}
       <Link href={track.url} className="col-start-3 row-start-4 justify-self-end self-end" target="_blank" rel="noopener noreferrer">
