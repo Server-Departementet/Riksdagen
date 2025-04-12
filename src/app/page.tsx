@@ -2,7 +2,6 @@
 
 import { MinisterPosts } from "@/components/minister-posts";
 
-
 export default function Page() {
   return (
     <main>
