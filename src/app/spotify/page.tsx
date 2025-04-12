@@ -41,10 +41,10 @@ export default async function SpotifyPage() {
 
       <Tabs className="mt-5 mb-10 w-full sm:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
         {/* List */}
-        <TabsList className="w-full mb-1 flex flex-row">
+        <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-scroll">
           {/* All */}
           <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}>
-            <TabsTrigger tabIndex={-1} value="alla">
+            <TabsTrigger tabIndex={-1} className="" value="alla">
               Totalt
             </TabsTrigger>
           </Link>
@@ -52,7 +52,7 @@ export default async function SpotifyPage() {
           {/* Users */}
           {users.map(async user => (
             <Link href={`?person=${encodeURIComponent(user.name || "alla")}`} key={user.id} className={`${styles.TabsTriggerLink} no-globals`}>
-              <TabsTrigger tabIndex={-1} value={encodeURIComponent(user.name || "alla") || user.id}>
+              <TabsTrigger tabIndex={-1} className="" value={encodeURIComponent(user.name || "alla") || user.id}>
                 {user.name || "Saknar namn"}
               </TabsTrigger>
             </Link>
