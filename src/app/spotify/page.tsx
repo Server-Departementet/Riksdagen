@@ -1,6 +1,7 @@
 import styles from "./spotify.module.css" with {type: "css"};
 import { TrackPlay } from "@/components/spotify/track-play";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
@@ -59,20 +60,41 @@ export default async function SpotifyPage() {
           ))}
         </TabsList>
 
-        {/* Totals */}
+        {/* Totals tab */}
         <TabsContent tabIndex={-1} value="alla" className="w-full sm:w-8/12">
-          Lyssningstid:
-          {
-            users.map(async (user, i) => {
-              const data = await user.data;
-              const totalTime = data.reduce((acc, play) => acc + play.track.duration, 0) / 1000;
-              return (
-                <div key={user.id + "-" + i} className="font-normal">
-                  <span className="font-bold">{user.name}</span>: {totalTime} s / {Math.floor(totalTime / 60)} min / {Math.floor(totalTime / 3600)} h / {Math.floor(totalTime / 86400)} d / {Math.floor(totalTime / 604800)} w / {Math.floor(totalTime / 2419200)} m / {Math.floor(totalTime / 29030400)} y
-                </div>
-              );
-            })
-          }
+          Total tid mellan alla användare:
+          {users.map(async (user, i) => {
+            const data = await user.data;
+
+            const totalMS = data.map(play => play.track).reduce((acc, track) => acc + track.duration, 0); // ms
+            const timeInDifferentUnits = {
+              s: { time: totalMS / 1000, unitLong: "sekunder", unitShort: "s" },
+              min: { time: totalMS / 60000, unitLong: "minuter", unitShort: "min" },
+              h: { time: totalMS / 3600000, unitLong: "timmar", unitShort: "h" },
+              d: { time: totalMS / 86400000, unitLong: "dygn", unitShort: "d" },
+              w: { time: totalMS / 604800000, unitLong: "veckor", unitShort: "v" },
+              m: { time: totalMS / 2419200000, unitLong: "månader", unitShort: "m" },
+              y: { time: totalMS / 29030400000, unitLong: "år", unitShort: "å" },
+            };
+
+            return (
+              <div key={user.id + "-" + i} className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-scroll">
+                <TooltipProvider>
+                  {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
+                    <React.Fragment key={key + "-" + i}>
+                      <Tooltip>
+                        <TooltipTrigger>{Math.floor(values.time)} {values.unitShort}</TooltipTrigger>
+                        <TooltipContent>{values.time.toString() + " " + values.unitLong}</TooltipContent>
+                      </Tooltip>
+
+                      {/* Separator */}
+                      {i < Object.entries(timeInDifferentUnits).length - 1 && <span className="cursor-default">{"="}</span>}
+                    </React.Fragment>
+                  )}
+                </TooltipProvider>
+              </div>
+            );
+          })}
         </TabsContent>
 
         {/* User tabs */}
@@ -94,19 +116,22 @@ export default async function SpotifyPage() {
 
           return (
             <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-full sm:w-8/12 flex flex-col gap-y-3">
-              {/* Total times */}
+              {/* Total times per user */}
               <div className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-scroll">
-                Totalt:
-                {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
-                  <React.Fragment key={key + "-" + i}>
-                    <span
-                      className="cursor-help"
-                      title={values.time.toString() + " " + values.unitLong}>
-                      {Math.floor(values.time)} {values.unitShort}
-                    </span>
-                    {i < Object.entries(timeInDifferentUnits).length - 1 && <span>=</span>}
-                  </React.Fragment>
-                )}
+                Total tid för {user.name}:
+                <TooltipProvider>
+                  {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
+                    <React.Fragment key={key + "-" + i}>
+                      <Tooltip>
+                        <TooltipTrigger>{Math.floor(values.time)} {values.unitShort}</TooltipTrigger>
+                        <TooltipContent>{values.time.toString() + " " + values.unitLong}</TooltipContent>
+                      </Tooltip>
+
+                      {/* Separator */}
+                      {i < Object.entries(timeInDifferentUnits).length - 1 && <span className="cursor-default">{"="}</span>}
+                    </React.Fragment>
+                  )}
+                </TooltipProvider>
               </div>
 
               {/* Tracks */}
