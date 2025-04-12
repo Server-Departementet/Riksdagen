@@ -26,7 +26,7 @@ async function getUserData(userId: string) {
         }
       },
     },
-    take: 10, // TODO: remove
+    take: 1000, // TODO: remove
   });
 }
 
@@ -47,31 +47,6 @@ export default async function SpotifyPage() {
     return { ...user, data };
   }));
 
-  // {awaitedUsers
-  //   .flatMap(user => user.data)
-  //   .map(play => play.track)
-  //   .map(track => {
-  //     const trackMS = awaitedUsers
-  //       .flatMap(user => user.data)
-  //       .filter(play => play.track.id === track.id)
-  //       .map(play => play.track)
-  //       .reduce((acc, track) => acc + track.duration, 0); // ms
-  //     return [track.id, trackMS];
-  //   })
-  //   // Sort by listened time
-  //   .sort((a, b) => {
-  //     const aTime = a[1] || 0;
-  //     const bTime = b[1] || 0;
-  //     return parseFloat(bTime.toString()) - parseFloat(aTime.toString());
-  //   })
-  //   .map(([trackId, trackMS]) => {
-  //     const track = awaitedUsers.flatMap(user => user.data).find(play => play.track.id === trackId)?.track;
-  //     if (!track) return null;
-
-  //     return (
-  //       <TrackPlay track={track} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + trackId} />
-  //     );
-  //   })}
   const mostListenedTracks = awaitedUsers
     .flatMap(user => user.data)
     .map(play => play.track)
@@ -92,8 +67,6 @@ export default async function SpotifyPage() {
       return parseFloat(bTime.toString()) - parseFloat(aTime.toString());
     })
     .slice(0, 3);
-
-
 
   return (
     <main>
@@ -122,7 +95,7 @@ export default async function SpotifyPage() {
         {/* Totals tab */}
         <TabsContent tabIndex={-1} value="alla" className="w-full lg:w-8/12">
           <h3>Totala tiden mellan alla</h3>
-          {(() => {
+          {(async () => {
             const timeInDifferentUnits = {
               s: { time: totalMS / 1000, unitLong: "sekunder", unitShort: "s" },
               min: { time: totalMS / 60000, unitLong: "minuter", unitShort: "min" },
