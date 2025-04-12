@@ -25,7 +25,7 @@ async function getUserData(userId: string) {
         }
       },
     },
-    take: 20, // TODO: remove
+    take: 3, // TODO: remove
   });
 }
 
@@ -39,7 +39,7 @@ export default async function SpotifyPage() {
     <main>
       <h1 className="mt-10">Spotify Statistik</h1>
 
-      <Tabs className="mt-5 mb-10 w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
+      <Tabs className="mt-5 mb-10 w-full sm:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
         {/* List */}
         <TabsList className="w-full mb-1 flex flex-row">
           {/* All */}
@@ -60,7 +60,7 @@ export default async function SpotifyPage() {
         </TabsList>
 
         {/* Totals */}
-        <TabsContent tabIndex={-1} value="alla" className="w-8/12">
+        <TabsContent tabIndex={-1} value="alla" className="w-full sm:w-8/12">
           Lyssningstid:
           {
             users.map(async (user, i) => {
@@ -79,27 +79,32 @@ export default async function SpotifyPage() {
         {users.map(async (user, i) => {
           const data = await user.data;
 
-          const tracks = data.map(play => play.track)
-          const totalMS = tracks.reduce((acc, track) => acc + track.duration, 0); // ms
+          const totalMS = data.map(play => play.track).reduce((acc, track) => acc + track.duration, 0); // ms
           const timeInDifferentUnits = {
-            s: totalMS / 1000,
-            min: totalMS / 60000,
-            h: totalMS / 3600000,
-            d: totalMS / 86400000,
-            w: totalMS / 604800000,
-            m: totalMS / 2419200000,
-            y: totalMS / 29030400000,
+            s: { time: totalMS / 1000, unitLong: "sekunder", unitShort: "s" },
+            min: { time: totalMS / 60000, unitLong: "minuter", unitShort: "min" },
+            h: { time: totalMS / 3600000, unitLong: "timmar", unitShort: "h" },
+            d: { time: totalMS / 86400000, unitLong: "dygn", unitShort: "d" },
+            w: { time: totalMS / 604800000, unitLong: "veckor", unitShort: "v" },
+            m: { time: totalMS / 2419200000, unitLong: "månader", unitShort: "m" },
+            y: { time: totalMS / 29030400000, unitLong: "år", unitShort: "å" },
           };
 
+          const tracks = data.map(play => play.track).filter((track, i, self) => self.findIndex(t => t.id === track.id) === i); // unique tracks
+
           return (
-            <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-8/12 flex flex-col gap-y-3">
+            <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-full sm:w-8/12 flex flex-col gap-y-3">
               {/* Total times */}
-              <div className="flex flex-row gap-x-2">
+              <div className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-scroll">
                 Totalt:
-                {Object.entries(timeInDifferentUnits).map(([unit, time], i) =>
-                  <React.Fragment key={unit + "-" + i}>
-                    <span className="cursor-help" title={time.toString()}>{Math.floor(time)} {unit}</span>
-                    {i < Object.entries(timeInDifferentUnits).length - 1 && <span>/</span>}
+                {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
+                  <React.Fragment key={key + "-" + i}>
+                    <span
+                      className="cursor-help"
+                      title={values.time.toString() + " " + values.unitLong}>
+                      {Math.floor(values.time)} {values.unitShort}
+                    </span>
+                    {i < Object.entries(timeInDifferentUnits).length - 1 && <span>=</span>}
                   </React.Fragment>
                 )}
               </div>

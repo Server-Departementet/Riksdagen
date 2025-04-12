@@ -15,34 +15,35 @@ export async function TrackPlay({ track, listeningTime, username }: { track: Tra
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  // const palette = track.image ? (await Vibrant.from(track.image).getPalette()) : null;
+  const getPalette = async (quality: number) => {
+    const v = track.image ? new Vibrant(track.image, { quality: quality, useWorker: true }) : null
+    return await v?.getPalette();
+  }
 
-  // const colors = [
-  //   palette?.DarkMuted?.hex,
-  //   palette?.Vibrant?.hex,
-  //   palette?.Muted?.hex,
-  //   palette?.DarkVibrant?.hex,
-  //   palette?.LightMuted?.hex,
-  //   palette?.LightVibrant?.hex,
-  // ];
+  const palette = await getPalette(100);
+  // const bgColor = palette?.Vibrant?.hex || "var(--color-zinc-100)"; // Not very contrasty against black text but prettier
+  const bgColor = palette?.LightVibrant?.hex || "var(--color-zinc-100)"; // Contrasty against black text
 
   return (
-    <div className="flex flex-row">
-      {/* <div className="flex flex-row rounded-xl">
-        {colors.map((color, i) => (
-          <div key={i} className="size-5" style={{ backgroundColor: color }}></div>
-        ))}
-      </div> */}
+    <div className="grid grid-cols-[128px_1fr_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] gap-x-2" style={{ backgroundColor: bgColor }}>
 
-      <Image width={128} height={128} className="rounded-[4px] h-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
+      {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
+      <Image width={128} height={128} className="row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
 
-      <Link href={track.url} className="" target="_blank" rel="noopener noreferrer">
+      {/* Track info */}
+      <h5 className="col-start-2 col-span-2">{track.name}</h5>
+      {/* Artists */}
+      <p className="col-start-2 col-span-2 font-semibold text-sm opacity-70 -mt-1">{track.artists.map(artist => artist.name).join(", ")}</p>
+
+
+      {/* Spotify Link */}
+      <Link href={track.url} className="col-start-3 row-start-4 justify-self-end self-end" target="_blank" rel="noopener noreferrer">
         <Button tabIndex={-1} className="m-2 px-2.5">
           <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
           Öppna i Spotify
         </Button>
       </Link>
-    </div>
+    </div >
   );
 }
 
