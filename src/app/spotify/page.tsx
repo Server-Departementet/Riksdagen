@@ -26,7 +26,7 @@ async function getUserData(userId: string) {
         }
       },
     },
-    take: 1000, // TODO: remove
+    // take: 1000, // TODO: remove
   });
 }
 
@@ -66,7 +66,7 @@ export default async function SpotifyPage() {
       const bTime = b[1] || 0;
       return parseFloat(bTime.toString()) - parseFloat(aTime.toString());
     })
-    .slice(0, 3);
+    // .slice(0, 3);
 
   return (
     <main>

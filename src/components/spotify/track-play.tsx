@@ -7,9 +7,10 @@ import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.sv
 import { Vibrant } from "node-vibrant/node";
 
 const getPalette = async (url: string | null, quality: number) => {
-  if (!url) return null;
-  const v = new Vibrant(url, { quality: quality, useWorker: true });
-  return await v.getPalette();
+  // if (!url) return null;
+  // const v = new Vibrant(url, { quality: quality, useWorker: true });
+  // return await v.getPalette();
+  return null;
 }
 
 export async function TrackPlay({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
@@ -20,7 +21,8 @@ export async function TrackPlay({ track, listeningTime, username }: { track: Tra
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
   const palette = await getPalette(track.image, 100);
-  const bgColor = palette?.LightVibrant?.hex || "var(--color-zinc-100)";
+  // const bgColor = palette?.LightVibrant?.hex || "var(--color-zinc-100)";
+  const bgColor = "var(--color-zinc-100)";
 
   return (
     <div className="grid grid-cols-[128px_1fr_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] gap-x-2" style={{ backgroundColor: bgColor }}>
