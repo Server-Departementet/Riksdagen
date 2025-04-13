@@ -44,7 +44,7 @@ images.forEach(async (url, i) => {
   }
   streamCount++;
   processImage(url)
-    .then(, => {
+    .then(_ => {
       processed[i] = true;
     })
     .catch(err => {
