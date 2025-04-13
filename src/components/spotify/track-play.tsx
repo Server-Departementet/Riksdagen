@@ -5,12 +5,23 @@ import { Button } from "@/components/ui/button";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import { Vibrant } from "node-vibrant/node";
+import fs from "node:fs";
 
-const getPalette = async (url: string | null, quality: number) => {
-  // if (!url) return null;
-  // const v = new Vibrant(url, { quality: quality, useWorker: true });
-  // return await v.getPalette();
-  return null;
+// Color cache
+const colorCachePath = "./src/components/spotify/color-cache.json";
+if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
+const colorCache = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
+process.on("exit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
+
+const getImageColor = async (url: string, quality: number) => {
+  // Return cache
+  if (colorCache[url]) return colorCache[url];
+  // Get color
+  const v = new Vibrant(url, { quality, useWorker: true });
+  const color = (await v.getPalette())?.LightVibrant?.hex;
+  // Set cache
+  if (color) colorCache[url] = color;
+  return color;
 }
 
 export async function TrackPlay({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
@@ -20,9 +31,11 @@ export async function TrackPlay({ track, listeningTime, username }: { track: Tra
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  const palette = await getPalette(track.image, 100);
-  // const bgColor = palette?.LightVibrant?.hex || "var(--color-zinc-100)";
-  const bgColor = "var(--color-zinc-100)";
+  // Vibrant
+  const bgColor = track.image ?
+    await getImageColor(track.image, 100) || "var(--color-zinc-100)"
+    :
+    "var(--color-zinc-100)";
 
   return (
     <div className="grid grid-cols-[128px_1fr_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] gap-x-2" style={{ backgroundColor: bgColor }}>
