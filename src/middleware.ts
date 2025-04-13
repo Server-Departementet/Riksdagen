@@ -1,11 +1,13 @@
-import { clerkMiddleware, ClerkMiddlewareAuth } from "@clerk/nextjs/server";
+import { clerkMiddleware, ClerkMiddlewareAuth, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
+
+const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
 
 export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
   const response = NextResponse.next();
 
   // Spotify
-  if (req.nextUrl.pathname.startsWith("/spotify")) {
+  if (isSpotifyRoute(req)) {
     const user = await auth();
 
     if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
