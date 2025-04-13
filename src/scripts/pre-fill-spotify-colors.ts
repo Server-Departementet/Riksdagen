@@ -13,7 +13,7 @@ if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.string
 const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 
-const processImage = async (url: string, quality: number = 100) => {
+const processImage = async (url: string, quality: number = 50) => {
   if (colorCache[url]) return colorCache[url];
   const v = new Vibrant(url, { quality, useWorker: true });
   const color = (await v.getPalette())?.LightVibrant?.hex;

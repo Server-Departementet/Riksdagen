@@ -26,7 +26,6 @@ async function getUserData(userId: string) {
         }
       },
     },
-    take: 500, // TODO: remove
   });
 }
 

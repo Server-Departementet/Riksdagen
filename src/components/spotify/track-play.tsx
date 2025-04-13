@@ -12,8 +12,9 @@ const colorCachePath = "./src/components/spotify/color-cache.json";
 if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
 const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
+setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
 
-const getImageColor = async (url: string, quality: number) => {
+const getImageColor = async (url: string, quality: number = 100) => {
   // Return cache
   if (colorCache[url]) return colorCache[url];
   // Get color
