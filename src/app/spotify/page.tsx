@@ -1,3 +1,4 @@
+import { JumpToHashHighlighter } from "@/components/spotify/copy-link";
 import styles from "./spotify.module.css" with {type: "css"};
 import { TrackPlayElement } from "@/components/spotify/track-play";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,7 +28,7 @@ async function getUserData(userId: string, username: string) {
         }
       },
     },
-    take: 50, // TODO - remove
+    // take: 50, // TODO - remove
   });
 
   const user: User = {
@@ -204,6 +205,8 @@ export default async function SpotifyPage() {
           return await getUserTab(user, i, globalPlaytimeMS);
         })}
       </Tabs>
+
+      <JumpToHashHighlighter />
     </main>
   );
 }

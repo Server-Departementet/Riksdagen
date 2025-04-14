@@ -43,7 +43,10 @@ export async function TrackPlayElement({ track, trackPlayCount, listeningTime, u
   const listenedMin = Math.round(listeningTime / 60000);
 
   return (
-    <div className="grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1" style={{ backgroundColor: bgColor }}>
+    <div
+      className={`grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
+      style={{ backgroundColor: bgColor }}
+    >
       {/* ID to jump to. Offset to align better with */}
       <div id={track.id} className="col-start-1 row-start-1 relative -translate-y-32 h-0 -z-50"></div>
 
