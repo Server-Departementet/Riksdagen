@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { LucideLink as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
-export function CopyLinkButton({ trackId }: { trackId: string }) {
+export function CopyLinkButton({ trackId, className = "" }: { trackId: string, className?: string }) {
 
   const copyLink = () => {
     const currentUrl = new URL(window.location.href);
@@ -17,7 +17,7 @@ export function CopyLinkButton({ trackId }: { trackId: string }) {
   };
 
   return (
-    <Button onClick={copyLink} variant={"ghost"} className="mt-2 col-start-3 row-start-1 row-span-2 justify-self-end self-start z-10">
+    <Button onClick={copyLink} variant={"ghost"} className={className}>
       <LinkIcon strokeWidth={2.5} size={44} className="size-full" />
     </Button>
   );
