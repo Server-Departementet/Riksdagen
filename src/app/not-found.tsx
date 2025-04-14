@@ -1,6 +1,7 @@
 import * as Icon from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 
 export default function Custom404() {
   return (
@@ -21,10 +22,10 @@ export default function Custom404() {
       {/* Big background crowns */}
       <div className="absolute opacity-50 flex flex-col justify-center items-center gap-x-2">
         <div className="flex flex-row justify-center items-center gap-x-2">
-          <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
-          <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
+          <Image src={CrownSVG} height={230} width={230} alt="" />
+          <Image src={CrownSVG} height={230} width={230} alt="" />
         </div>
-        <Image src={"/icons/crown.svg"} height={230} width={230} alt="" />
+        <Image src={CrownSVG} height={230} width={230} alt="" />
       </div>
     </main>
   )

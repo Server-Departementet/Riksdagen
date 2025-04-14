@@ -17,16 +17,19 @@ export function SidebarLink(
     className?: string
   }
 ) {
+  const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!e.target) return;
+    const target = e.target as HTMLAnchorElement | HTMLButtonElement;
+    if (target.tagName === "A") {
+      target.querySelector("button")?.click();
+    }
+  };
+
   return (
     <Link href={href} className={`w-full ${className}`}
-      onClick={(e) => {
-        if (!e.target) return;
-        const target = e.target as HTMLAnchorElement | HTMLButtonElement;
-        if (target.tagName === "A") {
-          target.querySelector("button")?.click();
-        }
-      }}>
-      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
+      onClick={onClick}
+    >
+      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full !flex !flex-row !gap-x-2 !items-center">
         {children}
       </SheetTrigger>
     </Link>
@@ -44,20 +47,12 @@ export function ExternalLink(
     className?: string
   }
 ) {
+
   return (
-    <Link href={href} className={`w-full flex flex-row items-center gap-x-1 ${className}`} target="_blank"
-      onClick={(e) => {
-        if (!e.target) return;
-        const target = e.target as HTMLAnchorElement | HTMLButtonElement;
-        if (target.tagName === "A") {
-          target.querySelector("button")?.click();
-        }
-      }}>
-      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full">
-        {children}
-        <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
-      </SheetTrigger>
-    </Link>
+    <SidebarLink href={href} className={`${className}`}>
+      {children}
+      <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
+    </SidebarLink>
   );
 }
 

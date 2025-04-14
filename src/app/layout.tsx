@@ -7,7 +7,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { currentUser } from "@clerk/nextjs/server";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
 
 /* Used in global css */

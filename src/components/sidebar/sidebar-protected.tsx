@@ -1,14 +1,18 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { SidebarLink } from "./sidebar";
+import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
+import Image from "next/image";
 
 export async function ProtectedLink(
   {
     href,
     children,
+    className = "",
     role = "",
   }: {
     href: string,
     children: React.ReactNode
+    className?: string
     role?: string
   }
 ) {
@@ -16,5 +20,10 @@ export async function ProtectedLink(
   if (!user) return null;
   if (user.publicMetadata.role !== role) return null;
 
-  return <SidebarLink href={href}>{children}</SidebarLink>;
+  return (
+    <SidebarLink href={href} className={className}>
+      {children}
+      <Image src={CrownSVG} alt="(skyddad)" />
+    </SidebarLink>
+  );
 }
