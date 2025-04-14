@@ -5,8 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
-import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar";
+import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { currentUser } from "@clerk/nextjs/server";
+import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -52,6 +54,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
+              <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
               <SidebarLink href="/rail-and-road">Minecraft Rail & Road Generator</SidebarLink>
               <ExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ExternalLink>
               <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Viggos Radio</ExternalLink>
@@ -61,7 +64,7 @@ export default async function RootLayout({ children }: {
 
         {children}
 
-        <Toaster theme="light"/>
+        <Toaster theme="light" />
 
         <footer className="p-3 mt-5">
           <p>© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>

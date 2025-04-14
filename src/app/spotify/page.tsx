@@ -130,7 +130,7 @@ export default async function SpotifyPage() {
 
   return (
     <main>
-      <h1 className="mt-10">Spotify Statistik</h1>
+      <h1 className="mt-10">Spotify-Statistik</h1>
 
       <Tabs className="mt-5 mb-10 w-full lg:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
         {/* List */}
