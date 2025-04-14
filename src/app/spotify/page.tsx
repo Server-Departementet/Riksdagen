@@ -27,7 +27,7 @@ async function getUserData(userId: string, username: string) {
         }
       },
     },
-    // take: 50, // TODO - remove
+    take: 50, // TODO - remove
   });
 
   const user: User = {
@@ -107,7 +107,8 @@ async function getUserTab(user: User, i: number, globalPlaytimeMS: number) {
       {Object.entries(userPlaytimes).map(([trackId, trackMS], i) => {
         const track = userTracks.find(track => track.id === trackId);
         if (!track) return null;
-        return <TrackPlayElement track={track} listeningTime={parseFloat(trackMS.toString())} username={user.name} key={track.id + "-" + user.id + "-" + i} />;
+        const playCount = user.trackPlays.filter(play => play.track.id === trackId).length;
+        return <TrackPlayElement track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={user.name} key={track.id + "-" + user.id + "-" + i} />;
       })}
     </TabsContent>
   );
@@ -189,7 +190,8 @@ export default async function SpotifyPage() {
             {Object.entries(trackPlaytimes).map(([trackId, trackMS], i) => {
               const track = uniqueTracks.find(track => track.id === trackId);
               if (!track) return null;
-              return <TrackPlayElement track={track} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + i} />;
+              const playCount = allTrackPlays.filter(play => play.track.id === trackId).length;
+              return <TrackPlayElement track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + i} />;
             })}
           </div>
 

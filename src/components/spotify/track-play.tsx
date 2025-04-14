@@ -25,18 +25,20 @@ const getImageColor = async (url: string, quality: number = 100) => {
   return color;
 }
 
-export async function TrackPlayElement({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
+export async function TrackPlayElement({ track, trackPlayCount, listeningTime, username }: { track: Track, trackPlayCount: number, listeningTime: number, username: string | null }) {
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  // Vibrant
+  // Background color
   const bgColor = track.image ?
     await getImageColor(track.image, 100) || "var(--color-zinc-100)"
     :
     "var(--color-zinc-100)";
+
+  const listenedCountText = trackPlayCount > 1 ? " gånger" : " gång";
 
   return (
     <div className="grid grid-cols-[128px_1fr_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] gap-x-2" style={{ backgroundColor: bgColor }}>
@@ -54,9 +56,7 @@ export async function TrackPlayElement({ track, listeningTime, username }: { tra
         {/* Duration */}
         <p>Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time */}
-        <p>{username ?? "Personer"} har lyssnat totalt {Math.round(listeningTime / 60000)} min</p>
-        {/* Count */}
-        <p>Det motsvara {Math.round(listeningTime / track.duration)} av låten</p>
+        <p>{username ?? "Personer"} har lyssnat {trackPlayCount} {listenedCountText} ({Math.round(listeningTime / 60000)} min)</p>
       </div>
 
       {/* Spotify Link */}
