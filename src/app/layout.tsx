@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -31,7 +32,7 @@ export default async function RootLayout({ children }: {
     <html lang="sv">
       <body>
         {/* Header */}
-        <header className="z-10 py-3 px-5 h-20">
+        <header className="z-40 py-3 px-5 h-20">
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-global">
             {/* Icon */}
@@ -59,6 +60,8 @@ export default async function RootLayout({ children }: {
         </header>
 
         {children}
+
+        <Toaster theme="light"/>
 
         <footer className="p-3 mt-5">
           <p>© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>

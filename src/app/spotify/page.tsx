@@ -82,7 +82,7 @@ async function getUserTab(user: User, i: number, globalPlaytimeMS: number) {
   return (
     <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-full lg:w-8/12 flex flex-col gap-y-3">
       {/* User stats */}
-      <div className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-scroll">
+      <div className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-auto">
         Total tid för {user.name}:
         <TooltipProvider>
           {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
@@ -133,7 +133,7 @@ export default async function SpotifyPage() {
 
       <Tabs className="mt-5 mb-10 w-full lg:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
         {/* List */}
-        <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-scroll">
+        <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-auto overflow-y-hidden">
           {/* All */}
           <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}>
             <TabsTrigger tabIndex={-1} className="" value="alla">
@@ -166,7 +166,7 @@ export default async function SpotifyPage() {
             };
 
             return (
-              <div className="flex flex-row gap-x-2 justify-center whitespace-nowrap overflow-x-scroll">
+              <div className="flex flex-row gap-x-2 justify-center whitespace-nowrap overflow-x-auto">
                 <TooltipProvider>
                   {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
                     <React.Fragment key={key + "-" + i}>
