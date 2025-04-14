@@ -25,7 +25,7 @@ const getImageColor = async (url: string, quality: number = 100) => {
   return color;
 }
 
-export async function TrackPlay({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
+export async function TrackPlayElement({ track, listeningTime, username }: { track: Track, listeningTime: number, username: string | null }) {
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
