@@ -35,6 +35,8 @@ export async function TrackPlayElement({
   username: string,
   index: number
 }) {
+  "use cache";
+
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);

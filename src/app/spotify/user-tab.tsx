@@ -1,3 +1,5 @@
+"use cache";
+
 import type { TrackWithStats, User } from "@/types";
 import { TimeAndPlayCountBar } from "@/components/sidebar/time-units-bar";
 import { TrackPlayElement } from "@/components/spotify/track-play";
