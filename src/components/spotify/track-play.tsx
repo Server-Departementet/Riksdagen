@@ -15,11 +15,11 @@ const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCache
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
 
-const getImageColor = async (url: string, quality: number = 100) => {
+const getImageColor = async (url: string) => {
   // Return cache
   if (colorCache[url]) return colorCache[url];
   // Get color
-  const v = new Vibrant(url, { quality, useWorker: true });
+  const v = new Vibrant(url, { quality: 100, useWorker: true });
   const color = (await v.getPalette())?.LightVibrant?.hex;
   // Set cache
   if (color) colorCache[url] = color;
@@ -35,7 +35,7 @@ export async function TrackPlayElement({ track, trackPlayCount, listeningTime, u
 
   // Background color
   const bgColor = track.image ?
-    await getImageColor(track.image, 100) || "var(--color-zinc-100)"
+    await getImageColor(track.image) || "var(--color-zinc-100)"
     :
     "var(--color-zinc-100)";
 
