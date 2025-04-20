@@ -1,7 +1,7 @@
 #!/bin/bash
 
 git fetch --all
-git reset --hard origin/master
+git checkout origin/Dev
 
 # Build
 yarn install
