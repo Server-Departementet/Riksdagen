@@ -26,7 +26,19 @@ const getImageColor = async (url: string) => {
   return color;
 }
 
-export async function TrackPlayElement({ track, trackPlayCount, listeningTime, username }: { track: Track, trackPlayCount: number, listeningTime: number, username: string | null }) {
+export async function TrackPlayElement({
+  track,
+  trackPlayCount,
+  listeningTime,
+  username,
+  index
+}: {
+  track: Track,
+  trackPlayCount: number,
+  listeningTime: number,
+  username: string | null
+  index: number
+}) {
 
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
@@ -43,46 +55,52 @@ export async function TrackPlayElement({ track, trackPlayCount, listeningTime, u
   const listenedMin = Math.round(listeningTime / 60000);
 
   return (
-    <div
-      className={`grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
-      style={{ backgroundColor: bgColor }}
-    >
-      {/* ID to jump to. Offset to align better with */}
-      <div id={track.id} className="col-start-1 row-start-1 relative -translate-y-32 h-0 -z-50"></div>
+    <div className="flex flex-row items-center gap-x-0.5 rounded-[4px] bg-zinc-100">
+      <span className="text-lg px-2 text-center">
+        {index + 1}
+      </span>
 
-      {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
-      <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
+      <div
+        className={`flex-1 grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
+        style={{ backgroundColor: bgColor }}
+      >
+        {/* ID to jump to. Offset to align better with */}
+        <div id={track.id} className="col-start-1 row-start-1 relative -translate-y-32 h-0 -z-50"></div>
 
-      {/* Track info */}
-      <h5 className="col-start-2 row-start-1 col-span-2 leading-5 mt-1">{track.name}</h5>
-      {/* Artists */}
-      <p className="col-start-2 row-start-2 col-span-2 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
+        {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
+        <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
 
-      {/* Stats */}
-      <div className="row-span-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
-        {/* Duration (long) */}
-        <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
-        {/* Listening time (long) */}
-        <p className="hidden sm:block">{username ?? "Alla"} har lyssnat totalt {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+        {/* Track info */}
+        <h5 className="col-start-2 row-start-1 col-span-2 leading-5 mt-1">{track.name}</h5>
+        {/* Artists */}
+        <p className="col-start-2 row-start-2 col-span-2 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
 
-        {/* Duration (short) */}
-        <p className="block sm:hidden">Längd {prettyDuration}</p>
-        {/* Listening time (short) */}
-        <p className="block sm:hidden">Lyssnat {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+        {/* Stats */}
+        <div className="row-span-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
+          {/* Duration (long) */}
+          <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+          {/* Listening time (long) */}
+          <p className="hidden sm:block">{username ?? "Alla"} har lyssnat totalt {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+
+          {/* Duration (short) */}
+          <p className="block sm:hidden">Längd {prettyDuration}</p>
+          {/* Listening time (short) */}
+          <p className="block sm:hidden">Lyssnat {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+        </div>
+
+        {/* Spotify Link */}
+        <Link href={track.url} className="col-start-3 col-span-2 row-start-4 justify-self-end self-end z-10" target="_blank" rel="noopener noreferrer">
+          <Button tabIndex={-1} className="mb-1.5 sm:mb-2 me-1.5 sm:me-2 px-2.5">
+            <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
+            <span className="hidden sm:block">
+              Öppna i Spotify
+            </span>
+          </Button>
+        </Link>
+
+        {/* Copy link button */}
+        <CopyLinkButton className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10" trackId={track.id} />
       </div>
-
-      {/* Spotify Link */}
-      <Link href={track.url} className="col-start-3 col-span-2 row-start-4 justify-self-end self-end z-10" target="_blank" rel="noopener noreferrer">
-        <Button tabIndex={-1} className="mb-1.5 sm:mb-2 me-1.5 sm:me-2 px-2.5">
-          <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
-          <span className="hidden sm:block">
-            Öppna i Spotify
-          </span>
-        </Button>
-      </Link>
-
-      {/* Copy link button */}
-      <CopyLinkButton className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10" trackId={track.id} />
-    </div >
+    </div>
   );
 }

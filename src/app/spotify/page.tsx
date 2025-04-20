@@ -109,7 +109,7 @@ async function getUserTab(user: User, i: number, globalPlaytimeMS: number) {
         const track = userTracks.find(track => track.id === trackId);
         if (!track) return null;
         const playCount = user.trackPlays.filter(play => play.track.id === trackId).length;
-        return <TrackPlayElement track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={user.name} key={track.id + "-" + user.id + "-" + i} />;
+        return <TrackPlayElement index={i} track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={user.name} key={track.id + "-" + user.id + "-" + i} />;
       })}
     </TabsContent>
   );
@@ -192,7 +192,7 @@ export default async function SpotifyPage() {
               const track = uniqueTracks.find(track => track.id === trackId);
               if (!track) return null;
               const playCount = allTrackPlays.filter(play => play.track.id === trackId).length;
-              return <TrackPlayElement track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + i} />;
+              return <TrackPlayElement index={i} track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + i} />;
             })}
           </div>
 
