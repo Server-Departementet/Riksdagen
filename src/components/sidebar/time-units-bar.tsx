@@ -30,7 +30,7 @@ function TimeUnitsBar({ timeMS, className = "" }: { timeMS: number, className?: 
                 {unit.number.toString() + " " + unit.long}
 
                 {/* Percent of a whole unit e.g. `0.01% av 1 vecka` as long as the percentage is below 100% */}
-                {unit.number < 0 ? <><br />{(unit.number * 100).toFixed(3)}% av {unit.longSingular}</> : ""}
+                {unit.number < 1 && <><br />{(unit.number * 100).toFixed(3)}% av {unit.longSingular}</>}
               </TooltipContent>
             </Tooltip>
 
