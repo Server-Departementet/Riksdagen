@@ -29,7 +29,7 @@ async function getUserData(userId: string, username: string) {
         }
       },
     },
-    ...(process.env.NODE_ENV !== "production" ? { take: 50 } : {})
+    ...(process.env.NODE_ENV !== "production" ? { take: 100 } : {})
   });
 
   const user: User = {

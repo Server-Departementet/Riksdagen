@@ -64,9 +64,9 @@ export async function TrackPlayElement({
         <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
 
         {/* Track info */}
-        <h5 className="col-start-2 row-start-1 col-span-2 leading-5 mt-1">{track.name}</h5>
+        <h5 className="col-start-2 row-start-1 col-span-2 leading-5 py-1 overflow-x-auto whitespace-nowrap text-ellipsis overflow-y-hidden">{track.name}</h5>
         {/* Artists */}
-        <p className="col-start-2 row-start-2 col-span-2 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
+        <p className="col-start-2 row-start-2 col-span-2 pb-1 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
 
         {/* Stats */}
         <div className="row-span-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
