@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
-/* @custom-variant dark (&:is(.dark *)); */
 
 @layer base {
   * {
@@ -98,6 +97,22 @@
   }
   h6 {
     @apply w-full text-base font-medium;
+  }
+
+  @keyframes pulse-animation {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .pulse-animation {
+    animation: pulse-animation 1.5s ease-in-out 3;
   }
 }
 

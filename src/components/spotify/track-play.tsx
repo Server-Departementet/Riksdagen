@@ -64,7 +64,7 @@ export async function TrackPlayElement({
         className={`flex-1 grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
         style={{ backgroundColor: bgColor }}
       >
-        {/* ID to jump to. Offset to align better with */}
+        {/* ID to jump to. Offset to give more control */}
         <div id={track.id} className="col-start-1 row-start-1 relative -translate-y-32 h-0 -z-50"></div>
 
         {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}

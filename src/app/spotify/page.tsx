@@ -1,4 +1,4 @@
-import { JumpToHashHighlighter } from "@/components/spotify/copy-link";
+import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
 import styles from "./spotify.module.css" with {type: "css"};
 import { TrackPlayElement } from "@/components/spotify/track-play";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,6 +9,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import Link from "next/link";
 import React from "react";
+import { TimeUnitsBar } from "@/components/sidebar/time-units-bar";
 
 const client = clerkClient();
 
@@ -136,18 +137,16 @@ export default async function SpotifyPage() {
         {/* List */}
         <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-auto overflow-y-hidden">
           {/* All */}
-          <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}>
-            <TabsTrigger tabIndex={-1} className="" value="alla">
-              Totalt
-            </TabsTrigger>
-          </Link>
+          <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}><TabsTrigger tabIndex={-1} className="" value="alla">Totalt</TabsTrigger></Link>
 
           {/* Users */}
           {users.map(async user => (
-            <Link href={`?person=${encodeURIComponent(user.name || "alla")}`} key={user.id} className={`${styles.TabsTriggerLink} no-globals`}>
-              <TabsTrigger tabIndex={-1} className="" value={encodeURIComponent(user.name || "alla") || user.id}>
-                {user.name || "Saknar namn"}
-              </TabsTrigger>
+            <Link
+              key={user.id}
+              href={`?person=${encodeURIComponent(user.name || "alla")}`}
+              className={`${styles.TabsTriggerLink} no-globals`}
+            >
+              <TabsTrigger tabIndex={-1} className="" value={encodeURIComponent(user.name || "alla") || user.id}>{user.name || "Saknar namn"}</TabsTrigger>
             </Link>
           ))}
         </TabsList>
@@ -155,35 +154,8 @@ export default async function SpotifyPage() {
         {/* Totals tab */}
         <TabsContent tabIndex={-1} value="alla" className="w-full lg:w-8/12">
           <h3>Totala tiden mellan alla</h3>
-          {(async () => {
-            const timeInDifferentUnits = {
-              s: { time: globalPlaytimeMS / 1000, unitLong: "sekunder", unitShort: "s" },
-              min: { time: globalPlaytimeMS / 60000, unitLong: "minuter", unitShort: "min" },
-              h: { time: globalPlaytimeMS / 3600000, unitLong: "timmar", unitShort: "h" },
-              d: { time: globalPlaytimeMS / 86400000, unitLong: "dygn", unitShort: "d" },
-              w: { time: globalPlaytimeMS / 604800000, unitLong: "veckor", unitShort: "v" },
-              m: { time: globalPlaytimeMS / 2419200000, unitLong: "månader", unitShort: "m" },
-              y: { time: globalPlaytimeMS / 29030400000, unitLong: "år", unitShort: "å" },
-            };
 
-            return (
-              <div className="flex flex-row gap-x-2 justify-center whitespace-nowrap overflow-x-auto">
-                <TooltipProvider>
-                  {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
-                    <React.Fragment key={key + "-" + i}>
-                      <Tooltip>
-                        <TooltipTrigger>{Math.floor(values.time)} {values.unitShort}</TooltipTrigger>
-                        <TooltipContent>{values.time.toString() + " " + values.unitLong}</TooltipContent>
-                      </Tooltip>
-
-                      {/* Separator */}
-                      {i < Object.entries(timeInDifferentUnits).length - 1 && <span className="cursor-default">{"="}</span>}
-                    </React.Fragment>
-                  )}
-                </TooltipProvider>
-              </div>
-            )
-          })()}
+          <TimeUnitsBar timeMS={globalPlaytimeMS} />
 
           {/* Absolute most listened to track */}
           <h3 className="mt-2">Mest spelade låtar</h3>
@@ -206,7 +178,7 @@ export default async function SpotifyPage() {
         })}
       </Tabs>
 
-      <JumpToHashHighlighter />
+      <JumpToTrackHighlightHandler />
     </main>
   );
 }

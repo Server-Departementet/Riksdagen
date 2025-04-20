@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { LucideLink as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
+/** Copies the link to a unique track */
 export function CopyLinkButton({ trackId, className = "" }: { trackId: string, className?: string }) {
   const copyLink = () => {
     const currentUrl = new URL(window.location.href);
-    currentUrl.hash = `#${trackId}`;
+    currentUrl.searchParams.set("track", trackId);
     navigator.clipboard.writeText(currentUrl.href).then(() => {
       toast.success("Länk kopierad!", {
         description: "Länken har kopierats till dina urklipp!",
@@ -22,25 +23,25 @@ export function CopyLinkButton({ trackId, className = "" }: { trackId: string, c
   );
 }
 
-export function JumpToHashHighlighter() {
-  const isClient = typeof window !== "undefined";
+/** When jumping to a track via its link, this client side element handles the reinforcing highlight of that track */
+export function JumpToTrackHighlightHandler() {
+  if (typeof window === "undefined") return <></>
 
-  // This has the pulse to make tailwind load it
-  const DOM = <div id="jump-to-hash" className="animate-pulse"></div>;
+  const trackId = new URL(window.location.href).searchParams.get("track");
+  if (!trackId) return <></>;
 
-  if (isClient) {
-    const trackId = new URL(window.location.href).hash.replace("#", "");
-    if (!trackId) return DOM;
-    const jumpElement = document.getElementById(trackId);
-    if (!jumpElement) return DOM;
-    const trackElement = jumpElement.parentElement;
-    if (!trackElement) return DOM;
+  const jumpElement = document.getElementById(trackId);
+  if (!jumpElement) return <></>;
 
-    trackElement.classList.add("animate-pulse");
-    setTimeout(() => {
-      trackElement.classList.remove("animate-pulse");
-    }, 4500);
-  }
+  const trackElement = jumpElement.parentElement;
+  if (!trackElement) return <></>;
 
-  return DOM;
+  jumpElement.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  trackElement.classList.add("pulse-animation");
+  setTimeout(() => {
+    trackElement.classList.remove("pulse-animation");
+  }, 4500);
+
+  return <></>;
 }
