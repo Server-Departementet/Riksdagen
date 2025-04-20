@@ -1,15 +1,15 @@
-import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
+import type { User } from "@/types";
 import styles from "./spotify.module.css" with {type: "css"};
-import { TrackPlayElement } from "@/components/spotify/track-play";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { prisma } from "@/lib/prisma";
-import type { Track, TrackPlay, User } from "@/types";
-import { clerkClient } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
-import Link from "next/link";
 import React from "react";
-import { TimeUnitsBar } from "@/components/sidebar/time-units-bar";
+import Link from "next/link";
+import { UserTab } from "@/app/spotify/user-tab";
+import { TrackPlayElement } from "@/components/spotify/track-play";
+import { TimeAndPlayCountBar } from "@/components/sidebar/time-units-bar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { prisma } from "@/lib/prisma";
+import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
+import { headers } from "next/headers";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const client = clerkClient();
 
@@ -41,93 +41,28 @@ async function getUserData(userId: string, username: string) {
   return user;
 }
 
-async function getTrackPlaytimes(trackPlays: TrackPlay[], tracks: Track[]): Promise<Record<string, number>> {
-  const listenedTimes: Record<string, number> = {};
-
-  tracks.forEach(track => {
-    const totalMS = trackPlays
-      .filter(play => play.track.id === track.id)
-      .map(play => play.track.duration)
-      .reduce((acc, duration) => acc + duration, 0); // ms
-    listenedTimes[track.id] = totalMS;
-  });
-
-  return Object.fromEntries(Object.entries(listenedTimes).sort(([, a], [, b]) => b - a));
-}
-
-async function getAllTrackPlays(users: User[]): Promise<TrackPlay[]> {
-  const allTracks: TrackPlay[] = users.flatMap(user => user.trackPlays);
-
-  return allTracks;
-}
-
-async function getUserTab(user: User, i: number, globalPlaytimeMS: number) {
-  "use cache";
-
-  const userTracks = user.trackPlays
-    .map(play => play.track)
-    .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i); // unique tracks
-
-  const userPlaytimes = await getTrackPlaytimes(user.trackPlays, userTracks);
-
-  const totalUserPlaytimeMS = Object.values(userPlaytimes).reduce((acc, time) => acc + time, 0); // ms
-  const timeInDifferentUnits = {
-    s: { time: totalUserPlaytimeMS / 1000, unitLong: "sekunder", unitShort: "s" },
-    min: { time: totalUserPlaytimeMS / 60000, unitLong: "minuter", unitShort: "min" },
-    h: { time: totalUserPlaytimeMS / 3600000, unitLong: "timmar", unitShort: "h" },
-    d: { time: totalUserPlaytimeMS / 86400000, unitLong: "dygn", unitShort: "d" },
-    w: { time: totalUserPlaytimeMS / 604800000, unitLong: "veckor", unitShort: "v" },
-    m: { time: totalUserPlaytimeMS / 2419200000, unitLong: "månader", unitShort: "m" },
-    y: { time: totalUserPlaytimeMS / 29030400000, unitLong: "år", unitShort: "å" },
-  };
-
-  return (
-    <TabsContent tabIndex={-1} key={user.id + "-" + i} value={encodeURIComponent(user.name || user.id)} className="w-full lg:w-8/12 flex flex-col gap-y-3">
-      {/* User stats */}
-      <div className="flex flex-row gap-x-2 whitespace-nowrap overflow-x-auto">
-        Total tid för {user.name}:
-        <TooltipProvider>
-          {Object.entries(timeInDifferentUnits).map(([key, values], i) =>
-            <React.Fragment key={key + "-" + i}>
-              <Tooltip>
-                <TooltipTrigger>{Math.floor(values.time)} {values.unitShort}</TooltipTrigger>
-                <TooltipContent>{values.time.toString() + " " + values.unitLong}</TooltipContent>
-              </Tooltip>
-
-              {/* Separator */}
-              <span className="cursor-default">{"="}</span>
-            </React.Fragment>
-          )}
-          <Tooltip>
-            <TooltipTrigger>{(totalUserPlaytimeMS / globalPlaytimeMS * 100).toFixed(2)}% av alla</TooltipTrigger>
-            <TooltipContent>{totalUserPlaytimeMS / globalPlaytimeMS * 100}%</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Tracks */}
-      {Object.entries(userPlaytimes).map(([trackId, trackMS], i) => {
-        const track = userTracks.find(track => track.id === trackId);
-        if (!track) return null;
-        const playCount = user.trackPlays.filter(play => play.track.id === trackId).length;
-        return <TrackPlayElement index={i} track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={user.name} key={track.id + "-" + user.id + "-" + i} />;
-      })}
-    </TabsContent>
-  );
-}
-
 export default async function SpotifyPage() {
   const clerkUserList = (await (await client).users.getUserList()).data.filter(user => user.publicMetadata.role === "minister").reverse();
 
   const users = await Promise.all(clerkUserList.map(async user => getUserData(user.id, user.firstName || user.id)));
 
-  const allTrackPlays = await getAllTrackPlays(users);
+  const allTrackPlays = users.flatMap(user => user.trackPlays);
+  const uniqueTracks = allTrackPlays
+    .map(play => play.track)
+    .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
+    .map(track => {
+      const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
+      const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
+      const totalPlays = allPlays.length;
+      return {
+        ...track,
+        totalMS,
+        totalPlays,
+      };
+    });
 
-  const uniqueTracks = allTrackPlays.map(play => play.track).filter((track, i, self) => self.findIndex(t => t.id === track.id) === i); // unique tracks
-
-  const trackPlaytimes = await getTrackPlaytimes(allTrackPlays, uniqueTracks);
-
-  const globalPlaytimeMS = Object.values(trackPlaytimes).reduce((acc, time) => acc + time, 0); // ms
+  const globalPlaytimeMS = uniqueTracks.reduce((acc, track) => acc + track.totalMS, 0);
+  const globalListenCount = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
 
   return (
     <main>
@@ -153,29 +88,50 @@ export default async function SpotifyPage() {
 
         {/* Totals tab */}
         <TabsContent tabIndex={-1} value="alla" className="w-full lg:w-8/12">
-          <h3>Totala tiden mellan alla</h3>
+          <h3>Sammantagen statistik</h3>
 
-          <TimeUnitsBar timeMS={globalPlaytimeMS} />
+          <TimeAndPlayCountBar timeMS={globalPlaytimeMS} playCount={globalListenCount} />
 
-          {/* Absolute most listened to track */}
-          <h3 className="mt-2">Mest spelade låtar</h3>
+          {/* Top play count tracks */}
+          <h3 className="mt-3">Flest spelade låtar</h3>
           <div className="flex flex-col gap-y-2 pt-2">
-            {Object.entries(trackPlaytimes).map(([trackId, trackMS], i) => {
-              const track = uniqueTracks.find(track => track.id === trackId);
-              if (!track) return null;
-              const playCount = allTrackPlays.filter(play => play.track.id === trackId).length;
-              return <TrackPlayElement index={i} track={track} trackPlayCount={playCount} listeningTime={parseFloat(trackMS.toString())} username={null} key={track.id + "-" + i} />;
-            })}
+            {uniqueTracks
+              .sort((a, b) => b.totalPlays - a.totalPlays)
+              .map((track, i) => {
+                return (
+                  <TrackPlayElement
+                    index={i}
+                    track={track}
+                    username="alla"
+                    key={track.id + "-" + i + "-play"}
+                  />
+                );
+              })}
           </div>
 
-          {/* Absolute most listened to artist */}
+          {/* Top playtime tracks */}
+          <h3 className="mt-3">Mest lyssnade låtar</h3>
+          <div className="flex flex-col gap-y-2 pt-2">
+            {uniqueTracks
+              .sort((a, b) => b.totalMS - a.totalMS)
+              .map((track, i) => {
+                return (
+                  <TrackPlayElement
+                    index={i}
+                    track={track}
+                    username="alla"
+                    key={track.id + "-" + i + "-time"}
+                  />
+                );
+              })}
+          </div>
+
+          {/* Top artists */}
           {/* TODO */}
         </TabsContent>
 
         {/* User tabs */}
-        {users.map(async (user, i) => {
-          return await getUserTab(user, i, globalPlaytimeMS);
-        })}
+        {users.map((user, i) => <UserTab key={i} user={user} />)}
       </Tabs>
 
       <JumpToTrackHighlightHandler />

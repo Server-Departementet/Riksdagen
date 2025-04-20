@@ -20,7 +20,7 @@
     }
 
     & > main {
-      @apply flex flex-col px-5 w-full items-center flex-1;
+      @apply flex flex-col px-4 w-full items-center flex-1;
     }
 
     & > footer {

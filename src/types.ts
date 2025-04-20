@@ -8,6 +8,8 @@ export type Minister = {
 
 export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };
 
+export type TrackWithStats = Track & { totalMS: number, totalPlays: number };
+
 export type TrackPlay = PrismaTrackPlay & { track: Track };
 
 export type User = {

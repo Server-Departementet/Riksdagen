@@ -1,4 +1,4 @@
-import type { Track } from "@/types";
+import type { TrackWithStats } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -28,18 +28,13 @@ const getImageColor = async (url: string) => {
 
 export async function TrackPlayElement({
   track,
-  trackPlayCount,
-  listeningTime,
   username,
   index
 }: {
-  track: Track,
-  trackPlayCount: number,
-  listeningTime: number,
-  username: string | null
+  track: TrackWithStats,
+  username: string,
   index: number
 }) {
-
   // Track duration
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
@@ -51,15 +46,11 @@ export async function TrackPlayElement({
     :
     "var(--color-zinc-100)";
 
-  const listenedCountText = trackPlayCount > 1 ? "gånger" : "gång";
-  const listenedMin = Math.round(listeningTime / 60000);
+  const prettyPlayCount = `${track.totalPlays} ${track.totalPlays > 1 ? "gånger" : "gång"}`;
+  const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
 
   return (
     <div className="flex flex-row items-center gap-x-0.5 rounded-[4px] bg-zinc-100">
-      <span className="text-lg px-2 text-center">
-        {index + 1}
-      </span>
-
       <div
         className={`flex-1 grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
         style={{ backgroundColor: bgColor }}
@@ -80,12 +71,12 @@ export async function TrackPlayElement({
           {/* Duration (long) */}
           <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
           {/* Listening time (long) */}
-          <p className="hidden sm:block">{username ?? "Alla"} har lyssnat totalt {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+          <p className="hidden sm:block">{username} har lyssnat {prettyPlayCount} ({prettyPlaytime})</p>
 
           {/* Duration (short) */}
           <p className="block sm:hidden">Längd {prettyDuration}</p>
           {/* Listening time (short) */}
-          <p className="block sm:hidden">Lyssnat {trackPlayCount} {listenedCountText} ({listenedMin} min)</p>
+          <p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>
         </div>
 
         {/* Spotify Link */}
@@ -101,6 +92,9 @@ export async function TrackPlayElement({
         {/* Copy link button */}
         <CopyLinkButton className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10" trackId={track.id} />
       </div>
+
+      {/* Index number */}
+      <span className="text-lg px-2 text-center">{index + 1}</span>
     </div>
   );
 }
