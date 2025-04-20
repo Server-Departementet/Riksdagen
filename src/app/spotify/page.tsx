@@ -97,7 +97,8 @@ export default async function SpotifyPage() {
           <div className="flex flex-col gap-y-2 pt-2">
             {uniqueTracks
               .sort((a, b) => b.totalPlays - a.totalPlays)
-              .map((track, i) => {
+              .map(async (track, i) => {
+                "use cache";
                 return (
                   <TrackPlayElement
                     index={i}
@@ -114,7 +115,8 @@ export default async function SpotifyPage() {
           <div className="flex flex-col gap-y-2 pt-2">
             {uniqueTracks
               .sort((a, b) => b.totalMS - a.totalMS)
-              .map((track, i) => {
+              .map(async (track, i) => {
+                "use cache";
                 return (
                   <TrackPlayElement
                     index={i}

@@ -11,6 +11,8 @@ export async function UserTab({
 }: {
   user: User,
 }) {
+  "use cache";
+
   const uniqueTracks: TrackWithStats[] = user.trackPlays
     .map(play => play.track)
     .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // Gets uniques

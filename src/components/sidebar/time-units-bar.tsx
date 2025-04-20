@@ -15,7 +15,9 @@ function timeInManyUnits(timeMS: number) {
   return timeInDifferentUnits;
 }
 
-function TimeUnitsBar({ timeMS, className = "" }: { timeMS: number, className?: string }) {
+async function TimeUnitsBar({ timeMS, className = "" }: { timeMS: number, className?: string }) {
+  "use cache";
+
   const units = timeInManyUnits(timeMS);
 
   return (
@@ -43,7 +45,7 @@ function TimeUnitsBar({ timeMS, className = "" }: { timeMS: number, className?: 
   )
 }
 
-export function TimeAndPlayCountBar(
+export async function TimeAndPlayCountBar(
   {
     timeMS,
     playCount,
@@ -54,6 +56,7 @@ export function TimeAndPlayCountBar(
     className?: string
   }
 ) {
+  "use cache";
   return (
     <div className={`w-full *:w-full flex flex-col justify-start items-center gap-y-2 pt-2 *:flex *:lg:flex-row *:flex-col *:justify-center *:gap-x-2 *:overflow-x-auto ${className}`}>
       {/* Time */}
