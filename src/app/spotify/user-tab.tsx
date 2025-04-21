@@ -34,44 +34,47 @@ export async function UserTab({
     <ParentsTabContent
       tabIndex={-1}
       value={encodeURIComponent(user.name || user.id)}
-      className="w-full lg:w-8/12 flex flex-col gap-y-3"
+      className="w-full lg:w-11/12 flex flex-col gap-y-3"
     >
-      <h3>{possessive(user.name)} statistik</h3>
-
-      <TimeAndPlayCountBar timeMS={totalMS} playCount={totalPlays} />
-
-      {/* Top play count tracks */}
-      <h3 className="mt-3">Flest spelade låtar</h3>
-      <div className="flex flex-col gap-y-2 pt-2">
-        {uniqueTracks
-          .sort((a, b) => b.totalPlays - a.totalPlays)
-          .map((track, i) => {
-            return (
-              <TrackPlayElement
-                index={i}
-                track={track}
-                username={user.name}
-                key={track.id + "-" + i}
-              />
-            );
-          })}
+      <div className="flex flex-col">
+        <h3>{possessive(user.name)} statistik</h3>
+        <TimeAndPlayCountBar timeMS={totalMS} playCount={totalPlays} />
       </div>
 
-      {/* Top playtime tracks */}
-      <h3 className="mt-3">Mest lyssnade låtar</h3>
-      <div className="flex flex-col gap-y-2 pt-2">
-        {uniqueTracks
-          .sort((a, b) => b.totalMS - a.totalMS)
-          .map((track, i) => {
-            return (
-              <TrackPlayElement
-                index={i}
-                track={track}
-                username={user.name}
-                key={track.id + "-" + i + "-time"}
-              />
-            );
-          })}
+      <div className="flex flex-col lg:flex-row gap-y-4">
+        {/* Top play count tracks */}
+        <div className="flex flex-col gap-y-2">
+          <h3>Flest spelade låtar</h3>
+          {uniqueTracks
+            .sort((a, b) => b.totalPlays - a.totalPlays)
+            .map((track, i) => {
+              return (
+                <TrackPlayElement
+                  index={i}
+                  track={track}
+                  username={user.name}
+                  key={track.id + "-" + i}
+                />
+              );
+            })}
+        </div>
+
+        {/* Top playtime tracks */}
+        <div className="flex flex-col gap-y-2">
+          <h3>Mest lyssnade låtar</h3>
+          {uniqueTracks
+            .sort((a, b) => b.totalMS - a.totalMS)
+            .map((track, i) => {
+              return (
+                <TrackPlayElement
+                  index={i}
+                  track={track}
+                  username={user.name}
+                  key={track.id + "-" + i + "-time"}
+                />
+              );
+            })}
+        </div>
       </div>
 
     </ParentsTabContent>
