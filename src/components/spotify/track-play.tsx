@@ -1,3 +1,5 @@
+"use server";
+
 import type { TrackWithStats } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,11 +31,15 @@ const getImageColor = async (url: string) => {
 export async function TrackPlayElement({
   track,
   username,
-  index
+  index,
+  className = "",
+  style = {},
 }: {
   track: TrackWithStats,
   username: string,
-  index: number
+  index: number,
+  className?: string,
+  style?: React.CSSProperties,
 }) {
   "use cache";
 
@@ -52,7 +58,10 @@ export async function TrackPlayElement({
   const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
 
   return (
-    <div className="flex flex-row items-center gap-x-0.5 rounded-[4px] bg-zinc-100">
+    <div
+      className={`flex flex-row items-center gap-x-0.5 rounded-[4px] bg-zinc-100 ${className}`}
+      style={style}
+    >
       <div
         className={`flex-1 grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1`}
         style={{ backgroundColor: bgColor }}

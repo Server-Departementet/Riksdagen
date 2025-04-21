@@ -1,4 +1,4 @@
-"use cache";
+"use server";
 
 import type { TrackWithStats, User } from "@/types";
 import { TimeAndPlayCountBar } from "@/components/sidebar/time-units-bar";
@@ -30,11 +30,14 @@ export async function UserTab({
   const totalMS = uniqueTracks.reduce((acc, track) => acc + track.totalMS, 0); // ms
   const totalPlays = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
 
+  const tracksByPlayCount: TrackWithStats[] = uniqueTracks.sort((a, b) => b.totalPlays - a.totalPlays);
+  const tracksByPlayTime: TrackWithStats[] = uniqueTracks.sort((a, b) => b.totalMS - a.totalMS);
+
   return (
     <ParentsTabContent
       tabIndex={-1}
       value={encodeURIComponent(user.name || user.id)}
-      className="w-full lg:w-11/12 flex flex-col gap-y-3"
+      className="w-full flex flex-col gap-y-3"
     >
       <div className="flex flex-col">
         <h3>{possessive(user.name)} statistik</h3>
@@ -43,10 +46,9 @@ export async function UserTab({
 
       <div className="flex flex-col lg:flex-row gap-y-4">
         {/* Top play count tracks */}
-        <div className="flex flex-col gap-y-2">
+        <div className="flex flex-col flex-1 gap-y-2">
           <h3>Flest spelade låtar</h3>
-          {uniqueTracks
-            .sort((a, b) => b.totalPlays - a.totalPlays)
+          {tracksByPlayCount
             .map((track, i) => {
               return (
                 <TrackPlayElement
@@ -60,10 +62,9 @@ export async function UserTab({
         </div>
 
         {/* Top playtime tracks */}
-        <div className="flex flex-col gap-y-2">
+        <div className="flex flex-col flex-1 gap-y-2">
           <h3>Mest lyssnade låtar</h3>
-          {uniqueTracks
-            .sort((a, b) => b.totalMS - a.totalMS)
+          {tracksByPlayTime
             .map((track, i) => {
               return (
                 <TrackPlayElement

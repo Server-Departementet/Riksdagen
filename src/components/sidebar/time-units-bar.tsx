@@ -3,13 +3,13 @@ import React from "react";
 
 function timeInManyUnits(timeMS: number) {
   const timeInDifferentUnits = {
-    s: { number: timeMS / 1000, long: "sekunder", short: "s", longSingular: "sekund" },
-    min: { number: timeMS / 60000, long: "minuter", short: "min", longSingular: "minut" },
-    h: { number: timeMS / 3600000, long: "timmar", short: "h", longSingular: "timme" },
-    d: { number: timeMS / 86400000, long: "dygn", short: "d", longSingular: "dygn" },
-    w: { number: timeMS / 604800000, long: "veckor", short: "v", longSingular: "vecka" },
-    m: { number: timeMS / 2419200000, long: "månader", short: "m", longSingular: "månad" },
-    y: { number: timeMS / 29030400000, long: "år", short: "å", longSingular: "år" },
+    s: { number: timeMS / 1000, long: "sekunder", short: "s", singular: "sekund" },
+    min: { number: timeMS / 60000, long: "minuter", short: "min", singular: "minut" },
+    h: { number: timeMS / 3600000, long: "timmar", short: "h", singular: "timme" },
+    d: { number: timeMS / 86400000, long: "dygn", short: "d", singular: "dygn" },
+    w: { number: timeMS / 604800000, long: "veckor", short: "v", singular: "vecka" },
+    m: { number: timeMS / 2419200000, long: "månader", short: "m", singular: "månad" },
+    y: { number: timeMS / 29030400000, long: "år", short: "å", singular: "år" },
   };
 
   return timeInDifferentUnits;
@@ -32,7 +32,7 @@ async function TimeUnitsBar({ timeMS, className = "" }: { timeMS: number, classN
                 {unit.number.toString() + " " + unit.long}
 
                 {/* Percent of a whole unit e.g. `0.01% av 1 vecka` as long as the percentage is below 100% */}
-                {unit.number < 1 && <><br />{(unit.number * 100).toFixed(3)}% av {unit.longSingular}</>}
+                {unit.number < 1 && <><br />{(unit.number * 100).toFixed(3)}% av 1 {unit.singular}</>}
               </TooltipContent>
             </Tooltip>
 
@@ -53,7 +53,7 @@ export async function TimeAndPlayCountBar(
   }: {
     timeMS: number,
     playCount: number,
-    className?: string
+    className?: string,
   }
 ) {
   "use cache";
