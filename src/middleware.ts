@@ -11,12 +11,6 @@ export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextReques
     const user = await auth();
 
     if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
-      // The different tabs set the param "person" in the URL
-      // This is used to determine which tab was opened last
-      const person = req.nextUrl.searchParams.get("person");
-      const openedPage = person ? person : "alla";
-      response.headers.set("x-opened-page", openedPage);
-
       return response;
     }
     else {
