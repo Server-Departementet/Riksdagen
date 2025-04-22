@@ -1,14 +1,7 @@
 import type { User } from "@/types";
-import styles from "./spotify.module.css" with {type: "css"};
 import React from "react";
-import Link from "next/link";
-import { UserTab } from "@/app/spotify/user-tab";
-import { TrackPlayElement } from "@/components/spotify/track-play";
-import { TimeAndPlayCountBar } from "@/components/sidebar/time-units-bar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { prisma } from "@/lib/prisma";
 import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
-import { headers } from "next/headers";
 import { clerkClient } from "@clerk/nextjs/server";
 
 const client = clerkClient();
@@ -66,75 +59,129 @@ export default async function SpotifyPage() {
 
   return (
     <main>
-      <h1 className="mt-10">Spotify-Statistik</h1>
+      <h1 className="mt-5 text-4xl">Spotify-Statistik</h1>
 
-      <Tabs className="mt-5 mb-10 w-full lg:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
-        {/* List */}
-        <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-auto overflow-y-hidden">
-          {/* All */}
-          <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}><TabsTrigger tabIndex={-1} className="" value="alla">Totalt</TabsTrigger></Link>
+      {/* Filters */}
+      <aside>
+        {/* Reset */}
 
-          {/* Users */}
-          {users.map(async user => (
-            <Link
-              key={user.id}
-              href={`?person=${encodeURIComponent(user.name || "alla")}`}
-              className={`${styles.TabsTriggerLink} no-globals`}
-            >
-              <TabsTrigger tabIndex={-1} className="" value={encodeURIComponent(user.name || "alla") || user.id}>{user.name || "Saknar namn"}</TabsTrigger>
-            </Link>
-          ))}
-        </TabsList>
+        {/* Which users */}
+        {/* Searchable multi-select inclusive/exclusive. select/unselect all buttons */}
 
-        {/* Totals tab */}
-        <TabsContent tabIndex={-1} value="alla" className="w-full lg:w-8/12">
-          <h3>Sammantagen statistik</h3>
+        {/* What results are shown, tracks | artists | album */}
 
-          <TimeAndPlayCountBar timeMS={globalPlaytimeMS} playCount={globalListenCount} />
+        {/*
+          Track filters
 
-          {/* Top play count tracks */}
-          <h3 className="mt-3">Flest spelade låtar</h3>
-          <div className="flex flex-col gap-y-2 pt-2">
-            {uniqueTracks
-              .sort((a, b) => b.totalPlays - a.totalPlays)
-              .map((track, i) => {
-                return (
-                  <TrackPlayElement
-                    index={i}
-                    track={track}
-                    username="alla"
-                    key={track.id + "-" + i + "-play"}
-                  />
-                );
-              })}
-          </div>
+          Sorting:
+          - playtime (d & a),
+          - play count (d & a),
+          - track length (d & a),
+          - track name (a & d),
+          - artist name (a & d), // Should probably combine with another sorting method
+          - played at. unique tracks mapped to the latest played track play's time (d & a),
+          - plays / time. Play frequency (d & a),
+          - plays / artist. Artist popularity (d & a),
 
-          {/* Top playtime tracks */}
-          <h3 className="mt-3">Mest lyssnade låtar</h3>
-          <div className="flex flex-col gap-y-2 pt-2">
-            {uniqueTracks
-              .sort((a, b) => b.totalMS - a.totalMS)
-              .map((track, i) => {
-                return (
-                  <TrackPlayElement
-                    index={i}
-                    track={track}
-                    username="alla"
-                    key={track.id + "-" + i + "-time"}
-                  />
-                );
-              })}
-          </div>
+          Genre:
+            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
 
-          {/* Top artists */}
-          {/* TODO */}
-        </TabsContent>
+          Artist:
+            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
 
-        {/* User tabs */}
-        {users.map((user, i) => <UserTab key={i} user={user} />)}
-      </Tabs>
+          Album:
+            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
+
+          Listened date range:
+            Slider + inputs on ends. "start date" and "end date"
+
+          Listened count range:
+            Slider + inputs on ends. "min count" and "max count"
+        */}
+
+        {/* 
+          Artist filters
+
+          Sorting:
+          - playtime (d & a),
+          - play count (d & a),
+          - track count (d & a),
+          - artist name (a & d),
+          - played at. latest track play mapped to artists (d & a),
+        */}
+      </aside>
+
+      {/* Result content */}
+      <section>
+      </section>
 
       <JumpToTrackHighlightHandler />
     </main>
   );
 }
+
+// <Tabs className="mt-5 mb-10 w-full lg:w-10/12 flex flex-col items-center" defaultValue={(await headers()).get("x-opened-page") || "alla"}>
+// {/* List */}
+// <TabsList className="w-full mb-1 flex flex-row justify-start overflow-x-auto overflow-y-hidden">
+//   {/* All */}
+//   <Link href={"?person=alla"} className={`${styles.TabsTriggerLink} no-globals`}><TabsTrigger tabIndex={-1} className="" value="alla">Totalt</TabsTrigger></Link>
+//
+//   {/* Users */}
+//   {users.map(async user => (
+//     <Link
+//       key={user.id}
+//       href={`?person=${encodeURIComponent(user.name || "alla")}`}
+//       className={`${styles.TabsTriggerLink} no-globals`}
+//     >
+//       <TabsTrigger tabIndex={-1} className="" value={encodeURIComponent(user.name || "alla") || user.id}>{user.name || "Saknar namn"}</TabsTrigger>
+//     </Link>
+//   ))}
+// </TabsList>
+//
+// {/* Totals tab */}
+// <TabsContent tabIndex={-1} value="alla" className="w-full lg:w-8/12">
+//   <h3>Sammantagen statistik</h3>
+//
+//   <TimeAndPlayCountBar timeMS={globalPlaytimeMS} playCount={globalListenCount} />
+//
+//   {/* Top play count tracks */}
+//   <h3 className="mt-3">Flest spelade låtar</h3>
+//   <div className="flex flex-col gap-y-2 pt-2">
+//     {uniqueTracks
+//       .sort((a, b) => b.totalPlays - a.totalPlays)
+//       .map((track, i) => {
+//         return (
+//           <TrackPlayElement
+//             index={i}
+//             track={track}
+//             username="alla"
+//             key={track.id + "-" + i + "-play"}
+//           />
+//         );
+//       })}
+//   </div>
+//
+//   {/* Top playtime tracks */}
+//   <h3 className="mt-3">Mest lyssnade låtar</h3>
+//   <div className="flex flex-col gap-y-2 pt-2">
+//     {uniqueTracks
+//       .sort((a, b) => b.totalMS - a.totalMS)
+//       .map((track, i) => {
+//         return (
+//           <TrackPlayElement
+//             index={i}
+//             track={track}
+//             username="alla"
+//             key={track.id + "-" + i + "-time"}
+//           />
+//         );
+//       })}
+//   </div>
+//
+//   {/* Top artists */}
+//   {/* TODO */}
+// </TabsContent>
+//
+// {/* User tabs */}
+// {users.map((user, i) => <UserTab key={i} user={user} />)}
+// </Tabs>

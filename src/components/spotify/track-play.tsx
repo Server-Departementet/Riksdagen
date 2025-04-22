@@ -8,7 +8,7 @@ import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml"
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
-import { CopyLinkButton } from "./copy-link";
+import { CopyLinkButton } from "@/components/spotify/copy-link";
 
 // Color cache
 const colorCachePath = "./cache/spotify-color-cache.json";

@@ -1,5 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { SidebarLink } from "./sidebar";
+import { SidebarLink } from "@/components/sidebar/sidebar";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 

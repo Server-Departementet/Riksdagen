@@ -8,6 +8,7 @@ import { ClerkLogin } from "@/components/login-button";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
+import { headers } from "next/headers";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });

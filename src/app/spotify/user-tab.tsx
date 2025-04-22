@@ -44,39 +44,6 @@ export async function UserTab({
         <TimeAndPlayCountBar timeMS={totalMS} playCount={totalPlays} />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-y-4">
-        {/* Top play count tracks */}
-        <div className="flex flex-col flex-1 gap-y-2">
-          <h3>Flest spelade låtar</h3>
-          {tracksByPlayCount
-            .map((track, i) => {
-              return (
-                <TrackPlayElement
-                  index={i}
-                  track={track}
-                  username={user.name}
-                  key={track.id + "-" + i}
-                />
-              );
-            })}
-        </div>
-
-        {/* Top playtime tracks */}
-        <div className="flex flex-col flex-1 gap-y-2">
-          <h3>Mest lyssnade låtar</h3>
-          {tracksByPlayTime
-            .map((track, i) => {
-              return (
-                <TrackPlayElement
-                  index={i}
-                  track={track}
-                  username={user.name}
-                  key={track.id + "-" + i + "-time"}
-                />
-              );
-            })}
-        </div>
-      </div>
 
     </ParentsTabContent>
   );
