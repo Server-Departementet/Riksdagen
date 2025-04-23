@@ -1,13 +1,11 @@
-import type { User } from "@/types";
+import type { User } from "./types";
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
 import { clerkClient } from "@clerk/nextjs/server";
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDownIcon, Trash2Icon } from "lucide-react";
-import { IncludeExcludeItem } from "./components/filter-item";
+import { Trash2Icon } from "lucide-react";
+import { MultiSelectFilterGroup } from "./components/multi-select-filter-group";
 
 const client = clerkClient();
 
@@ -78,34 +76,10 @@ export default async function SpotifyPage() {
           <hr className="my-2" />
 
           {/* User select */}
-          <Popover>
-            {/* Trigger */}
-            <PopoverTrigger asChild>
-              <Button role="combobox" variant={"outline"} type="button">
-                Filtrera användare
-                <ChevronsUpDownIcon />
-              </Button>
-            </PopoverTrigger>
-            {/* Select */}
-            <PopoverContent>
-              <Command>
-                <CommandInput placeholder="Användarnamn" />
-                <CommandList>
-                  <CommandEmpty className="my-4 mb-2 w-full text-center opacity-90">Hittar ingen</CommandEmpty>
-                  <CommandItem><IncludeExcludeItem>Alla</IncludeExcludeItem></CommandItem>
-                  {users.map((user, i) => (
-                    <CommandItem key={`${encodeURIComponent(user.name)}-${i}-user-filter`}>
-                      <IncludeExcludeItem>{user.name}</IncludeExcludeItem>
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {/* Selected users */}
-          <ul id="selected-users-table">
-            <span className="hidden only:block w-full text-sm text-center opacity-80">Visar alla</span>
-          </ul>
+          <MultiSelectFilterGroup
+            items={["Alla", ...users.map(user => user.name)]}
+            emptyText="Hittar ingen"
+          />
 
           <hr className="my-2" />
 

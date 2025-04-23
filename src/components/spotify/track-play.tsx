@@ -1,6 +1,6 @@
 "use server";
 
-import type { TrackWithStats } from "@/types";
+import type { TrackWithStats } from "./types";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
