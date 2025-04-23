@@ -1,10 +1,10 @@
 import type { User } from "./types";
 import React from "react";
 import { prisma } from "@/lib/prisma";
-import { JumpToTrackHighlightHandler } from "@/components/spotify/copy-link";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
+import { JumpToTrackHighlightHandler } from "./components/copy-link";
 import { MultiSelectFilterGroup } from "./components/multi-select-filter-group";
 
 const client = clerkClient();

@@ -1,8 +1,6 @@
 import { createContext } from "react";
 
-
-const FilterContext = createContext<null>(null);
-
+export const FilterContext = createContext<>();
 
 export function FilterContextProvider({ children }: { children: React.ReactNode }) {
   return (

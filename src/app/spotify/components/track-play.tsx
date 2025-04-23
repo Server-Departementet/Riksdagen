@@ -1,6 +1,6 @@
 "use server";
 
-import type { TrackWithStats } from "./types";
+import type { TrackWithStats } from "../types";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml"
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
-import { CopyLinkButton } from "@/components/spotify/copy-link";
+import { CopyLinkButton } from "./copy-link";
 
 // Color cache
 const colorCachePath = "./cache/spotify-color-cache.json";
