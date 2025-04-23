@@ -6,9 +6,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { BanIcon, CheckIcon, ChevronsUpDownIcon } from "lucide-react";
-import { FilterCommandItem } from "@/app/spotify/components/filter-item";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ChevronsUpDownIcon, Trash2Icon } from "lucide-react";
+import { IncludeExcludeItem } from "./components/filter-item";
 
 const client = clerkClient();
 
@@ -45,33 +44,38 @@ export default async function SpotifyPage() {
 
   const users = await Promise.all(clerkUserList.map(async user => getUserData(user.id, user.firstName || user.id)));
 
-  const allTrackPlays = users.flatMap(user => user.trackPlays);
-  const uniqueTracks = allTrackPlays
-    .map(play => play.track)
-    .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
-    .map(track => {
-      const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
-      const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
-      const totalPlays = allPlays.length;
-      return {
-        ...track,
-        totalMS,
-        totalPlays,
-      };
-    });
+  // const allTrackPlays = users.flatMap(user => user.trackPlays);
+  // const uniqueTracks = allTrackPlays
+  //   .map(play => play.track)
+  //   .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
+  //   .map(track => {
+  //     const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
+  //     const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
+  //     const totalPlays = allPlays.length;
+  //     return {
+  //       ...track,
+  //       totalMS,
+  //       totalPlays,
+  //     };
+  //   });
 
-  const globalPlaytimeMS = uniqueTracks.reduce((acc, track) => acc + track.totalMS, 0);
-  const globalListenCount = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
+  // const globalPlaytimeMS = uniqueTracks.reduce((acc, track) => acc + track.totalMS, 0);
+  // const globalListenCount = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
 
   return (
 
     <main className="flex-row justify-start items-start px-0 pb-0">
       {/* Filters */}
-      <aside className="h-full min-w-1/4 flex-1 resize-x flex flex-col">
+      <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 resize-x flex flex-col">
         <form action="" className="p-2 flex flex-col gap-y-2">
-          <Button type="reset">
+          <h3>Filter</h3>
+
+          <Button variant={"link"} type="button" className="w-full hover:text-red-600">
             Återställ alla
+            <Trash2Icon />
           </Button>
+
+          <hr className="my-2" />
 
           {/* User select */}
           <Popover>
@@ -87,13 +91,24 @@ export default async function SpotifyPage() {
               <Command>
                 <CommandInput placeholder="Användarnamn" />
                 <CommandList>
-                  <CommandEmpty>Hittar inget</CommandEmpty>
-                  <FilterCommandItem>Alla</FilterCommandItem>
-                  {users.map(user => <FilterCommandItem key={user.name}>{user.name}</FilterCommandItem>)}
+                  <CommandEmpty className="my-4 mb-2 w-full text-center opacity-90">Hittar ingen</CommandEmpty>
+                  <CommandItem><IncludeExcludeItem>Alla</IncludeExcludeItem></CommandItem>
+                  {users.map((user, i) => (
+                    <CommandItem key={`${encodeURIComponent(user.name)}-${i}-user-filter`}>
+                      <IncludeExcludeItem>{user.name}</IncludeExcludeItem>
+                    </CommandItem>
+                  ))}
                 </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
+          {/* Selected users */}
+          <ul id="selected-users-table">
+            <span className="hidden only:block w-full text-sm text-center opacity-80">Visar alla</span>
+          </ul>
+
+          <hr className="my-2" />
+
         </form>
 
         {/* Reset */}
