@@ -6,8 +6,9 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDownIcon } from "lucide-react";
+import { BanIcon, CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { FilterCommandItem } from "@/app/spotify/components/filter-item";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const client = clerkClient();
 

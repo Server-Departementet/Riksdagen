@@ -10,12 +10,12 @@ export function FilterCommandItem({
   ...props
 }: FilterItemInterface) {
   return (
-    <CommandItem className="flex flex-row justify-between">
+    <CommandItem className="flex flex-row justify-between" {...props}>
       {children}
 
-      <ToggleGroup type="single" defaultValue="">
-        <ToggleGroupItem className="hover:bg-zinc-300" value="exclude"><BanIcon className="text-red-700" /></ToggleGroupItem>
-        <ToggleGroupItem className="hover:bg-zinc-300" value="exclude"><CheckIcon className="text-green-600" /></ToggleGroupItem>
+      <ToggleGroup type="single">
+        <ToggleGroupItem value="exclude" className="text-red-600 hover:bg-zinc-300 data-[state=on]:bg-red-700 data-[state=on]:text-zinc-50"><BanIcon className="text-inherit" /></ToggleGroupItem>
+        <ToggleGroupItem value="include" className="text-green-600 hover:bg-zinc-300 data-[state=on]:bg-green-600 data-[state=on]:text-zinc-50"><CheckIcon className="text-inherit" /></ToggleGroupItem>
       </ToggleGroup>
     </CommandItem>
   );
