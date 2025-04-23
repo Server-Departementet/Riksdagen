@@ -1,4 +1,4 @@
-import type { User } from "./types";
+import type { TrackWithStats, User } from "./types";
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { JumpToTrackHighlightHandler } from "./components/copy-link";
 import { MultiSelectFilterGroup } from "./components/multi-select-filter-group";
+import { FilterContextProvider } from "./filter-context";
 
 const client = clerkClient();
 
@@ -43,7 +44,7 @@ export default async function SpotifyPage() {
   const users = await Promise.all(clerkUserList.map(async user => getUserData(user.id, user.firstName || user.id)));
 
   // const allTrackPlays = users.flatMap(user => user.trackPlays);
-  // const uniqueTracks = allTrackPlays
+  // const uniqueTracks: TrackWithStats[] = allTrackPlays
   //   .map(play => play.track)
   //   .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
   //   .map(track => {
@@ -54,6 +55,7 @@ export default async function SpotifyPage() {
   //       ...track,
   //       totalMS,
   //       totalPlays,
+  //       lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
   //     };
   //   });
 
@@ -61,38 +63,38 @@ export default async function SpotifyPage() {
   // const globalListenCount = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
 
   return (
-
     <main className="flex-row justify-start items-start px-0 pb-0">
-      {/* Filters */}
-      <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 resize-x flex flex-col">
-        <form action="" className="p-2 flex flex-col gap-y-2">
-          <h3>Filter</h3>
+      <FilterContextProvider>
+        {/* Filters */}
+        <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 resize-x flex flex-col">
+          <form action="" className="p-2 flex flex-col gap-y-2">
+            <h3>Filter</h3>
 
-          <Button variant={"link"} type="button" className="w-full hover:text-red-600">
-            Återställ alla
-            <Trash2Icon />
-          </Button>
+            <Button variant={"link"} type="button" className="w-full hover:text-red-600">
+              Återställ alla
+              <Trash2Icon />
+            </Button>
 
-          <hr className="my-2" />
+            <hr className="my-2" />
 
-          {/* User select */}
-          <MultiSelectFilterGroup
-            items={["Alla", ...users.map(user => user.name)]}
-            emptyText="Hittar ingen"
-          />
+            {/* User select */}
+            <MultiSelectFilterGroup
+              items={["Alla", ...users.map(user => user.name)]}
+              emptyText="Hittar ingen"
+            />
 
-          <hr className="my-2" />
+            <hr className="my-2" />
 
-        </form>
+          </form>
 
-        {/* Reset */}
+          {/* Reset */}
 
-        {/* Which users */}
-        {/* Searchable multi-select inclusive/exclusive. select/unselect all buttons */}
+          {/* Which users */}
+          {/* Searchable multi-select inclusive/exclusive. select/unselect all buttons */}
 
-        {/* What results are shown, tracks | artists | album */}
+          {/* What results are shown, tracks | artists | album */}
 
-        {/*
+          {/*
           Track filters
 
           Sorting:
@@ -119,9 +121,12 @@ export default async function SpotifyPage() {
 
           Listened count range:
             Slider + inputs on ends. "min count" and "max count"
+
+          Track length range:
+            Slider + inputs on ends. "min length" and "max length"
         */}
 
-        {/* 
+          {/* 
           Artist filters
 
           Sorting:
@@ -131,60 +136,62 @@ export default async function SpotifyPage() {
           - artist name (a & d),
           - played at. latest track play mapped to artists (d & a),
         */}
-      </aside>
+        </aside>
 
-      {/* Result content */}
-      <section>
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-      </section>
+        {/* Result content */}
+        <section>
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+        </section>
+
+      </FilterContextProvider>
 
       <JumpToTrackHighlightHandler />
     </main>
