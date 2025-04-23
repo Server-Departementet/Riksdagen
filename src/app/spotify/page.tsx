@@ -5,8 +5,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { JumpToTrackHighlightHandler } from "./components/copy-link";
-import { MultiSelectFilterGroup } from "./components/multi-select-filter-group";
-import { FilterContextProvider } from "./filter-context";
+import { FilterContextProvider, ResetFiltersButton } from "./filter-context";
+import { UsersFilter } from "./components/users-filter";
 
 const client = clerkClient();
 
@@ -64,28 +64,19 @@ export default async function SpotifyPage() {
 
   return (
     <main className="flex-row justify-start items-start px-0 pb-0">
-      <FilterContextProvider>
+      <FilterContextProvider users={users}>
         {/* Filters */}
-        <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 resize-x flex flex-col">
-          <form action="" className="p-2 flex flex-col gap-y-2">
-            <h3>Filter</h3>
+        <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 p-2 flex flex-col gap-y-2">
+          <h3>Filter</h3>
 
-            <Button variant={"link"} type="button" className="w-full hover:text-red-600">
-              Återställ alla
-              <Trash2Icon />
-            </Button>
+          <ResetFiltersButton />
 
-            <hr className="my-2" />
+          <hr className="my-2" />
 
-            {/* User select */}
-            <MultiSelectFilterGroup
-              items={["Alla", ...users.map(user => user.name)]}
-              emptyText="Hittar ingen"
-            />
+          {/* User select */}
+          <UsersFilter users={users} />
 
-            <hr className="my-2" />
-
-          </form>
+          <hr className="my-2" />
 
           {/* Reset */}
 

@@ -25,32 +25,36 @@ export type FilterPacket = FilterTracks; // | FilterArtists;
 
 export type FilterTracks = {
   sorting: SortingOption | SortingOption[];
-  genres?: {
-    include?: string[] | null; // Genre ID's
-    exclude?: string[] | null; // Genre ID's
+  users: {
+    include: User[];
+    exclude: User[];
   };
-  artists?: {
-    include?: string[] | null; // Artist ID's
-    exclude?: string[] | null; // Artist ID's
+  genres: {
+    include: string[]; // Genre ID's
+    exclude: string[]; // Genre ID's
   };
-  albums?: {
-    include?: string[] | null; // Album ID's
-    exclude?: string[] | null; // Album ID's
+  artists: {
+    include: string[]; // Artist ID's
+    exclude: string[]; // Artist ID's
+  };
+  albums: {
+    include: string[]; // Album ID's
+    exclude: string[]; // Album ID's
   };
   playedAtRange?: {
-    start?: Date | null; // If null, assume start of time
-    end?: Date | null; // If null, assume end of time
+    start?: Date; // If null, assume start of time
+    end?: Date; // If null, assume end of time
   };
   playCountRange?: {
-    min?: number | null; // If null, assume 0
-    max?: number | null; // If null, assume max value of the dataset
+    min?: number; // If null, assume 0
+    max?: number; // If null, assume max value of the dataset
   };
   playtimeRange?: {
-    min?: number | null; // If null, assume 0
-    max?: number | null; // If null, assume max value of the dataset
+    min?: number; // If null, assume 0
+    max?: number; // If null, assume max value of the dataset
   };
   trackLengthRange?: {
-    min?: number | null; // If null, assume 0
-    max?: number | null; // If null, assume max value of the dataset
+    min?: number; // If null, assume 0
+    max?: number; // If null, assume max value of the dataset
   };
 };
