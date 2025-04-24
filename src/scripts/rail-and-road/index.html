@@ -34,15 +34,27 @@
       }
     }
 
+    #canvas-container {
+      display: flex;
+      flex-flow: column nowrap;
+      align-items: center;
+    }
+
     canvas {
+      position: absolute;
+      top: 2rem;
+
       height: 80dvh;
       min-height: 80dvh;
       width: 80dvh;
       min-width: 80dvh;
       aspect-ratio: 1/1;
-      background-color: #f8feff;
       border-radius: 0.5ch;
+    }
+
+    #base {
       image-rendering: pixelated;
+      background-color: #f8feff;
     }
   </style>
 </head>
@@ -50,8 +62,10 @@
 <body>
   <main>
     Rail & Road
-
-    <canvas></canvas>
+    <div id="canvas-container">
+      <canvas id="base"></canvas>
+      <canvas id="ref"></canvas>
+    </div>
   </main>
 </body>
 

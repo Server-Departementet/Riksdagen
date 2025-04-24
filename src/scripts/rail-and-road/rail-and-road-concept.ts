@@ -1,21 +1,26 @@
 // mathjs is imported in the html
 declare const math: typeof import("mathjs");
 
-const canvas: HTMLCanvasElement = document.querySelector("canvas") as HTMLCanvasElement;
+const canvas: HTMLCanvasElement = document.querySelector("#base") as HTMLCanvasElement;
 const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+const refCanvas: HTMLCanvasElement = document.querySelector("#ref") as HTMLCanvasElement;
+const refCtx: CanvasRenderingContext2D = refCanvas.getContext("2d") as CanvasRenderingContext2D;
 
 /** Size in blocks */
 const size = { w: 50, h: 50 };
+
 /** Size in pixels (each block is 2x2 pixels for details) */
 canvas.width = size.w * 2;
 canvas.height = size.h * 2;
+refCanvas.width = size.w * 20;
+refCanvas.height = size.h * 20;
+ctx.imageSmoothingEnabled = false;
 
 // Checkerboard
 ctx.fillStyle = "whitesmoke";
 for (let i = 0; i < canvas.width * canvas.height; i += 2) {
   const x = (i % canvas.width);
   const y = Math.floor(i / canvas.width);
-  console.log(x % 2, y % 2);
   if (x % 2 === 0) {
     if (y % 2 === 0) {
       ctx.fillRect(x * 2, y * 2, 2, 2);
@@ -86,3 +91,12 @@ ctx.drawImage(quarter.nw, 2, 14);
 ctx.drawImage(quarter.ne, 6, 14);
 ctx.drawImage(quarter.se, 10, 14);
 ctx.drawImage(quarter.sw, 14, 14);
+
+refCtx.strokeStyle = "red";
+refCtx.beginPath();
+refCtx.moveTo(0, 0);
+for (let i = 0; i < refCanvas.width; i++) {
+  
+}
+refCtx.stroke();
+refCtx.closePath();
