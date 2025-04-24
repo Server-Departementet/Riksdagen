@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "cache:colors": "node src/scripts/pre-fill-spotify-colors.ts",
-    "dev:rail-and-road": "tsc --watch src/scripts/rail-and-road-concept.ts"
+    "dev:rail-and-road": "tsc --watch src/scripts/rail-and-road/rail-and-road-concept.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.17.0",

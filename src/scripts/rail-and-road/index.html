@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rail and Road</title>
+
+  <script defer src="./rail-and-road-concept.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-flow: column nowrap;
+      height: 100%;
+
+      color: #fdfdfd;
+      background-color: #1c1c1c;
+
+      &>main {
+        display: flex;
+        flex-flow: column nowrap;
+        align-items: center;
+
+        flex: 1;
+      }
+    }
+
+    canvas {
+      height: 80dvh;
+      min-height: 80dvh;
+      width: 80dvh;
+      min-width: 80dvh;
+      aspect-ratio: 1/1;
+      background-color: #f8feff;
+      border-radius: 1ch;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    Rail & Road
+
+    <canvas></canvas>
+  </main>
+</body>
+
+</html>
