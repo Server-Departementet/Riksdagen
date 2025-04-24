@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
-              <SidebarLink href="/rail-and-road">Minecraft Rail & Road Generator</SidebarLink>
+              <SidebarLink href="/rals-och-vag">Räls- och väg-generator</SidebarLink>
               <ExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ExternalLink>
               <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Viggos Radio</ExternalLink>
             </Sidebar>
