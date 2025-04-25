@@ -6,14 +6,12 @@ import { JumpToTrackHighlightHandler } from "./components/copy-link";
 import { FilterContextProvider, ResetFiltersButton } from "./filter-context";
 import { UsersFilter } from "./components/users-filter";
 import { TrackElement } from "./components/track-element";
+import { trackSortingFunctions, validTrackSortingFunctions } from "./functions/track-sorting";
 
 const client = clerkClient();
 
 async function getUserData(userId: string, username: string) {
   const dbTrackPlaysForUser = await prisma.trackPlay.findMany({
-    orderBy: {
-      playedAt: "desc",
-    },
     where: {
       userId: userId,
     },
@@ -36,10 +34,19 @@ async function getUserData(userId: string, username: string) {
   return user;
 }
 
-export default async function SpotifyPage() {
+export default async function SpotifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort: string }>;
+}) {
   const clerkUserList = (await (await client).users.getUserList()).data.filter(user => user.publicMetadata.role === "minister").reverse();
 
   const users = await Promise.all(clerkUserList.map(async user => getUserData(user.id, user.firstName || user.id)));
+
+  const params = await searchParams;
+
+  const sortType = validTrackSortingFunctions.find(type => type === params.sort) || "default";
+  const sortFunction: (a: TrackWithStats, b: TrackWithStats) => number = trackSortingFunctions[sortType];
 
   const allTrackPlays = users.flatMap(user => user.trackPlays);
   const uniqueTracks: TrackWithStats[] = allTrackPlays
@@ -55,7 +62,8 @@ export default async function SpotifyPage() {
         totalPlays,
         lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
       };
-    });
+    })
+    .sort(sortFunction);
 
   return (
     <main className="flex flex-row justify-start items-start px-0 py-0 *:h-[calc(100dvh-80px)]">
@@ -138,7 +146,7 @@ export default async function SpotifyPage() {
         </aside>
 
         {/* Result content */}
-        <section id="filtered-output-list" className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2">
+        <section id="filtered-output-list" className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2 pb-15">
           <h2 className="py-5">Spotify-statistik</h2>
           {uniqueTracks.map((track, i) =>
             <TrackElement
