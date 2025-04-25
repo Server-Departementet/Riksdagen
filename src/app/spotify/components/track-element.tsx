@@ -54,10 +54,12 @@ export async function TrackElement({
 
   return (
     <div
-      className={`flex flex-row items-center gap-x-0.5 rounded-[4px] h-[128px] bg-zinc-100 ${className}`}
+      id={`${track.id}-outer`}
+      className={`flex flex-row items-center gap-x-0.5 rounded-[4px] min-h-[128px] bg-zinc-100 ${className}`}
       style={style}
     >
       <InnerTrackElement
+        className="flex-1"
         bgColor={bgColor}
         track={track}
         minutes={minutes}

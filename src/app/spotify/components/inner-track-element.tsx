@@ -7,6 +7,7 @@ import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import { CopyLinkButton } from "./copy-link";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function InnerTrackElement({
   track,
@@ -29,9 +30,37 @@ export function InnerTrackElement({
   username: string,
   className?: string,
 }) {
-  return (
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const domRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollEvent = useCallback(() => {
+    if (!domRef.current) return;
+    const rect = domRef.current.getBoundingClientRect();
+    const isInViewport = rect.top >= -256 && rect.bottom <= window.innerHeight + 256;
+    setIsVisible(isInViewport);
+  }, [domRef]);
+
+  useEffect(() => {
+    if (!domRef.current) {
+      domRef.current = document.getElementById(`${track.id}-outer`) as HTMLDivElement;
+    }
+
+    const list = document.getElementById("filtered-output-list");
+    if (!list) return;
+
+    list.addEventListener("scroll", handleScrollEvent, { passive: true });
+    handleScrollEvent(); // Check if element is in viewport on mount
+
+    return () => {
+      list.removeEventListener("scroll", handleScrollEvent);
+      if (domRef.current) domRef.current = null;
+    }
+  }, [handleScrollEvent, track.id]);
+
+  return isVisible ? (
     <div
-      className={`flex-1 grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1 ${className}`}
+      id={`${track.id}-inner`}
+      className={`grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1 ${className}`}
       style={{ backgroundColor: bgColor }}
     >
       {/* ID to jump to. Offset to give more control */}
@@ -72,4 +101,5 @@ export function InnerTrackElement({
       <CopyLinkButton className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10" trackId={track.id} />
     </div>
   )
+    : <span id={`${track.id}-inner`} className={`${className}`}></span>;
 }

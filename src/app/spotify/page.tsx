@@ -2,8 +2,6 @@ import type { TrackWithStats, User } from "./types";
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
-import { Button } from "@/components/ui/button";
-import { Trash2Icon } from "lucide-react";
 import { JumpToTrackHighlightHandler } from "./components/copy-link";
 import { FilterContextProvider, ResetFiltersButton } from "./filter-context";
 import { UsersFilter } from "./components/users-filter";
@@ -142,7 +140,7 @@ export default async function SpotifyPage() {
         </aside>
 
         {/* Result content */}
-        <section className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2">
+        <section id="filtered-output-list" className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2">
           <h2 className="py-5">Spotify-statistik</h2>
           {uniqueTracks.map((track, i) =>
             <TrackElement
