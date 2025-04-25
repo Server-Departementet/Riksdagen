@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { FilterPacket, User } from "./types";
 import { createContext, useCallback, useContext, useState } from "react";
 import { Trash2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 let defaultFilter: FilterPacket = {
   sorting: {
@@ -39,10 +40,18 @@ export function FilterContextProvider({ users, children }: { users: User[], chil
 }
 
 export function ResetFiltersButton() {
-  const { setFilter } = useFilterContext();
+  const router = useRouter();
+
   const handleClick = useCallback(() => {
-    setFilter(defaultFilter);
-  }, [setFilter]);
+    if (typeof window === "undefined") return;
+
+    // Strip arguments from URL
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    params.delete("sort");
+    window.location.search = params.toString();
+    router.refresh();
+  }, [router]);
 
   return (
     <Button onClick={handleClick} variant={"link"} type="button" className="w-full hover:text-red-600">
