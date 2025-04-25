@@ -7,6 +7,7 @@ import { Trash2Icon } from "lucide-react";
 import { JumpToTrackHighlightHandler } from "./components/copy-link";
 import { FilterContextProvider, ResetFiltersButton } from "./filter-context";
 import { UsersFilter } from "./components/users-filter";
+import { TrackElement } from "./components/track-element";
 
 const client = clerkClient();
 
@@ -43,30 +44,31 @@ export default async function SpotifyPage() {
 
   const users = await Promise.all(clerkUserList.map(async user => getUserData(user.id, user.firstName || user.id)));
 
-  // const allTrackPlays = users.flatMap(user => user.trackPlays);
-  // const uniqueTracks: TrackWithStats[] = allTrackPlays
-  //   .map(play => play.track)
-  //   .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
-  //   .map(track => {
-  //     const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
-  //     const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
-  //     const totalPlays = allPlays.length;
-  //     return {
-  //       ...track,
-  //       totalMS,
-  //       totalPlays,
-  //       lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
-  //     };
-  //   });
-
-  // const globalPlaytimeMS = uniqueTracks.reduce((acc, track) => acc + track.totalMS, 0);
-  // const globalListenCount = uniqueTracks.reduce((acc, track) => acc + track.totalPlays, 0);
+  const allTrackPlays = users.flatMap(user => user.trackPlays);
+  const uniqueTracks: TrackWithStats[] = allTrackPlays
+    .map(play => play.track)
+    .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
+    .map(track => {
+      const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
+      const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
+      const totalPlays = allPlays.length;
+      return {
+        ...track,
+        totalMS,
+        totalPlays,
+        lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
+      };
+    });
 
   return (
-    <main className="flex-row justify-start items-start px-0 pb-0">
+    <main className="flex flex-row justify-start items-start px-0 py-0 *:h-[calc(100dvh-80px)]">
+      <style>{`
+        footer{display:none;}
+      `}</style>
+
       <FilterContextProvider users={users}>
         {/* Filters */}
-        <aside className="h-full min-w-1/4 px-3 pt-3 flex-1 p-2 flex flex-col gap-y-2">
+        <aside className="h-full min-h-full min-w-1/4 max-w-1/4 px-3 pt-3 flex-1 p-2 flex flex-col gap-y-2">
           <h3>Filter</h3>
 
           <ResetFiltersButton />
@@ -78,6 +80,16 @@ export default async function SpotifyPage() {
 
           <hr className="my-2" />
 
+          {/* Spacer */}
+          <span className="flex-1"></span>
+
+          <p className="text-center text-sm opacity-80">© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>
+
+
+          {/* 
+            Notes:
+          */}
+
           {/* Reset */}
 
           {/* Which users */}
@@ -86,100 +98,60 @@ export default async function SpotifyPage() {
           {/* What results are shown, tracks | artists | album */}
 
           {/*
-          Track filters
+            Track filters
 
-          Sorting:
-          - playtime (d & a),
-          - play count (d & a),
-          - track length (d & a),
-          - track name (a & d),
-          - artist name (a & d), // Should probably combine with another sorting method
-          - played at. unique tracks mapped to the latest played track play's time (d & a),
-          - plays / time. Play frequency (d & a),
-          - plays / artist. Artist popularity (d & a),
+            Sorting:
+            - playtime (d & a),
+            - play count (d & a),
+            - track length (d & a),
+            - track name (a & d),
+            - artist name (a & d), // Should probably combine with another sorting method
+            - played at. unique tracks mapped to the latest played track play's time (d & a),
+            - plays / time. Play frequency (d & a),
+            - plays / artist. Artist popularity (d & a),
 
-          Genre:
-            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
+            Genre:
+              Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
 
-          Artist:
-            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
+            Artist:
+              Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
 
-          Album:
-            Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
+            Album:
+              Searchable multi-select. Check as inclusive or exclusive. "select/unselect all" buttons
 
-          Listened date range:
-            Slider + inputs on ends. "start date" and "end date"
+            Listened date range:
+              Slider + inputs on ends. "start date" and "end date"
 
-          Listened count range:
-            Slider + inputs on ends. "min count" and "max count"
+            Listened count range:
+              Slider + inputs on ends. "min count" and "max count"
 
-          Track length range:
-            Slider + inputs on ends. "min length" and "max length"
-        */}
+            Track length range:
+              Slider + inputs on ends. "min length" and "max length"
+          */}
 
           {/* 
-          Artist filters
+            Artist filters
 
-          Sorting:
-          - playtime (d & a),
-          - play count (d & a),
-          - track count (d & a),
-          - artist name (a & d),
-          - played at. latest track play mapped to artists (d & a),
-        */}
+            Sorting:
+            - playtime (d & a),
+            - play count (d & a),
+            - track count (d & a),
+            - artist name (a & d),
+            - played at. latest track play mapped to artists (d & a),
+          */}
         </aside>
 
         {/* Result content */}
-        <section>
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Velit incidunt est sunt quos inventore, adipisci nostrum blanditiis, repudiandae minima quam error beatae natus iusto eos perferendis nemo, neque vero! A.
+        <section className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2">
+          <h2 className="py-5">Spotify-statistik</h2>
+          {uniqueTracks.map((track, i) =>
+            <TrackElement
+              index={i}
+              track={track}
+              username="alla"
+              key={track.id + "-" + i + "-play"}
+            />
+          )}
         </section>
 
       </FilterContextProvider>
