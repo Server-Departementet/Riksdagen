@@ -48,6 +48,7 @@ export function InnerTrackElement({
     const list = document.getElementById("filtered-output-list");
     if (!list) return;
 
+    window.addEventListener("resize", handleScrollEvent, { passive: true });
     list.addEventListener("scroll", handleScrollEvent, { passive: true });
     handleScrollEvent(); // Check if element is in viewport on mount
 

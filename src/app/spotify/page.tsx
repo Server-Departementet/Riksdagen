@@ -25,7 +25,6 @@ async function getUserData(userId: string, username: string) {
         }
       },
     },
-    ...(process.env.NODE_ENV !== "production" ? { take: 100 } : {})
   });
 
   const user: User = {
@@ -66,8 +65,7 @@ export default async function SpotifyPage() {
 
       <FilterContextProvider users={users}>
         {/* Filters */}
-        <aside className="h-full min-h-full min-w-1/4 max-w-1/4 px-3 pt-3 flex-1 p-2 flex flex-col gap-y-2">
-          <h3>Filter</h3>
+        <aside className="h-full min-h-full min-w-1/4 max-w-1/4 px-3 pt-3 flex-1 p-2 flex flex-col gap-y-2">        <h3>Filter</h3>
 
           <ResetFiltersButton />
 
@@ -146,7 +144,7 @@ export default async function SpotifyPage() {
             <TrackElement
               index={i}
               track={track}
-              username="alla"
+              username="Alla"
               key={track.id + "-" + i + "-play"}
             />
           )}
