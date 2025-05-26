@@ -1,14 +1,17 @@
 "use client";
 
-import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { RailsAndRoadCanvas } from "./client";
+
+// import * as THREE from "three";
+// import { Canvas } from "@react-three/fiber";
 
 export default function RailsAndRoadsPage() {
   return (
     <main>
-      <Canvas>
+      <RailsAndRoadCanvas />
+      {/* <Canvas>
         <ambientLight intensity={0.5} />
-      </Canvas>
+      </Canvas> */}
     </main >
   );
 }
