@@ -3,7 +3,17 @@ import { TrackSortingFunctions } from "./functions/track-sorting";
 
 export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };
 
-export type TrackWithStats = Track & { totalMS: number, totalPlays: number, lastPlayedAt: Date };
+export type TrackWithStats = Track & {
+  totalMS: number;
+  totalPlays: number;
+  lastPlayedAt: Date;
+};
+
+export type TrackWithMeta = Track & {
+  totalPlays: number;
+  totalMS: number;
+  playsPerUser: Record<string, number>;
+};
 
 export type TrackPlay = PrismaTrackPlay & { track: Track };
 
@@ -24,7 +34,7 @@ export interface SortingOption {
 export type FilterPacket = FilterTracks; // | FilterArtists;
 
 export type FilterTracks = {
-  sorting: SortingOption | SortingOption[];
+  sorting: SortingOption;
   users: {
     include: User[];
     exclude: User[];

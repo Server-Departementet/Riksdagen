@@ -7,28 +7,15 @@ import { FilterContextProvider, ResetFiltersButton } from "./filter-context";
 import { UsersFilter } from "./components/users-filter";
 import { TrackElement } from "./components/track-element";
 import { trackSortingFunctions, validTrackSortingFunctions } from "./functions/track-sorting";
+import { FilterOutput } from "./components/filter-output";
 
 const client = clerkClient();
 
 async function getUserData(userId: string, username: string) {
-  const dbTrackPlaysForUser = await prisma.trackPlay.findMany({
-    where: {
-      userId: userId,
-    },
-    include: {
-      track: {
-        include: {
-          artists: true,
-          album: true,
-        }
-      },
-    },
-  });
-
   const user: User = {
     id: userId,
     name: username,
-    trackPlays: dbTrackPlaysForUser,
+    trackPlays: [],
   }
 
   return user;
@@ -45,28 +32,28 @@ export default async function SpotifyPage({
 
   const params = await searchParams;
 
-  const sortType = validTrackSortingFunctions.find(type => type === params.sort) || "default";
-  const sortFunction: (a: TrackWithStats, b: TrackWithStats) => number = trackSortingFunctions[sortType];
+  // const sortType = validTrackSortingFunctions.find(type => type === params.sort) || "default";
+  // const sortFunction: (a: TrackWithStats, b: TrackWithStats) => number = trackSortingFunctions[sortType];
 
-  const allTrackPlays = users.flatMap(user => user.trackPlays);
-  const uniqueTracks: TrackWithStats[] = allTrackPlays
-    .map(play => play.track)
-    .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
-    .map(track => {
-      const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
-      const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
-      const totalPlays = allPlays.length;
-      return {
-        ...track,
-        totalMS,
-        totalPlays,
-        lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
-      };
-    })
-    .sort(sortFunction);
+  // const allTrackPlays = users.flatMap(user => user.trackPlays);
+  // const uniqueTracks: TrackWithStats[] = allTrackPlays
+  //   .map(play => play.track)
+  //   .filter((track, i, self) => self.findIndex(t => t.id === track.id) === i) // unique tracks
+  //   .map(track => {
+  //     const allPlays = allTrackPlays.filter(play => play.track.id === track.id);
+  //     const totalMS = allPlays.reduce((acc, play) => acc + play.track.duration, 0);
+  //     const totalPlays = allPlays.length;
+  //     return {
+  //       ...track,
+  //       totalMS,
+  //       totalPlays,
+  //       lastPlayedAt: allPlays.sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime())[0].playedAt,
+  //     };
+  //   })
+  //   .sort(sortFunction);
 
   return (
-    <main className="flex flex-row justify-start items-start px-0 py-0 *:h-[calc(100dvh-80px)]">
+    <main className="flex flex-row justify-center items-start px-0 py-0 *:h-[calc(100dvh-80px)]">
       <style>{`
         footer{display:none;}
       `}</style>
@@ -148,14 +135,7 @@ export default async function SpotifyPage({
         {/* Result content */}
         <section id="filtered-output-list" className="overflow-y-auto w-full lg:w-3/5 px-2 flex flex-col gap-y-2 pb-15">
           <h2 className="py-5">Spotify-statistik</h2>
-          {uniqueTracks.map((track, i) =>
-            <TrackElement
-              index={i}
-              track={track}
-              username="Alla"
-              key={track.id + "-" + i + "-play"}
-            />
-          )}
+          <FilterOutput />
         </section>
 
       </FilterContextProvider>

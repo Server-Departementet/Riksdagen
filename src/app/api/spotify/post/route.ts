@@ -1,5 +1,9 @@
 "use server";
 
+/** 
+ * This API endpoint gets called by the Spotify cron job running on an always-on server external to the Next.js app.
+ */
+
 import { clerkClient } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { createHash } from "node:crypto";
