@@ -34,26 +34,3 @@ export function CopyLinkButton({ trackId, className = "" }: { trackId: string, c
     </Button>
   );
 }
-
-/** When jumping to a track via its link, this client side element handles the reinforcing highlight of that track */
-export function JumpToTrackHighlightHandler() {
-  if (typeof window === "undefined") return <></>
-
-  const trackId = new URL(window.location.href).searchParams.get("track");
-  if (!trackId) return <></>;
-
-  const jumpElement = document.getElementById(trackId);
-  if (!jumpElement) return <></>;
-
-  const trackElement = jumpElement.parentElement;
-  if (!trackElement) return <></>;
-
-  jumpElement.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  trackElement.classList.add("pulse-animation");
-  setTimeout(() => {
-    trackElement.classList.remove("pulse-animation");
-  }, 4500);
-
-  return <></>;
-}

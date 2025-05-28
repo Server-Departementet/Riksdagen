@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { FilterPacket, User } from "./types";
+import type { FilterPacket, User } from "@/app/spotify/types";
 import { createContext, useCallback, useContext, useState } from "react";
 import { Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,8 +26,8 @@ export function useFilterContext() {
   return { filter, setFilter };
 }
 
-export function FilterContextProvider({ users, children }: { users: User[], children: React.ReactNode }) {
-  defaultFilter = { ...defaultFilter, users: { include: users, exclude: [] } };
+export default function FilterContextProvider({ users, children }: { users: User[], children: React.ReactNode }) {
+  defaultFilter = { ...defaultFilter, users: { include: users.map(u => u.id), exclude: [] } };
   const [activeFilter, setActiveFilter] = useState<FilterPacket>(defaultFilter);
 
   return (

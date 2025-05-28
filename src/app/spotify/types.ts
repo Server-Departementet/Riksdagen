@@ -1,43 +1,40 @@
-import type { Genre as PrismaGenre, Album as PrismaAlbum, Artist as PrismaArtist, Track as PrismaTrack, TrackPlay as PrismaTrackPlay } from "@prisma/client";
+import type {
+  Genre as PrismaGenre,
+  Album as PrismaAlbum,
+  Artist as PrismaArtist,
+  Track as PrismaTrack,
+  TrackPlay as PrismaTrackPlay
+} from "@prisma/client";
 import { TrackSortingFunctions } from "./functions/track-sorting";
 
+// Extend Prisma types to include relations
 export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };
+export type TrackPlay = PrismaTrackPlay & { track: Track };
+export type Genre = PrismaGenre;
 
-export type TrackWithStats = Track & {
-  totalMS: number;
-  totalPlays: number;
-  lastPlayedAt: Date;
-};
+export type User = {
+  name: string; // User's name
+  id: string; // User's ID provided by Clerk
+}
 
 export type TrackWithMeta = Track & {
   totalPlays: number;
   totalMS: number;
   playsPerUser: Record<string, number>;
-};
-
-export type TrackPlay = PrismaTrackPlay & { track: Track };
-
-export type Genre = PrismaGenre;
-
-export type User = {
-  name: string;
-  id: string;
-  trackPlays: TrackPlay[];
+  color?: string; // Color extracted from the track image, when missing it uses a default fallback
 };
 
 export interface SortingOption {
-  label: string;
-  sortBy: TrackSortingFunctions;
+  label: string; // User facing label for the sorting option
+  sortBy: TrackSortingFunctions; // String literal type for sorting function, (a,b) => number functions are indexed by this string
   reverse?: boolean;
 }
 
-export type FilterPacket = FilterTracks; // | FilterArtists;
-
-export type FilterTracks = {
+export type FilterPacket = {
   sorting: SortingOption;
   users: {
-    include: User[];
-    exclude: User[];
+    include: string[]; // User ID's
+    exclude: string[]; // User ID's
   };
   genres: {
     include: string[]; // Genre ID's

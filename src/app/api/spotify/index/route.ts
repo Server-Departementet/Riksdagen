@@ -57,16 +57,11 @@ export async function POST(req: NextRequest) {
     ) as TrackSortingFunctions
   ];
 
-  const resultingTracks = allTracksWithMeta
+  const trackIds = allTracksWithMeta
     .sort(sortFunction)
     .map(track => {
       return track.id;
     });
 
-  const res = {
-    trackIds: resultingTracks,
-    // tracks: [] as string[],
-  }
-
-  return NextResponse.json(res);
+  return NextResponse.json({ trackIds });
 }

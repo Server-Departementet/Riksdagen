@@ -1,12 +1,12 @@
 "use client";
 
-import type { TrackWithStats } from "../types";
+import type { TrackWithMeta } from "@/app/spotify/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
-import { CopyLinkButton } from "./copy-link";
+import { CopyLinkButton } from "@/app/spotify/components/copy-link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function InnerTrackElement({
@@ -20,7 +20,7 @@ export function InnerTrackElement({
   username,
   className = "",
 }: {
-  track: TrackWithStats,
+  track: TrackWithMeta,
   bgColor: string,
   minutes: number,
   seconds: number,

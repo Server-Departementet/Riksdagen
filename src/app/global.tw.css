@@ -192,6 +192,10 @@
 }
 
 @theme inline {
+  /* md - 768px */
+  /* --breakpoint-midi: 1082px; */
+  /* lg - 1024px */
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-alt-foreground: var(--alt-foreground);

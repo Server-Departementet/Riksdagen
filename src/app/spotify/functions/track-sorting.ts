@@ -1,7 +1,7 @@
-import type { TrackWithMeta } from "../types";
+import type { TrackWithMeta } from "@/app/spotify/types";
 
-export type TrackSortingFunctions = "playtime" | "play_count" | "track_length" | "track_name" | "artist_name" | "played_at" | "default";
-export const validTrackSortingFunctions = ["playtime", "play_count", "track_length", "track_name", "artist_name", "played_at", "default"] as const;
+export type TrackSortingFunctions = "playtime" | "play_count" | "track_length" | "track_name" | "artist_name" | "default";
+export const validTrackSortingFunctions = ["playtime", "play_count", "track_length", "track_name", "artist_name", "default"] as const;
 
 export const trackSortingFunctions: Record<TrackSortingFunctions, (a: TrackWithMeta, b: TrackWithMeta) => number> = {
   default: (a: TrackWithMeta, b: TrackWithMeta) => trackSortingFunctions["playtime"](a, b),
@@ -15,5 +15,4 @@ export const trackSortingFunctions: Record<TrackSortingFunctions, (a: TrackWithM
     const bArtists = b.artists.map((artist) => artist.name).join(", ");
     return aArtists.localeCompare(bArtists);
   },
-  played_at: (a: TrackWithMeta, b: TrackWithMeta) => a.lastPlayedAt.getTime() - b.lastPlayedAt.getTime(),
 };
