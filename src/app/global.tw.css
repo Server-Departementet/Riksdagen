@@ -4,6 +4,11 @@
 @plugin "tailwindcss-animate";
 
 @layer base {
+  :root {
+    --header-height: 80px;
+    --screen-height: calc(100vh - var(--header-height));
+  }
+
   * {
     @apply font-thin antialiased;
     font-family: "Open Sans", sans-serif;

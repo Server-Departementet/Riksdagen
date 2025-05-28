@@ -41,7 +41,7 @@ export default function TrackList() {
   }, [filter, hasFetchedIndex]);
 
   return (
-    <ul className="w-1/2 flex-1 lg:flex-none overflow-y-auto p-4 first:mt-5 flex flex-col gap-y-4">
+    <ul className="w-1/2 flex-1 lg:flex-none overflow-y-auto p-4 first:mt-5 flex flex-col gap-y-3">
       {trackIndices.length > 0 &&
         trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} />)
       }

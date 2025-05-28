@@ -24,7 +24,7 @@ export default async function SpotifyPage() {
       <style>{`footer{display:none;}`}</style>
 
       <FilterContextProvider users={users}>
-        <section className="max-h-[calc(100dvh-80px)] w-full lg:w-11/12 flex flex-row gap-x-10">
+        <section className="max-h-(--screen-height) min-h-(--screen-height) h-(--screen-height) *:min-h-[inherit] *:h-[inherit] w-full lg:w-11/12 flex flex-row gap-x-10">
           <FilterPanel users={users} />
 
           <TrackList />

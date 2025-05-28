@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: {
     <html lang="sv">
       <body>
         {/* Header */}
-        <header className="z-40 py-3 px-5 h-20">
+        <header className="z-40 py-3 px-5 h-(--header-height)">
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-global">
             {/* Icon */}

@@ -69,7 +69,7 @@ export function UsersFilter({ users }: { users: User[] }) {
   }, [rerender, setFilter]);
 
   return (
-    <section className="flex flex-col justify-start items-center">
+    <div className="flex flex-col justify-start items-center">
       <h5 className="text-center">Användare</h5>
 
       <ul className="w-full flex flex-col gap-y-1">
@@ -104,6 +104,6 @@ export function UsersFilter({ users }: { users: User[] }) {
 
       {/* Clear */}
       <Button onClick={handleClear} className="text-sm opacity-80" variant={"link"} type="button">Rensa</Button>
-    </section >
+    </div >
   );
 }
