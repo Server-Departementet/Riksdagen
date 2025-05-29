@@ -3,6 +3,12 @@
 import { useFilterContext } from "@/app/spotify/filter-context";
 import { useEffect, useState } from "react";
 import { TrackElement } from "@/app/spotify/components/track-element";
+import { TrackWithMeta } from "@/app/spotify/types";
+
+if (typeof window !== "undefined" && !localStorage.getItem("trackCache")) localStorage.setItem("trackCache", "{}");
+const trackCache: Record<string, TrackWithMeta> = JSON.parse(
+  typeof window !== "undefined" ? localStorage.getItem("trackCache") || "{}" : "{}"
+);
 
 export default function TrackList() {
   const { filter } = useFilterContext();
@@ -58,7 +64,7 @@ export default function TrackList() {
       <p className="text-sm text-gray-500">{trackIndices.length} resultat</p>
       {trackIndices.length > 0 ?
         // Track element handles loading state internally
-        trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} />)
+        trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} cachedTrackData={trackCache[id]} />)
         :
         // Skeletons while fetching indices
         new Array(20).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)

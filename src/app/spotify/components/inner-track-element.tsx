@@ -10,16 +10,18 @@ const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
 
 export function InnerTrackElement({
   trackId,
-  waitingForId = false,
   index,
+  waitingForId = false,
+  cachedTrackData = null,
 }: {
   trackId: string;
-  waitingForId?: boolean;
   index: number;
+  waitingForId?: boolean;
+  cachedTrackData?: TrackWithMeta | null;
 }) {
   const [isVisible, setIsVisible] = useState<boolean>(index < 8);
   const [waitingForTrackData, setWaitingForTrackData] = useState<boolean>(true);
-  const [trackData, setTrackData] = useState<TrackWithMeta | null>(null);
+  const [trackData, setTrackData] = useState<TrackWithMeta | null>(cachedTrackData || null);
   const domRef = useRef<HTMLDivElement>(null);
 
   // Cull on scroll
@@ -59,6 +61,14 @@ export function InnerTrackElement({
       return;
     }
 
+    // If trackData is cached, use it
+    const cachedTrack = JSON.parse(localStorage.getItem("trackCache") || "{}")[trackId];
+    if (cachedTrack) {
+      setTrackData(cachedTrack);
+      setWaitingForTrackData(false);
+      return;
+    }
+
     // Fetch track data
     setWaitingForTrackData(true);
     fetch(`/api/spotify/get?tracks=${trackId}`, { method: "GET" })
@@ -69,6 +79,10 @@ export function InnerTrackElement({
           setTrackData(null);
         } else {
           setTrackData(data.tracks[0]);
+          localStorage.setItem("trackCache", JSON.stringify({
+            ...JSON.parse(localStorage.getItem("trackCache") || "{}"),
+            [trackId]: data.tracks[0],
+          }));
         }
       })
       .catch(err => {

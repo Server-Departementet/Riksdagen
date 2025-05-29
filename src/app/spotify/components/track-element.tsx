@@ -1,15 +1,18 @@
 "use client";
 
 import { InnerTrackElement } from "@/app/spotify/components/inner-track-element";
+import { TrackWithMeta } from "@/app/spotify/types";
 
 export function TrackElement({
   trackId,
   index,
   waitingForId = false,
+  cachedTrackData = null,
 }: {
   trackId: string,
   index: number,
   waitingForId?: boolean,
+  cachedTrackData?: TrackWithMeta | null,
 }) {
   return (
     <div
@@ -17,8 +20,9 @@ export function TrackElement({
     >
       <InnerTrackElement
         trackId={trackId}
-        waitingForId={waitingForId}
         index={index}
+        waitingForId={waitingForId}
+        cachedTrackData={cachedTrackData}
       />
 
       {/* Index number */}
