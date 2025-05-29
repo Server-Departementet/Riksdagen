@@ -26,7 +26,7 @@ export default async function SpotifyPage() {
       <FilterContextProvider users={users}>
         <section className={`
           md:max-h-(--screen-height) md:min-h-(--screen-height) md:h-(--screen-height) md:*:min-h-[inherit] md:*:h-[inherit] 
-          w-full lg:w-11/12 
+          w-full 
           flex flex-col md:flex-row
           items-center md:justify-center
         `}>
@@ -34,7 +34,7 @@ export default async function SpotifyPage() {
 
           <TrackList />
 
-          <span className="hidden md:block flex-1 min-w-[20ch] max-w-11/12 md:max-w-[30ch]"></span>
+          <span className="hidden xl:block flex-1 min-w-[20ch] max-w-11/12 md:max-w-[30ch]"></span>
         </section>
       </FilterContextProvider>
     </main>

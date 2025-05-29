@@ -52,7 +52,7 @@ export default function TrackList() {
       className={`
         max-h-[80dvh] md:max-h-auto
         h-[80dvh] md:h-auto
-        w-full md:w-1/2
+        w-full lg:w-1/2
         p-4 first:mt-5 
         flex-2 lg:flex-none 
         overflow-y-auto 
