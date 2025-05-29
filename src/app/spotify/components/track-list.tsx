@@ -43,9 +43,19 @@ export default function TrackList() {
 
   return (
     <ul
-      className="w-1/2 flex-1 lg:flex-none overflow-y-auto p-4 first:mt-5 flex flex-col gap-y-3"
+      className={`
+        max-h-[80dvh] md:max-h-auto
+        h-[80dvh] md:h-auto
+        w-full md:w-1/2
+        p-4 first:mt-5 
+        flex-2 lg:flex-none 
+        overflow-y-auto 
+        flex flex-col 
+        gap-y-3
+      `}
       id="filtered-output-list"
     >
+      <p className="text-sm text-gray-500">{trackIndices.length} resultat</p>
       {trackIndices.length > 0 ?
         // Track element handles loading state internally
         trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} />)

@@ -144,13 +144,13 @@ function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
 
 function SkeletonTrackElement() {
   return (
-    <div className="h-[128px] flex flex-row gap-x-6">
+    <div className="flex-1 h-[128px] flex flex-row gap-x-6">
       {/* "Img" */}
       <div className="size-[128px] rounded-[4px] bg-gray-600 pulse-animation"></div>
 
       <div className="flex-1">
         {/* "Track name" */}
-        <div className="h-5 w-1/2 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
+        <div className="h-5 w-[16ch] md:w-1/2 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
       </div>
     </div>
   );

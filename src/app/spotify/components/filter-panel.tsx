@@ -2,9 +2,14 @@ import type { User } from "@/app/spotify/types";
 import { ResetFiltersButton } from "@/app/spotify/filter-context";
 import { UsersFilter } from "@/app/spotify/components/users-filter";
 
-export default function FilterPanel({ users, className = "" }: { users: User[], className?: string }) {
+export default function FilterPanel({ users }: { users: User[] }) {
   return (
-    <aside className={`min-w-[20ch] max-w-1/4 px-3 pt-4 p-2 flex flex-col gap-y-2 ${className}`}>
+    <aside className={`
+      min-w-[20ch] max-w-11/12 md:max-w-[30ch]
+      flex-1
+      px-5 pt-4 p-2 
+      flex flex-col gap-y-2
+    `}>
       <h3>Filter</h3>
 
       <ResetFiltersButton />
