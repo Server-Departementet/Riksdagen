@@ -6,7 +6,7 @@ import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml"
 import { CopyLinkButton, OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const CULLING_MARGIN = 512; // Pixels outside viewport to cull
+const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
 
 export function InnerTrackElement({
   trackId,

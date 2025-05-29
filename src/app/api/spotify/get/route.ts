@@ -8,6 +8,8 @@ async function compileTrackWithMeta(
   track: Track,
   trackPlays: TrackPlay[]
 ): Promise<TrackWithMeta> {
+  "use cache";
+
   const thesePlays = trackPlays.filter(play => play.trackId === track.id);
   const totalMS: number = thesePlays.reduce((acc, play) => acc + play.track.duration, 0);
   const totalPlays: number = thesePlays.length;
@@ -27,16 +29,8 @@ async function compileTrackWithMeta(
   };
 }
 
-export async function GET(req: NextRequest) {
-  // Auth request with clerk
-  if (((await auth()).sessionClaims?.metadata as { role: string })?.role !== "minister") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
-  const url = new URL(req.url);
-  const params = url.searchParams;
-
-  const trackIds = params.get("tracks")?.split(",") || [];
+async function getTrackData(trackIds: string[]): Promise<TrackWithMeta[]> {
+  "use cache";
 
   // Read DB
   const dbTracks = await prisma.track.findMany({
@@ -67,9 +61,54 @@ export async function GET(req: NextRequest) {
   });
 
   // Compile tracks with metadata
-  const tracks: TrackWithMeta[] = await Promise.all(
+  return Promise.all(
     dbTracks.map(track => compileTrackWithMeta(track, dbTrackPlays))
   );
+}
 
-  return NextResponse.json({ tracks }, { status: 200 });
+export async function GET(req: NextRequest) {
+  // Auth request with clerk
+  if (((await auth()).sessionClaims?.metadata as { role: string })?.role !== "minister") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  const url = new URL(req.url);
+  const params = url.searchParams;
+
+  const trackIds = params.get("tracks")?.split(",") || [];
+
+  // // Read DB
+  // const dbTracks = await prisma.track.findMany({
+  //   where: {
+  //     id: {
+  //       in: trackIds,
+  //     },
+  //   },
+  //   include: {
+  //     album: true,
+  //     artists: true,
+  //   },
+  // });
+  // const dbTrackPlays = await prisma.trackPlay.findMany({
+  //   where: {
+  //     trackId: {
+  //       in: trackIds,
+  //     },
+  //   },
+  //   include: {
+  //     track: {
+  //       include: {
+  //         album: true,
+  //         artists: true,
+  //       },
+  //     },
+  //   },
+  // });
+
+  // // Compile tracks with metadata
+  // const tracks: TrackWithMeta[] = await Promise.all(
+  //   dbTracks.map(track => compileTrackWithMeta(track, dbTrackPlays))
+  // );
+
+  return NextResponse.json({ tracks: await getTrackData(trackIds) }, { status: 200 });
 }
