@@ -13,13 +13,13 @@ const trackCache: Record<string, TrackWithMeta> = JSON.parse(
 export default function TrackList() {
   const { filter } = useFilterContext();
   const [trackIndices, setTrackIndices] = useState<string[]>([]);
-  const [hasFetchedIndex, setHasFetchedIndex] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Fetch track indices based on the current filter
+  // Fetch track indices whenever the filter changes
   useEffect(() => {
-    if (hasFetchedIndex) return;
+    setLoading(true);
+    setTrackIndices([]); // Optionally clear previous results while loading
 
-    // Post filter to /api/spotify/index to get track ids
     const fetchIndex = async () => {
       const response = await fetch("/api/spotify/index", {
         method: "POST",
@@ -31,6 +31,7 @@ export default function TrackList() {
 
       if (!response.ok) {
         console.error("Failed to fetch index:", response.statusText);
+        setLoading(false);
         return;
       }
 
@@ -38,14 +39,16 @@ export default function TrackList() {
 
       if (!data.trackIds || !Array.isArray(data.trackIds)) {
         console.error("Invalid response format:", data);
+        setLoading(false);
         return;
       }
 
       setTrackIndices(data.trackIds);
-      setHasFetchedIndex(true);
-    }
+      setLoading(false);
+    };
+
     fetchIndex();
-  }, [filter, hasFetchedIndex]);
+  }, [filter]);
 
   return (
     <ul
@@ -62,12 +65,9 @@ export default function TrackList() {
       id="filtered-output-list"
     >
       <p className="text-sm text-gray-500 w-full text-center md:text-start">{trackIndices.length} resultat</p>
-      {trackIndices.length > 0 ?
-        // Track element handles loading state internally
-        trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} cachedTrackData={trackCache[id]} />)
-        :
-        // Skeletons while fetching indices
-        new Array(20).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
+      {loading
+        ? new Array(20).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
+        : trackIndices.map((id, i) => <TrackElement trackId={id} key={`${id}-outer`} index={i} cachedTrackData={trackCache[id]} />)
       }
     </ul>
   );

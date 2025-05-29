@@ -32,10 +32,7 @@ export interface SortingOption {
 
 export type FilterPacket = {
   sorting: SortingOption;
-  users: {
-    include: string[]; // User ID's
-    exclude: string[]; // User ID's
-  };
+  users: string[]; // User ID's to include in the filter
   genres: {
     include: string[]; // Genre ID's
     exclude: string[]; // Genre ID's

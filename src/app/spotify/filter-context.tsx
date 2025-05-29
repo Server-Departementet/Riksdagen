@@ -6,15 +6,15 @@ import { createContext, useCallback, useContext, useState } from "react";
 import { Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-let defaultFilter: FilterPacket = {
+export let defaultFilter: FilterPacket = {
   sorting: {
     label: "Lyssningstid",
     sortBy: "playtime",
   },
+  users: [],
   albums: { include: [], exclude: [] },
   artists: { include: [], exclude: [] },
   genres: { include: [], exclude: [] },
-  users: { include: [], exclude: [] },
 };
 
 export const FilterContext = createContext<FilterPacket>(defaultFilter);
@@ -27,7 +27,7 @@ export function useFilterContext() {
 }
 
 export default function FilterContextProvider({ users, children }: { users: User[], children: React.ReactNode }) {
-  defaultFilter = { ...defaultFilter, users: { include: users.map(u => u.id), exclude: [] } };
+  defaultFilter = { ...defaultFilter, users: users.map(u => u.id) };
   const [activeFilter, setActiveFilter] = useState<FilterPacket>(defaultFilter);
 
   return (

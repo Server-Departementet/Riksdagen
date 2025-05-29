@@ -5,6 +5,7 @@ import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import { OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFilterContext } from "../filter-context";
 
 const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
 
@@ -19,6 +20,7 @@ export function InnerTrackElement({
   waitingForId?: boolean;
   cachedTrackData?: TrackWithMeta | null;
 }) {
+  const { filter } = useFilterContext();
   const [isVisible, setIsVisible] = useState<boolean>(index < 8);
   const [waitingForTrackData, setWaitingForTrackData] = useState<boolean>(true);
   const [trackData, setTrackData] = useState<TrackWithMeta | null>(cachedTrackData || null);
@@ -51,7 +53,7 @@ export function InnerTrackElement({
     }
   }, [handleScrollEvent, trackId]);
 
-  // When trackId is set, fetch track data on /api/spotify/get?tracks={trackId}
+  // When trackId is set, fetch track data on /api/spotify/track?ids={trackId}
   useEffect(() => {
     if (!trackId || waitingForId || !isVisible) return;
 
@@ -71,7 +73,10 @@ export function InnerTrackElement({
 
     // Fetch track data
     setWaitingForTrackData(true);
-    fetch(`/api/spotify/get?tracks=${trackId}`, { method: "GET" })
+    fetch(`/api/spotify/track?ids=${trackId}`, {
+      body: JSON.stringify(filter),
+      method: "POST"
+    })
       .then(res => res.json())
       .then(data => {
         if (data.error) {
@@ -92,7 +97,7 @@ export function InnerTrackElement({
       .finally(() => {
         setWaitingForTrackData(false);
       });
-  }, [trackId, waitingForId, trackData, isVisible]);
+  }, [trackId, waitingForId, trackData, isVisible, filter]);
 
   return (
     <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] flex-1">

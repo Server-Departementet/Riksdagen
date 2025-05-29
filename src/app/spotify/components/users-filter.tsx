@@ -2,7 +2,7 @@
 
 import type { User } from "@/app/spotify/types";
 import { Button } from "@/components/ui/button";
-import { useFilterContext } from "@/app/spotify/filter-context";
+import { defaultFilter, useFilterContext } from "@/app/spotify/filter-context";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { BanIcon, CheckIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -18,52 +18,24 @@ export function UsersFilter({ users }: { users: User[] }) {
   useEffect(() => rerender, [filter, rerender]);
 
   const handleToggle = useCallback((value: string, userId: string) => {
-    if (value === "include") {
-      setFilter((prev) => {
-        return {
-          ...prev, users: {
-            exclude: prev.users.exclude.filter(u => u !== userId),
-            include: [
-              ...prev.users.include,
-              userId,
-            ]
-          }
-        }
-      });
-    }
-    else if (value === "exclude") {
-      setFilter((prev) => {
-        return {
-          ...prev, users: {
-            include: prev.users.include.filter(u => u !== userId),
-            exclude: [
-              ...prev.users.exclude,
-              userId,
-            ]
-          }
-        }
-      });
-    }
-    else {
-      setFilter((prev) => {
-        return {
-          ...prev, users: {
-            include: prev.users.include.filter(u => u !== userId),
-            exclude: prev.users.exclude.filter(u => u !== userId),
-          }
-        }
-      });
-    }
+    setFilter((prev) => {
+      const newUsers = [...prev.users];
+      if (value === "include") {
+        if (!newUsers.includes(userId)) newUsers.push(userId);
+      } else {
+        const index = newUsers.indexOf(userId);
+        if (index > -1) newUsers.splice(index, 1);
+      }
+      return { ...prev, users: newUsers };
+    });
+
     rerender();
   }, [rerender, setFilter]);
 
   const handleClear = useCallback(() => {
     setFilter((prev) => ({
       ...prev,
-      users: {
-        include: [],
-        exclude: [],
-      },
+      users: [...defaultFilter.users], // Make sure this is a new array
     }));
     rerender();
   }, [rerender, setFilter]);
@@ -74,8 +46,7 @@ export function UsersFilter({ users }: { users: User[] }) {
 
       <ul className="w-full flex flex-col gap-y-1">
         {users.map((user, i) => {
-          const isIncluded = filter.users.include.some(u => u === user.id);
-          const isExcluded = filter.users.exclude.some(u => u === user.id);
+          const isIncluded = filter.users.some(u => u === user.id);
           return (
             <li className="flex flex-row justify-between items-center" key={`${user}-${i}-user-filter`}>
               <Tooltip delayDuration={300}>
@@ -91,7 +62,7 @@ export function UsersFilter({ users }: { users: User[] }) {
                 key={groupKey}
                 className="flex flex-row justify-between items-center"
                 type="single"
-                defaultValue={isIncluded ? "include" : isExcluded ? "exclude" : "none"}
+                defaultValue={isIncluded ? "include" : "exclude"}
                 onValueChange={(value) => handleToggle(value, user.id)}
               >
                 <ToggleGroupItem value="exclude" className="text-red-600 hover:text-red-600 hover:bg-zinc-300 data-[state=on]:bg-red-700 data-[state=on]:text-zinc-50"><BanIcon className="text-inherit" /></ToggleGroupItem>

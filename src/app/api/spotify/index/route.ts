@@ -1,12 +1,14 @@
-import { trackSortingFunctions, TrackSortingFunctions, validTrackSortingFunctions } from "@/app/spotify/functions/track-sorting";
 import type { FilterPacket, TrackWithMeta } from "@/app/spotify/types";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { compileTrackWithMeta } from "@/app/api/spotify/lib/tracks";
 import { isMinister } from "@/lib/auth";
+import { extractFilter, filterTracks, sortTracks } from "@/app/api/spotify/lib/filter";
 
-async function getIdsFromFilter(filter: FilterPacket): Promise<string[]> {
-  "use cache";
+export const dynamic = "force-dynamic";
+
+async function getIdsFromFilter(filter: FilterPacket) {
+  // "use cache";
 
   const allTracks = await prisma.track.findMany({
     include: {
@@ -14,7 +16,7 @@ async function getIdsFromFilter(filter: FilterPacket): Promise<string[]> {
       artists: true,
     },
   });
-  const allTrackPlays = await prisma.trackPlay.findMany({
+  const allTrackPlays = (await prisma.trackPlay.findMany({
     include: {
       track: {
         include: {
@@ -23,26 +25,17 @@ async function getIdsFromFilter(filter: FilterPacket): Promise<string[]> {
         },
       },
     },
-  });
+  }));
+
+  const { filteredTracks, filteredTrackPlays } = filterTracks(allTracks, allTrackPlays, filter);
 
   const allTracksWithMeta: TrackWithMeta[] = await Promise.all(
-
-    allTracks.map(async (track) => compileTrackWithMeta(track, allTrackPlays))
+    filteredTracks.map(async (track) => compileTrackWithMeta(track, filteredTrackPlays))
   );
 
-  const sortFunction = trackSortingFunctions[
-    (validTrackSortingFunctions
-      .map(func => func.toLowerCase())
-      .find(func => func === filter.sorting.sortBy)
-      || "default"
-    ) as TrackSortingFunctions
-  ];
+  const sortedTracks = sortTracks(allTracksWithMeta, filter);
 
-  const trackIds = allTracksWithMeta
-    .sort(sortFunction)
-    .map(track => {
-      return track.id;
-    });
+  const trackIds = sortedTracks.map(track => track.id);
 
   return trackIds;
 }
@@ -53,10 +46,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const filter = (await req.json()) as FilterPacket;
-
-  if (!filter || !filter.sorting || !validTrackSortingFunctions.includes(filter.sorting.sortBy) || !filter.users || !filter.genres || !filter.artists || !filter.albums) {
-    return NextResponse.json({ error: "Invalid filter packet" }, { status: 400 });
+  const filter = await extractFilter(req);
+  if (!filter) {
+    return NextResponse.json({ error: "Invalid filter" }, { status: 400 });
   }
 
   return NextResponse.json({ trackIds: await getIdsFromFilter(filter) }, { status: 200 });
