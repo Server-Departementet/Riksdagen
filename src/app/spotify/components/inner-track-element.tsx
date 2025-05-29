@@ -3,7 +3,7 @@
 import type { TrackWithMeta } from "@/app/spotify/types";
 import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
-import { CopyLinkButton, OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
+import { OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
