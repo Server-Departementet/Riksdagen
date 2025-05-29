@@ -51,7 +51,7 @@ export default function TrackList() {
         trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} />)
         :
         // Skeletons while fetching indices
-        new Array(10).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
+        new Array(20).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
       }
     </ul>
   );

@@ -1,8 +1,6 @@
 "use client";
 
-import type { TrackWithMeta } from "@/app/spotify/types";
 import { InnerTrackElement } from "@/app/spotify/components/inner-track-element";
-import { useEffect, useState } from "react";
 
 export function TrackElement({
   trackId,

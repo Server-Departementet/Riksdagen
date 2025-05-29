@@ -1,8 +1,31 @@
-import type { Track, TrackWithMeta } from "@/app/spotify/types";
+import type { Track, TrackPlay, TrackWithMeta } from "@/app/spotify/types";
 import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+
+async function compileTrackWithMeta(
+  track: Track,
+  trackPlays: TrackPlay[]
+): Promise<TrackWithMeta> {
+  const thesePlays = trackPlays.filter(play => play.trackId === track.id);
+  const totalMS: number = thesePlays.reduce((acc, play) => acc + play.track.duration, 0);
+  const totalPlays: number = thesePlays.length;
+  const playsPerUser: Record<string, number> = thesePlays.reduce((acc, play) => {
+    acc[play.userId] = (acc[play.userId] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const color = track.image ? await getTrackBGColor(track.image) : undefined;
+
+  return {
+    ...track,
+    totalMS,
+    totalPlays,
+    playsPerUser,
+    color,
+  };
+}
 
 export async function GET(req: NextRequest) {
   // Auth request with clerk
@@ -16,7 +39,7 @@ export async function GET(req: NextRequest) {
   const trackIds = params.get("tracks")?.split(",") || [];
 
   // Read DB
-  const dbTracks: Track[] = (await prisma.track.findMany({
+  const dbTracks = await prisma.track.findMany({
     where: {
       id: {
         in: trackIds,
@@ -26,7 +49,7 @@ export async function GET(req: NextRequest) {
       album: true,
       artists: true,
     },
-  }));
+  });
   const dbTrackPlays = await prisma.trackPlay.findMany({
     where: {
       trackId: {
@@ -44,23 +67,9 @@ export async function GET(req: NextRequest) {
   });
 
   // Compile tracks with metadata
-  const tracks: TrackWithMeta[] = await Promise.all(dbTracks
-    .map(async track => {
-      const thesePlays = dbTrackPlays.filter(play => play.trackId === track.id);
-      const totalMS: number = thesePlays.reduce((acc, play) => acc + play.track.duration, 0);
-      const totalPlays: number = thesePlays.length;
-      const playsPerUser: Record<string, number> = thesePlays.reduce((acc, play) => {
-        acc[play.userId] = (acc[play.userId] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      return {
-        ...track,
-        totalMS,
-        totalPlays,
-        playsPerUser,
-        color: await getTrackBGColor(track.album.url),
-      }
-    }));
+  const tracks: TrackWithMeta[] = await Promise.all(
+    dbTracks.map(track => compileTrackWithMeta(track, dbTrackPlays))
+  );
 
-  return NextResponse.json({ tracks: JSON.stringify(tracks) }, { status: 200 });
+  return NextResponse.json({ tracks }, { status: 200 });
 }

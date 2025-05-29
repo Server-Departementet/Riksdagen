@@ -8,21 +8,26 @@ const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCache
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
 
-export const fallbackColor = "var(--color-zinc-100)";
-
 /** 
  * Extracts prominent color from the image in the url and caches it to a file.
  */
-export async function getTrackBGColor(url: string): Promise<string> {
+export async function getTrackBGColor(url: string): Promise<string | undefined> {
   // Return cache
   if (colorCache[url]) return colorCache[url];
 
   // Calculate color
-  const v = new Vibrant(url, { quality: 100, useWorker: true });
-  const color = (await v.getPalette())?.LightVibrant?.hex;
+  let color: string | undefined = undefined;
+  try {
+    const v = new Vibrant(url, { quality: 100, useWorker: true });
+    color = (await v.getPalette())?.LightVibrant?.hex;
+  }
+  catch (error) {
+    console.error("Error fetching color from URL:", url, error);
+    return undefined;
+  }
 
   // If no color found, return default
-  if (!color) return fallbackColor;
+  if (!color) return undefined;
 
   // Set cache
   if (color) colorCache[url] = color;

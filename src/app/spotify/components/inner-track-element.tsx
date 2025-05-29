@@ -49,6 +49,37 @@ export function InnerTrackElement({
     }
   }, [handleScrollEvent, trackId]);
 
+  // When trackId is set, fetch track data on /api/spotify/get?tracks={trackId}
+  useEffect(() => {
+    if (!trackId || waitingForId || !isVisible) return;
+
+    // If trackData is already set, no need to fetch again
+    if (trackData) {
+      setWaitingForTrackData(false);
+      return;
+    }
+
+    // Fetch track data
+    setWaitingForTrackData(true);
+    fetch(`/api/spotify/get?tracks=${trackId}`, { method: "GET" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          console.error("Error fetching track data:", data.error);
+          setTrackData(null);
+        } else {
+          setTrackData(data.tracks[0]);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching track data:", err);
+        setTrackData(null);
+      })
+      .finally(() => {
+        setWaitingForTrackData(false);
+      });
+  }, [trackId, waitingForId, trackData, isVisible]);
+
   return (
     <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] flex-1">
       {
@@ -58,23 +89,10 @@ export function InnerTrackElement({
             :
             (trackData) ? <LoadedTrackElement track={trackData} />
               :
-              <div>Fel i inladdningen</div>
+              <div className="min-h-[128px] h-[128px] flex-1 flex flex-row items-center justify-center text-xl">Fel i inladdningen</div>
       }
     </div>
   );
-
-  // if (waitingForId || waitingForTrackData) {
-  //   return <SkeletonTrackElement />;
-  // }
-  // else if (trackData && isVisible) {
-  //   return <LoadedTrackElement track={trackData} />;
-  // }
-  // else if (trackData && !isVisible) {
-  //   return <div></div>;
-  // }
-  // else {
-  //   return <div>Fel i inladdningen</div>;
-  // }
 }
 
 function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
@@ -88,7 +106,7 @@ function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
 
   return (
     <div
-      className={`grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1 ${className}`}
+      className="grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1"
       {...track.color ? { style: { backgroundColor: track.color } } : {}}
     >
       {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
