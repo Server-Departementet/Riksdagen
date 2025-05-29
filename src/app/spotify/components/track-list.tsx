@@ -61,7 +61,7 @@ export default function TrackList() {
       `}
       id="filtered-output-list"
     >
-      <p className="text-sm text-gray-500">{trackIndices.length} resultat</p>
+      <p className="text-sm text-gray-500 w-full text-center md:text-start">{trackIndices.length} resultat</p>
       {trackIndices.length > 0 ?
         // Track element handles loading state internally
         trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} cachedTrackData={trackCache[id]} />)

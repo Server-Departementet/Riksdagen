@@ -28,11 +28,13 @@ export default async function SpotifyPage() {
           md:max-h-(--screen-height) md:min-h-(--screen-height) md:h-(--screen-height) md:*:min-h-[inherit] md:*:h-[inherit] 
           w-full lg:w-11/12 
           flex flex-col md:flex-row
-          items-center md:items-start
+          items-center md:justify-center
         `}>
           <FilterPanel users={users} />
 
           <TrackList />
+
+          <span className="hidden md:block flex-1 min-w-[20ch] max-w-11/12 md:max-w-[30ch]"></span>
         </section>
       </FilterContextProvider>
     </main>

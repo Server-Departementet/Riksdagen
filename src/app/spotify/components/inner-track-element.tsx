@@ -127,12 +127,15 @@ function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
       <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
 
       {/* Track info */}
-      <h5 className="col-start-2 row-start-1 col-span-2 leading-5 py-1 overflow-x-auto whitespace-nowrap text-ellipsis overflow-y-hidden">{track.name}</h5>
+      <h5 className={`
+        col-start-2 row-start-1 col-span-2
+        leading-5 py-1 overflow-x-hidden whitespace-nowrap text-ellipsis overflow-y-hidden
+      `}>{track.name}</h5>
       {/* Artists */}
       <p className="col-start-2 row-start-2 col-span-2 pb-1 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
 
       {/* Stats */}
-      <div className="row-span-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
+      <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
         {/* Duration (long) */}
         <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
@@ -148,10 +151,10 @@ function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
       <OpenInSpotifyButton trackURL={track.url} />
 
       {/* Copy link button */}
-      <CopyLinkButton
+      {/* <CopyLinkButton
         trackId={track.id}
         className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10"
-      />
+      /> */}
     </div>
   );
 }
