@@ -10,7 +10,7 @@
   }
 
   * {
-    @apply font-thin antialiased;
+    @apply font-thin;
     font-family: "Open Sans", sans-serif;
   }
 
@@ -119,7 +119,7 @@
   }
 
   .pulse-animation {
-    animation: pulse-animation 1.5s ease-in-out 3;
+    animation: pulse-animation infinite ease-in-out 3;
   }
 }
 

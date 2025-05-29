@@ -1,48 +1,39 @@
 "use client";
 
 import type { TrackWithMeta } from "@/app/spotify/types";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import Image from "next/image";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
-import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
-import { CopyLinkButton } from "@/app/spotify/components/copy-link";
+import { CopyLinkButton, OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const CULLING_MARGIN = 512; // Pixels outside viewport to cull
+
 export function InnerTrackElement({
-  track,
-  bgColor,
-  minutes,
-  seconds,
-  prettyDuration,
-  prettyPlayCount,
-  prettyPlaytime,
-  username,
-  className = "",
+  trackId,
+  waitingForId = false,
+  index,
 }: {
-  track: TrackWithMeta,
-  bgColor: string,
-  minutes: number,
-  seconds: number,
-  prettyDuration: string,
-  prettyPlayCount: string,
-  prettyPlaytime: string,
-  username: string,
-  className?: string,
+  trackId: string;
+  waitingForId?: boolean;
+  index: number;
 }) {
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(index < 8);
+  const [waitingForTrackData, setWaitingForTrackData] = useState<boolean>(true);
+  const [trackData, setTrackData] = useState<TrackWithMeta | null>(null);
   const domRef = useRef<HTMLDivElement>(null);
 
+  // Cull on scroll
   const handleScrollEvent = useCallback(() => {
     if (!domRef.current) return;
     const rect = domRef.current.getBoundingClientRect();
-    const isInViewport = rect.top >= -256 && rect.bottom <= window.innerHeight + 256;
+    const isInViewport = rect.top >= -CULLING_MARGIN && rect.bottom <= window.innerHeight + CULLING_MARGIN;
     setIsVisible(isInViewport);
   }, [domRef]);
 
+  // Attach scroll event listeners on mount
   useEffect(() => {
     if (!domRef.current) {
-      domRef.current = document.getElementById(`${track.id}-outer`) as HTMLDivElement;
+      domRef.current = document.getElementById(`${trackId}-inner`) as HTMLDivElement;
     }
 
     const list = document.getElementById("filtered-output-list");
@@ -56,17 +47,50 @@ export function InnerTrackElement({
       list.removeEventListener("scroll", handleScrollEvent);
       if (domRef.current) domRef.current = null;
     }
-  }, [handleScrollEvent, track.id]);
+  }, [handleScrollEvent, trackId]);
 
-  return isVisible ? (
+  return (
+    <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] flex-1">
+      {
+        (!isVisible) ? <div></div>
+          :
+          (waitingForId || waitingForTrackData) ? <SkeletonTrackElement />
+            :
+            (trackData) ? <LoadedTrackElement track={trackData} />
+              :
+              <div>Fel i inladdningen</div>
+      }
+    </div>
+  );
+
+  // if (waitingForId || waitingForTrackData) {
+  //   return <SkeletonTrackElement />;
+  // }
+  // else if (trackData && isVisible) {
+  //   return <LoadedTrackElement track={trackData} />;
+  // }
+  // else if (trackData && !isVisible) {
+  //   return <div></div>;
+  // }
+  // else {
+  //   return <div>Fel i inladdningen</div>;
+  // }
+}
+
+function LoadedTrackElement({ track }: { track: TrackWithMeta }) {
+  // Track stats
+  const minutes = Math.floor(track.duration / 60000);
+  const seconds = Math.floor((track.duration % 60000) / 1000);
+  const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+  const prettyPlayCount = `${track.totalPlays} ${track.totalPlays > 1 ? "gånger" : "gång"}`;
+  const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
+
+  return (
     <div
-      id={`${track.id}-inner`}
       className={`grid grid-cols-[128px_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[128px] overflow-hidden gap-x-2 gap-y-1 ${className}`}
-      style={{ backgroundColor: bgColor }}
+      {...track.color ? { style: { backgroundColor: track.color } } : {}}
     >
-      {/* ID to jump to. Offset to give more control */}
-      <div id={track.id} className="col-start-1 row-start-1 relative -translate-y-32 h-0 -z-50"></div>
-
       {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
       <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
 
@@ -80,7 +104,7 @@ export function InnerTrackElement({
         {/* Duration (long) */}
         <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
-        <p className="hidden sm:block">{username} har lyssnat {prettyPlayCount} ({prettyPlaytime})</p>
+        <p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>
 
         {/* Duration (short) */}
         <p className="block sm:hidden">Längd {prettyDuration}</p>
@@ -89,18 +113,27 @@ export function InnerTrackElement({
       </div>
 
       {/* Spotify Link */}
-      <Link href={track.url} className="col-start-3 col-span-2 row-start-4 justify-self-end self-end z-10" target="_blank" rel="noopener noreferrer">
-        <Button tabIndex={-1} className="mb-1.5 sm:mb-2 me-1.5 sm:me-2 px-2.5">
-          <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
-          <span className="hidden sm:block">
-            Öppna i Spotify
-          </span>
-        </Button>
-      </Link>
+      <OpenInSpotifyButton trackURL={track.url} />
 
       {/* Copy link button */}
-      <CopyLinkButton className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10" trackId={track.id} />
+      <CopyLinkButton
+        trackId={track.id}
+        className="mt-1.5 sm:mt-2 me-1.5 sm:me-2 col-start-4 row-start-1 row-span-2 justify-self-end self-start z-10"
+      />
     </div>
-  )
-    : <span id={`${track.id}-inner`} className={`${className}`}></span>;
+  );
+}
+
+function SkeletonTrackElement() {
+  return (
+    <div className="h-[128px] flex flex-row gap-x-6">
+      {/* "Img" */}
+      <div className="size-[128px] rounded-[4px] bg-gray-600 pulse-animation"></div>
+
+      <div className="flex-1">
+        {/* "Track name" */}
+        <div className="h-5 w-1/2 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
+      </div>
+    </div>
+  );
 }

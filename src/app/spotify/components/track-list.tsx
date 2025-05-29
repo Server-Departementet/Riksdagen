@@ -9,6 +9,7 @@ export default function TrackList() {
   const [trackIndices, setTrackIndices] = useState<string[]>([]);
   const [hasFetchedIndex, setHasFetchedIndex] = useState<boolean>(false);
 
+  // Fetch track indices based on the current filter
   useEffect(() => {
     if (hasFetchedIndex) return;
 
@@ -41,9 +42,16 @@ export default function TrackList() {
   }, [filter, hasFetchedIndex]);
 
   return (
-    <ul className="w-1/2 flex-1 lg:flex-none overflow-y-auto p-4 first:mt-5 flex flex-col gap-y-3">
-      {trackIndices.length > 0 &&
+    <ul
+      className="w-1/2 flex-1 lg:flex-none overflow-y-auto p-4 first:mt-5 flex flex-col gap-y-3"
+      id="filtered-output-list"
+    >
+      {trackIndices.length > 0 ?
+        // Track element handles loading state internally
         trackIndices.map((id, i) => <TrackElement trackId={id} key={"track-element-" + i} index={i} />)
+        :
+        // Skeletons while fetching indices
+        new Array(10).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
       }
     </ul>
   );
