@@ -72,7 +72,7 @@ export function InnerTrackElement({
     }
 
     // If trackData is cached, use it
-    const cachedTrack = JSON.parse(localStorage.getItem("trackCache") || "{}")[trackId + "-" + filterHash];
+    const cachedTrack = JSON.parse(sessionStorage.getItem("trackCache") || "{}")[trackId + "-" + filterHash];
     if (cachedTrack) {
       setTrackData(cachedTrack);
       setWaitingForTrackData(false);
@@ -92,9 +92,9 @@ export function InnerTrackElement({
           setTrackData(null);
         } else {
           setTrackData(data.tracks[0]);
-          const trackCache = JSON.parse(localStorage.getItem("trackCache") || "{}");
+          const trackCache = JSON.parse(sessionStorage.getItem("trackCache") || "{}");
           trackCache[trackId + "-" + filterHash] = data.tracks[0];
-          localStorage.setItem("trackCache", JSON.stringify(trackCache));
+          sessionStorage.setItem("trackCache", JSON.stringify(trackCache));
         }
       })
       .catch(err => {
@@ -107,7 +107,7 @@ export function InnerTrackElement({
   }, [trackId, waitingForId, trackData, isVisible, filter, filterHash]);
 
   return (
-    <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] flex-1">
+    <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] w-full">
       {
         (!isVisible) ? <div></div>
           :

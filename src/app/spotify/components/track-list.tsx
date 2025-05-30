@@ -9,9 +9,12 @@ import { TrackWithMeta } from "@/app/spotify/types";
 const hashes = await import("jshashes");
 const hash = (string: string) => (new hashes.SHA1).hex(string);
 
-if (typeof window !== "undefined" && !localStorage.getItem("trackCache")) localStorage.setItem("trackCache", "{}");
+// Remove old local storage cache if it exists
+if (typeof window !== "undefined" && localStorage.getItem("trackCache")) localStorage.removeItem("trackCache");
+
+if (typeof window !== "undefined" && !sessionStorage.getItem("trackCache")) sessionStorage.setItem("trackCache", "{}");
 const trackCache: Record<string, TrackWithMeta> = JSON.parse(
-  typeof window !== "undefined" ? localStorage.getItem("trackCache") || "{}" : "{}"
+  typeof window !== "undefined" ? sessionStorage.getItem("trackCache") || "{}" : "{}"
 );
 
 export default function TrackList() {
@@ -63,11 +66,11 @@ export default function TrackList() {
       className={`
         max-h-[80dvh] md:max-h-auto
         h-[80dvh] md:h-auto
-        w-full lg:w-1/2
-        p-4 first:mt-5 
-        flex-2 lg:flex-none 
-        overflow-y-auto 
-        flex flex-col 
+        w-full
+        flex-2
+        p-4 first:mt-5
+        overflow-y-auto
+        flex flex-col
         gap-y-3
       `}
       id="filtered-output-list"

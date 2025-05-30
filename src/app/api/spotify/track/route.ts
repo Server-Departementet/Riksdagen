@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { compileTrackWithMeta } from "@/app/api/spotify/lib/tracks";
 import { extractFilter, filterTracks, sortTracks } from "@/app/api/spotify/lib/filter";
-import { isMinister } from "@/lib/auth";
+// import { isMinister } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -47,10 +47,11 @@ async function getTrackData(trackIds: string[], filter: FilterPacket) {
 }
 
 export async function POST(req: NextRequest) {
-  // Auth request with clerk
-  if (!isMinister()) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  // TODO - Reimplement with request buffering
+  // // Auth request with clerk
+  // if (!isMinister()) {
+  //   return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  // }
 
   const url = new URL(req.url);
   const params = url.searchParams;

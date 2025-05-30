@@ -4,29 +4,36 @@ import { UsersFilter } from "@/app/spotify/components/users-filter";
 
 export default function FilterPanel({ users }: { users: User[] }) {
   return (
-    <aside className={`
-      min-w-[20ch] max-w-11/12 md:max-w-[30ch]
-      flex-1
-      px-5 pt-4 p-2 
-      flex flex-col gap-y-2
-    `}>
-      <h3>Filter</h3>
+    <aside
+      className={`
+        flex flex-col 
+        items-center
+        flex-1  
+      `}
+    >
+      <div className={`
+        min-w-[20ch] max-w-11/12 md:max-w-[30ch]
+        px-5 pt-4 p-2
+        flex flex-col gap-y-2
+        h-full
+      `}>
+        <h3>Filter</h3>
 
-      <ResetFiltersButton />
+        <ResetFiltersButton />
 
-      <hr className="my-2" />
+        <hr className="my-2" />
 
-      {/* User select */}
-      <UsersFilter users={users} />
+        {/* User select */}
+        <UsersFilter users={users} />
 
-      <hr className="my-2" />
+        <hr className="my-2" />
 
-      {/* Spacer */}
-      <span className="flex-1"></span>
+        {/* Spacer */}
+        <span className="flex-1"></span>
 
-      <p className="text-center text-sm opacity-80">© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>
+        <p className="text-center text-sm opacity-80">© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>
 
-      {/* 
+        {/* 
         Notes:
         Reset
 
@@ -77,6 +84,7 @@ export default function FilterPanel({ users }: { users: User[] }) {
         - artist name (a & d),
         - played at. latest track play mapped to artists (d & a),
       */}
+      </div>
     </aside>
   );
 }

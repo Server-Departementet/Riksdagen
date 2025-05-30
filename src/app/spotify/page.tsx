@@ -21,20 +21,20 @@ export default async function SpotifyPage() {
   return (
     <main className="px-0 lg:px-4">
       {/* Overwrite layout styling */}
-      <style>{`footer{display:none;}`}</style>
+      <style>{`footer{display:none;}main{padding:0;}`}</style>
 
       <FilterContextProvider users={users}>
         <section className={`
           md:max-h-(--screen-height) md:min-h-(--screen-height) md:h-(--screen-height) md:*:min-h-[inherit] md:*:h-[inherit] 
-          w-full 
+          w-full
           flex flex-col md:flex-row
-          items-center md:justify-center
+          items-center justify-center
         `}>
+          {/* <span className="hidden xl:block flex-1"></span> */}
+
           <FilterPanel users={users} />
 
           <TrackList />
-
-          <span className="hidden xl:block flex-1 min-w-[20ch] max-w-11/12 md:max-w-[30ch]"></span>
         </section>
       </FilterContextProvider>
     </main>

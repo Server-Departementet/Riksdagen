@@ -16,7 +16,15 @@ export function TrackElement({
 }) {
   return (
     <div
-      className="flex flex-row items-center *:first:flex-1 gap-x-0.5 rounded-[4px] min-h-[128px] h-[128px] bg-zinc-100"
+      className={`
+        flex flex-row items-center
+        gap-x-0.5
+        *:first:flex-1
+        rounded-[4px]
+        w-full max-w-prose
+        min-h-[128px] h-[128px]
+        bg-zinc-100
+      `}
     >
       <InnerTrackElement
         trackId={trackId}
