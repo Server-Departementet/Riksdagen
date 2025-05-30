@@ -6,11 +6,13 @@ import { TrackWithMeta } from "@/app/spotify/types";
 export function TrackElement({
   trackId,
   index,
+  searchTerm = "",
   waitingForId = false,
   cachedTrackData = null,
 }: {
   trackId: string,
   index: number,
+  searchTerm?: string,
   waitingForId?: boolean,
   cachedTrackData?: TrackWithMeta | null,
 }) {
@@ -29,6 +31,7 @@ export function TrackElement({
       <InnerTrackElement
         trackId={trackId}
         index={index}
+        searchTerm={searchTerm}
         waitingForId={waitingForId}
         cachedTrackData={cachedTrackData}
       />

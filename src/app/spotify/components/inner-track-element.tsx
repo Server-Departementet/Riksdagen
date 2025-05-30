@@ -16,11 +16,13 @@ const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
 export function InnerTrackElement({
   trackId,
   index,
+  searchTerm = "",
   waitingForId = false,
   cachedTrackData = null,
 }: {
   trackId: string;
   index: number;
+  searchTerm?: string;
   waitingForId?: boolean;
   cachedTrackData?: TrackWithMeta | null;
 }) {
@@ -109,13 +111,16 @@ export function InnerTrackElement({
   return (
     <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] w-full">
       {
-        (!isVisible) ? <div></div>
+        // TODO - Reconsider view culling if necessary
+        // (!isVisible && trackData) ? <div>{trackData.name} - {trackData.artists.map(a => a.name).join(", ")}</div>
+        //   :
+        //   (!isVisible) ? <div></div>
+        // :
+        (waitingForId || waitingForTrackData) ? <SkeletonTrackElement />
           :
-          (waitingForId || waitingForTrackData) ? <SkeletonTrackElement />
+          (trackData) ? <LoadedTrackElement track={trackData} />
             :
-            (trackData) ? <LoadedTrackElement track={trackData} />
-              :
-              <div className="min-h-[128px] h-[128px] flex-1 flex flex-row items-center justify-center text-xl">Fel i inladdningen</div>
+            <div className="min-h-[128px] h-[128px] flex-1 flex flex-row items-center justify-center text-xl">Fel i inladdningen</div>
       }
     </div>
   );

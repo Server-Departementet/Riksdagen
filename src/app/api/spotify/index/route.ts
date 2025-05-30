@@ -36,8 +36,9 @@ async function getIdsFromFilter(filter: FilterPacket) {
   const sortedTracks = sortTracks(allTracksWithMeta, filter);
 
   const trackIds = sortedTracks.map(track => track.id);
+  const trackSearchTerm = sortedTracks.map(track => track.name);
 
-  return trackIds;
+  return { trackIds, trackSearchTerm };
 }
 
 export async function POST(req: NextRequest) {
@@ -51,5 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid filter" }, { status: 400 });
   }
 
-  return NextResponse.json({ trackIds: await getIdsFromFilter(filter) }, { status: 200 });
+  const { trackIds, trackSearchTerm } = await getIdsFromFilter(filter);
+
+  return NextResponse.json({ trackIds, trackSearchTerm }, { status: 200 });
 }
