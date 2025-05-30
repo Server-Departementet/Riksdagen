@@ -4,7 +4,7 @@ import type {
   Artist as PrismaArtist,
   Track as PrismaTrack,
   TrackPlay as PrismaTrackPlay
-} from "@prisma/client";
+} from "@/prisma/generated/client";
 import { TrackSortingFunctions } from "./functions/track-sorting";
 
 // Extend Prisma types to include relations

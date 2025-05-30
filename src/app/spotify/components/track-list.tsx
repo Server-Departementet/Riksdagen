@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { TrackElement } from "@/app/spotify/components/track-element";
 import { TrackWithMeta } from "@/app/spotify/types";
 
+// @ts-expect-error - It does not have types
+const hashes = await import("jshashes");
+const hash = (string: string) => (new hashes.SHA1).hex(string);
+
 if (typeof window !== "undefined" && !localStorage.getItem("trackCache")) localStorage.setItem("trackCache", "{}");
 const trackCache: Record<string, TrackWithMeta> = JSON.parse(
   typeof window !== "undefined" ? localStorage.getItem("trackCache") || "{}" : "{}"
@@ -12,6 +16,7 @@ const trackCache: Record<string, TrackWithMeta> = JSON.parse(
 
 export default function TrackList() {
   const { filter } = useFilterContext();
+  const [filterHash, setFilterHash] = useState<string>(hash(JSON.stringify(filter)));
   const [trackIndices, setTrackIndices] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -19,6 +24,9 @@ export default function TrackList() {
   useEffect(() => {
     setLoading(true);
     setTrackIndices([]); // Optionally clear previous results while loading
+
+    // Update the filter hash
+    setFilterHash(hash(JSON.stringify(filter)));
 
     const fetchIndex = async () => {
       const response = await fetch("/api/spotify/index", {
@@ -67,7 +75,7 @@ export default function TrackList() {
       <p className="text-sm text-gray-500 w-full text-center md:text-start">{trackIndices.length} resultat</p>
       {loading
         ? new Array(20).fill(0).map((_, i) => <TrackElement trackId={""} waitingForId={true} key={"track-element-" + i} index={i} />)
-        : trackIndices.map((id, i) => <TrackElement trackId={id} key={`${id}-outer`} index={i} cachedTrackData={trackCache[id]} />)
+        : trackIndices.map((id, i) => <TrackElement trackId={id} key={`${id + "-" + filterHash}-outer`} index={i} cachedTrackData={trackCache[id + "-" + filterHash]} />)
       }
     </ul>
   );

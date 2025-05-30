@@ -7,6 +7,10 @@ import { OpenInSpotifyButton } from "@/app/spotify/components/track-buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFilterContext } from "../filter-context";
 
+// @ts-expect-error - It does not have types
+const hashes = await import("jshashes");
+const hash = (string: string) => (new hashes.SHA1).hex(string);
+
 const CULLING_MARGIN = 1024; // Pixels outside viewport to cull
 
 export function InnerTrackElement({
@@ -21,6 +25,7 @@ export function InnerTrackElement({
   cachedTrackData?: TrackWithMeta | null;
 }) {
   const { filter } = useFilterContext();
+  const [filterHash, setFilterHash] = useState<string>(hash(JSON.stringify(filter)));
   const [isVisible, setIsVisible] = useState<boolean>(index < 8);
   const [waitingForTrackData, setWaitingForTrackData] = useState<boolean>(true);
   const [trackData, setTrackData] = useState<TrackWithMeta | null>(cachedTrackData || null);
@@ -57,6 +62,9 @@ export function InnerTrackElement({
   useEffect(() => {
     if (!trackId || waitingForId || !isVisible) return;
 
+    // Update filter hash when filter changes
+    setFilterHash(hash(JSON.stringify(filter)));
+
     // If trackData is already set, no need to fetch again
     if (trackData) {
       setWaitingForTrackData(false);
@@ -64,7 +72,7 @@ export function InnerTrackElement({
     }
 
     // If trackData is cached, use it
-    const cachedTrack = JSON.parse(localStorage.getItem("trackCache") || "{}")[trackId];
+    const cachedTrack = JSON.parse(localStorage.getItem("trackCache") || "{}")[trackId + "-" + filterHash];
     if (cachedTrack) {
       setTrackData(cachedTrack);
       setWaitingForTrackData(false);
@@ -84,10 +92,9 @@ export function InnerTrackElement({
           setTrackData(null);
         } else {
           setTrackData(data.tracks[0]);
-          localStorage.setItem("trackCache", JSON.stringify({
-            ...JSON.parse(localStorage.getItem("trackCache") || "{}"),
-            [trackId]: data.tracks[0],
-          }));
+          const trackCache = JSON.parse(localStorage.getItem("trackCache") || "{}");
+          trackCache[trackId + "-" + filterHash] = data.tracks[0];
+          localStorage.setItem("trackCache", JSON.stringify(trackCache));
         }
       })
       .catch(err => {
@@ -97,7 +104,7 @@ export function InnerTrackElement({
       .finally(() => {
         setWaitingForTrackData(false);
       });
-  }, [trackId, waitingForId, trackData, isVisible, filter]);
+  }, [trackId, waitingForId, trackData, isVisible, filter, filterHash]);
 
   return (
     <div ref={domRef} id={`${trackId}-inner`} className="min-h-[128px] h-[128px] flex-1">
