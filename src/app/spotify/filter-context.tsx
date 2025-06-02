@@ -1,15 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { FilterPacket, User } from "@/app/spotify/types";
+import type { FetchFilterPacket, User } from "@/app/spotify/types";
 import { createContext, useCallback, useContext, useState } from "react";
 import { Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export let defaultFilter: FilterPacket = {
-  sorting: {
+export let defaultFilter: FetchFilterPacket = {
+  sort: {
     label: "Lyssningstid",
-    sortBy: "playtime",
+    func: "playtime",
   },
   users: [],
   albums: { include: [], exclude: [] },
@@ -17,8 +17,8 @@ export let defaultFilter: FilterPacket = {
   genres: { include: [], exclude: [] },
 };
 
-export const FilterContext = createContext<FilterPacket>(defaultFilter);
-export const FilterContextSetter = createContext<React.Dispatch<React.SetStateAction<FilterPacket>>>(() => { });
+export const FilterContext = createContext<FetchFilterPacket>(defaultFilter);
+export const FilterContextSetter = createContext<React.Dispatch<React.SetStateAction<FetchFilterPacket>>>(() => { });
 
 export function useFilterContext() {
   const filter = useContext(FilterContext);
@@ -28,7 +28,7 @@ export function useFilterContext() {
 
 export default function FilterContextProvider({ users, children }: { users: User[], children: React.ReactNode }) {
   defaultFilter = { ...defaultFilter, users: users.map(u => u.id) };
-  const [activeFilter, setActiveFilter] = useState<FilterPacket>(defaultFilter);
+  const [activeFilter, setActiveFilter] = useState<FetchFilterPacket>(defaultFilter);
 
   return (
     <FilterContext.Provider value={activeFilter}>

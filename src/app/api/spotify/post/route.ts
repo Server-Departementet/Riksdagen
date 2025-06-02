@@ -5,7 +5,7 @@
  */
 
 import { clerkClient } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/prisma/generated/client";
 import { createHash } from "node:crypto";
 
 const prisma = new PrismaClient();

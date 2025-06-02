@@ -5,7 +5,6 @@ import type {
   Track as PrismaTrack,
   TrackPlay as PrismaTrackPlay
 } from "@/prisma/generated/client";
-import { TrackSortingFunctions } from "./functions/track-sorting";
 
 // Extend Prisma types to include relations
 export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };
@@ -25,13 +24,20 @@ export type TrackWithMeta = Track & {
 };
 
 export interface SortingOption {
-  label: string; // User facing label for the sorting option
-  sortBy: TrackSortingFunctions; // String literal type for sorting function, (a,b) => number functions are indexed by this string
-  reverse?: boolean;
-}
+  label: string; // User facing name
+  id: string; // Used as key in object
+  func: (a: TrackWithMeta, b: TrackWithMeta) => number;
+};
 
-export type FilterPacket = {
-  sorting: SortingOption;
+export type LocalFilterPacket = {
+  search: string;
+  sort: SortingOption;
+  reverseOrder: boolean;
+};
+
+export type FetchFilterPacket = {
+  sort: SortingOption;
+  reverseOrder: boolean;
   users: string[]; // User ID's to include in the filter
   genres: {
     include: string[]; // Genre ID's
