@@ -31,11 +31,11 @@ export default async function SpotifyPage() {
         flex flex-col sm:flex-row justify-center
         w-full
       `}>
-        <FetchFilterContextProvider>
+        <FetchFilterContextProvider initialUsers={users}>
           <LocalFilterContextProvider>
 
             {/* Filter panel will set fetch filters for getting track ids. Local filters such as search will also live here */}
-            <FilterPanel className="flex-1" />
+            <FilterPanel className="flex-1 sticky sm:static" />
 
             {/* Filtered tracks */}
             <TrackList className="flex-2" />

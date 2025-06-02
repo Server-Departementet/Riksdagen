@@ -1,8 +1,8 @@
 "use client";
 
-import type { FetchFilterPacket } from "@/app/spotify/types";
+import type { FetchFilterPacket, User } from "@/app/spotify/types";
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 export const defaultFetchFilter: FetchFilterPacket = {
   users: [],
@@ -36,8 +36,12 @@ export function UseFetchFilterContext() {
   return { fetchFilter, setFetchFilter };
 }
 
-export default function FetchFilterContextProvider({ children }: { children: React.ReactNode }) {
-  const { fetchFilter, setFetchFilter } = UseFetchFilterContext();
+export default function FetchFilterContextProvider({ children, initialUsers }: { children: React.ReactNode, initialUsers: User[] }) {
+  const [fetchFilter, setFetchFilter] = useState<FetchFilterPacket>({
+    ...defaultFetchFilter,
+    users: initialUsers,
+  });
+
   return (
     <FetchFilterContext.Provider value={fetchFilter}>
       <FetchFilterContextSetter.Provider value={setFetchFilter}>

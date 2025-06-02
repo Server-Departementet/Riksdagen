@@ -38,7 +38,7 @@ export type LocalFilterPacket = {
 export type FetchFilterPacket = {
   sort: SortingOption;
   reverseOrder: boolean;
-  users: string[]; // User ID's to include in the filter
+  users: User[]; // User ID's to include in the filter
   genres: {
     include: string[]; // Genre ID's
     exclude: string[]; // Genre ID's
