@@ -1,3 +1,5 @@
+"use client";
+
 import type { FetchFilterPacket } from "@/app/spotify/types";
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 import { createContext, useContext } from "react";
@@ -34,7 +36,7 @@ export function UseFetchFilterContext() {
   return { fetchFilter, setFetchFilter };
 }
 
-export function FetchFilterContextProvider({ children }: { children: React.ReactNode }) {
+export default function FetchFilterContextProvider({ children }: { children: React.ReactNode }) {
   const { fetchFilter, setFetchFilter } = UseFetchFilterContext();
   return (
     <FetchFilterContext.Provider value={fetchFilter}>

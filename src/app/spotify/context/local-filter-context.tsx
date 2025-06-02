@@ -1,3 +1,5 @@
+"use client";
+
 import type { LocalFilterPacket } from "@/app/spotify/types";
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 import { createContext, useContext } from "react";
@@ -22,7 +24,7 @@ export function UseLocalFilterContext() {
   return { localFilter, setLocalFilter };
 }
 
-export function LocalFilterContextProvider({ children }: { children: React.ReactNode }) {
+export default function LocalFilterContextProvider({ children }: { children: React.ReactNode }) {
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
   return (
     <LocalFilterContext.Provider value={localFilter}>
