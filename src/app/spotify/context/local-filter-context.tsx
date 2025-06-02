@@ -1,6 +1,6 @@
 import type { LocalFilterPacket } from "@/app/spotify/types";
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
 export const defaultLocalFilter: LocalFilterPacket = {
   search: "",
@@ -8,9 +8,27 @@ export const defaultLocalFilter: LocalFilterPacket = {
   reverseOrder: false,
 }
 
-export const LocalFetchFilterContext = createContext<LocalFilterPacket>(defaultLocalFilter);
-export const LocalFetchFilterContextSetter = createContext<React.Dispatch<React.SetStateAction<LocalFilterPacket>> | null>(null);
+export const LocalFilterContext = createContext<LocalFilterPacket>(defaultLocalFilter);
+export const LocalFilterContextSetter = createContext<React.Dispatch<React.SetStateAction<LocalFilterPacket>>>(() => { });
+
+export function UseLocalFilterContext() {
+  const localFilter = useContext(LocalFilterContext);
+  const setLocalFilter = useContext(LocalFilterContextSetter);
+
+  if (!localFilter || !setLocalFilter) {
+    throw new Error("UseLocalFilterContext must be used within a LocalFilterContextProvider");
+  }
+
+  return { localFilter, setLocalFilter };
+}
 
 export function LocalFilterContextProvider({ children }: { children: React.ReactNode }) {
-
+  const { localFilter, setLocalFilter } = UseLocalFilterContext();
+  return (
+    <LocalFilterContext.Provider value={localFilter}>
+      <LocalFilterContextSetter.Provider value={setLocalFilter}>
+        {children}
+      </LocalFilterContextSetter.Provider>
+    </LocalFilterContext.Provider>
+  )
 }

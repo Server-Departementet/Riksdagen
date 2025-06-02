@@ -2,6 +2,8 @@ import type { User } from "@/app/spotify/types";
 import { isMinister } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { clerkClient } from "@clerk/nextjs/server";
+import { FetchFilterContextProvider } from "@/app/spotify/context/fetch-filter-context";
+import { LocalFilterContextProvider } from "@/app/spotify/context/local-filter-context";
 
 const clerk = await clerkClient();
 
@@ -21,18 +23,18 @@ export default async function SpotifyPage() {
       <style>{`footer{display:none;}main{padding:0;}`}</style>
 
       <section>
-        {/* <FetchFilterContextProvider> */}
-        {/*   <LocalFilterContextProvider> */}
-        <h1>Spotify-statistik</h1>
+        <FetchFilterContextProvider>
+          <LocalFilterContextProvider>
+            <h1>Spotify-statistik</h1>
 
-        {/* Filter panel will set fetch filters for getting track ids. Local filters such as search will also live here */}
-        {/* <FilterPanel /> */}
+            {/* Filter panel will set fetch filters for getting track ids. Local filters such as search will also live here */}
+            {/* <FilterPanel /> */}
 
-        {/* Filtered tracks */}
-        {/* <TrackList /> */}
+            {/* Filtered tracks */}
+            {/* <TrackList /> */}
 
-        {/*   </LocalFilterContextProvider> */}
-        {/* </FetchFilterContextProvider> */}
+          </LocalFilterContextProvider>
+        </FetchFilterContextProvider>
       </section>
     </main>
   );
