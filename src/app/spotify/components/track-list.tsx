@@ -20,12 +20,12 @@ export default async function TrackList({ className = "" }: { className?: string
   const tracksWithMeta: TrackWithMeta[] = await Promise.all(trackDataWithPlays.map(async (track) => {
     const totalPlays = track.TrackPlay.length;
     const totalMS = totalPlays * (track.duration || 0);
-    const playsPerUser: Record<string, number> = {};
+    const playsPerUser: Record<string, number> = {}; // Leave empty for now
     return {
       ...track,
       totalPlays,
       totalMS,
-      playsPerUser, // Leave empty for now
+      playsPerUser,
       color: await getTrackBGColor(track.image || ""),
     }
   }));
@@ -35,11 +35,10 @@ export default async function TrackList({ className = "" }: { className?: string
       overflow-y-auto 
       flex flex-col
       gap-y-3
-      pe-6 lg:pe-0
+      px-6 sm:ps-0
       *:first:mt-5 *:last:mb-10
       ${className}
     `}>
-      {/* {new Array(15).fill(0).map((_, i) => <Track trackData={} lineNumber={i + 1} key={`track-${i}`} />)} */}
       {tracksWithMeta.map((track, i) => (
         <TrackElement
           trackData={track}

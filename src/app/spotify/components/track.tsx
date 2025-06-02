@@ -27,7 +27,7 @@ export default function TrackElement({
     <li
       className={`
       h-(--spotify-track-height) min-h-(--spotify-track-height) 
-      w-full lg:w-2/3 max-w-prose min-w-[300px]
+      w-full xl:w-2/3 max-w-prose min-w-[300px]
       bg-zinc-100
       flex-1 
       grid 
@@ -55,7 +55,15 @@ export default function TrackElement({
       </h5>
 
       {/* Artists */}
-      <p className="col-start-2 row-start-2 col-span-2 pb-1 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
+      <p className={`
+        col-start-2 row-start-2 col-span-2 
+        pb-1 leading-4 
+        font-semibold text-sm 
+        opacity-75 
+        whitespace-nowrap text-ellipsis overflow-x-hidden
+      `}>
+        {track.artists.map(artist => artist.name).join(", ")}
+      </p>
 
       {/* Stats */}
       <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
