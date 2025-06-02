@@ -12,6 +12,16 @@ setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "
  * Extracts prominent color from the image in the url and caches it to a file.
  */
 export async function getTrackBGColor(url: string): Promise<string | undefined> {
+  if (!url) return undefined;
+  
+  // Validate URL
+  try {
+    new URL(url);
+  } catch (error) {
+    console.error("Invalid URL provided:", url, error);
+    return undefined;
+  }
+
   // Return cache
   if (colorCache[url]) return colorCache[url];
 

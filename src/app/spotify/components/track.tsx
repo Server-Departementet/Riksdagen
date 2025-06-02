@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function Track({
+export default function TrackElement({
   trackData: track,
   lineNumber,
   className = "",
@@ -16,52 +16,71 @@ export default function Track({
   lineNumber: number;
   className?: string;
 }) {
+  const minutes = Math.floor(track.duration / 60000);
+  const seconds = Math.floor((track.duration % 60000) / 1000);
+  const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+  const prettyPlayCount = `${track.totalPlays} ${track.totalPlays > 1 ? "gånger" : "gång"}`;
+  const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
+
   return (
     <li
       className={`
       h-(--spotify-track-height) min-h-(--spotify-track-height) 
-      flex flex-row items-center
-      gap-x-0.5
-      rounded-[4px]
-      w-2/3 max-w-prose min-w-[300px]
+      w-full lg:w-2/3 max-w-prose min-w-[300px]
       bg-zinc-100
+      flex-1 
+      grid 
+      grid-cols-[128px_1fr_max-content_max-content] 
+      grid-rows-[max-content_max-content_1fr_max-content] 
+      rounded-[4px] 
+      gap-x-2 gap-y-1
+      overflow-hidden 
       ${className}
-    `}>
-      <div
-        className="flex-1 grid grid-cols-[(--spotify-track-height)_1fr_max-content_max-content] grid-rows-[max-content_max-content_1fr_max-content] rounded-[4px] h-[(--spotify-track-height)] overflow-hidden gap-x-2 gap-y-1"
-        {...track.color ? { style: { backgroundColor: track.color } } : {}}
-      >
-        {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
-        <Image width={128} height={128} className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square" src={track.image ?? CrownSVG} alt="Låtbild" />
+    `}
+      {...track.color ? { style: { backgroundColor: track.color } } : {}}
+    >
+      {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
+      <Image
+        width={128} height={128}
+        className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square"
+        src={track.image ?? CrownSVG} alt="Låtbild"
+      />
 
-        <h5 className={`
+      <h5 className={`
           col-start-2 row-start-1 col-span-2
           leading-5 py-1 overflow-x-hidden whitespace-nowrap text-ellipsis overflow-y-hidden
         `}>
-          {track.name}
-        </h5>
+        {track.name}
+      </h5>
 
-        {/* Artists */}
-        <p className="col-start-2 row-start-2 col-span-2 pb-1 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
+      {/* Artists */}
+      <p className="col-start-2 row-start-2 col-span-2 pb-1 font-semibold text-sm opacity-75 leading-4 whitespace-nowrap overflow-y-hidden overflow-x-auto">{track.artists.map(artist => artist.name).join(", ")}</p>
 
-        {/* Stats */}
-        <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
-          {/* Duration (long) */}
-          <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
-          {/* Listening time (long) */}
-          <p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>
+      {/* Stats */}
+      <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
+        {/* Duration (long) */}
+        <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+        {/* Listening time (long) */}
+        <p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>
 
-          {/* Duration (short) */}
-          <p className="block sm:hidden">Längd {prettyDuration}</p>
-          {/* Listening time (short) */}
-          <p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>
-        </div>
-
-        {/* Spotify Link */}
-        <OpenInSpotifyButton trackURL={track.url} />
+        {/* Duration (short) */}
+        <p className="block sm:hidden">Längd {prettyDuration}</p>
+        {/* Listening time (short) */}
+        <p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>
       </div>
 
-      <span>{lineNumber}</span>
+      {/* Line number */}
+      <div className="col-start-3 col-span-2 row-start-1 flex flex-row items-center justify-end px-1">
+        {/* Circle/Pill */}
+        <span className="bg-zinc-100 rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center">
+          {/* Number */}
+          <span className="text-center align-middle text-xs">{lineNumber}</span>
+        </span>
+      </div>
+
+      {/* Spotify Link */}
+      <OpenInSpotifyButton trackURL={track.url} />
     </li>
   );
 }
