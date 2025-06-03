@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { sha1 } from "@/lib/hash";
 import filterTracks from "../lib/filter";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest): Promise<NextResponse<{ trackStats: Record<string, TrackStats> }>> {
   // Auth user 
   if (!isMinister()) return new NextResponse("Unauthorized", { status: 401 });

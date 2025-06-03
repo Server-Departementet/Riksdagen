@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
 import filterTracks from "@/app/api/spotify/lib/filter";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   // Auth user 
   if (!isMinister()) return new Response("Unauthorized", { status: 401 });
