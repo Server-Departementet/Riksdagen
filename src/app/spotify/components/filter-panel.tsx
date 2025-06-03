@@ -1,18 +1,24 @@
 "use client";
 
+import type { User } from "@/app/spotify/types";
 import { UseFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
 import { UseLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCallback } from "react";
 
-export default function FilterPanel({ className = "" }: { className?: string }) {
+export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = UseFetchFilterContext();
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
 
-  const handleUserToggle = useCallback((value: string) => {
-    console.log(value);
+  const handleUserToggle = useCallback((value: string[]) => {
+    const userIds = value;
+    const users = userIds.map(id => userMap[id]).filter(Boolean) as User[];
 
-  }, []);
+    setFetchFilter(prev => ({
+      ...prev,
+      users,
+    }));
+  }, [setFetchFilter, userMap]);
 
   return (
     <div className={`
@@ -36,7 +42,7 @@ export default function FilterPanel({ className = "" }: { className?: string }) 
             onValueChange={handleUserToggle}
             className="w-fit flex-col *:w-full"
           >
-            {fetchFilter.users.map(u => (
+            {Object.values(userMap).map(u => (
               <ToggleGroupItem
                 value={u.id}
                 key={`user-${u.id}`}

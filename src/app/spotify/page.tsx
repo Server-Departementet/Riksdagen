@@ -14,10 +14,17 @@ export default async function SpotifyPage() {
   // if (!(await isMinister())) return notFound();
 
   const allUsers = (await clerk.users.getUserList({ orderBy: "+created_at" })).data;
-  const ministerChecks = await Promise.all(allUsers.map(user => isMinister(user.id)));
-  const users: User[] = allUsers
-    .filter((_, i) => ministerChecks[i])
-    .map(user => ({ id: user.id, name: user.firstName || user.id }));
+  const users = (await Promise.all(
+    allUsers.map(async user => {
+      const isMinisterUser = await isMinister(user.id);
+      return isMinisterUser ? { id: user.id, name: user.firstName || user.id } : null;
+    })
+  )).filter(Boolean) as User[];
+
+  const userMap: Record<string, User> = {};
+  users.forEach(user => {
+    userMap[user.id] = user;
+  });
 
   return (
     <main className={`
@@ -35,7 +42,7 @@ export default async function SpotifyPage() {
           <LocalFilterContextProvider>
 
             {/* Filter panel will set fetch filters for getting track ids. Local filters such as search will also live here */}
-            <FilterPanel className="flex-1" />
+            <FilterPanel userMap={userMap} className="flex-1" />
 
             {/* Filtered tracks */}
             <TrackList className="flex-2" />
