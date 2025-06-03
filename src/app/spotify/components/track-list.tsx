@@ -1,6 +1,6 @@
 "use client";
 
-import type { Track, TrackStats } from "@/app/spotify/types";
+import type { TrackStats, TrackWithStats } from "@/app/spotify/types";
 import TrackElement from "@/app/spotify/components/track";
 import { useEffect, useState } from "react";
 import { useFetchFilterContext } from "../context/fetch-filter-context";
@@ -8,7 +8,7 @@ import { sha1 } from "@/lib/hash";
 
 export default function TrackList({ className = "" }: { className?: string }) {
   const { fetchFilter } = useFetchFilterContext();
-  const [trackData, setTrackData] = useState<Track[]>([]);
+  const [trackData, setTrackData] = useState<TrackWithStats[]>([]);
   const [trackStats, setTrackStats] = useState<Record<string, TrackStats>>({});
   const [lastFilterHash, setLastFilterHash] = useState<string>(sha1(JSON.stringify(fetchFilter)));
 
@@ -34,7 +34,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
           throw new Error("Failed to fetch track data");
         }
 
-        const data = await response.json();
+        const data = await response.json() as { trackData: TrackWithStats[] };
         setTrackData(data.trackData);
       } catch (error) {
         console.error("Error fetching track data:", error);
@@ -84,7 +84,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {trackData.map((track, i) => (
         <TrackElement
           trackData={track}
-          trackStats={trackStats[sha1(track.id + sha1(JSON.stringify(fetchFilter)))] || null}
+          statOverride={trackStats[sha1(track.id + sha1(JSON.stringify(fetchFilter)))] || null}
           lineNumber={i + 1}
           key={`track-${track.id}`}
         />

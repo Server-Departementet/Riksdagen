@@ -9,7 +9,7 @@ import { useCallback } from "react";
 export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
-
+  
   const handleUserToggle = useCallback((value: string[]) => {
     const userIds = value;
     const users = userIds.map(id => userMap[id]).filter(Boolean) as User[];

@@ -39,7 +39,7 @@ export function useFetchFilterContext() {
 export default function FetchFilterContextProvider({ children, initialUsers }: { children: React.ReactNode, initialUsers: User[] }) {
   const [fetchFilter, setFetchFilter] = useState<FetchFilterPacket>({
     ...defaultFetchFilter,
-    users: initialUsers,
+    users: initialUsers.filter(u => u.id !== "user_2uU9WrpwOdzo3KZELFjz5TlT1Py"),
   });
 
   return (

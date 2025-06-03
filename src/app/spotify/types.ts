@@ -7,8 +7,10 @@ import type {
 } from "@/prisma/generated/client";
 
 // Extend Prisma types to include relations
-export type TrackPlay = PrismaTrackPlay & { track: Track };
+export type TrackPlay = PrismaTrackPlay;
 export type Genre = PrismaGenre;
+export type Album = PrismaAlbum;
+export type Artist = PrismaArtist;
 
 export type User = {
   name: string; // User's name
@@ -30,9 +32,11 @@ export type TrackStats = {
 
 export type TrackWithStats = Track & TrackStats;
 
+export type TrackWithPlays = Track & { TrackPlay: TrackPlay[] };
+
 export interface SortingOption {
   label: string; // User facing name
-  id: string; // Used as key in object
+  id: "playtime" | "play_count" | "track_length" | "track_name" | "artist_name" | "default"; // Used as key in object
   func: (a: TrackWithStats, b: TrackWithStats) => number;
 };
 

@@ -3,10 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isMinister } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sha1 } from "@/lib/hash";
+import filterTracks from "../lib/filter";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse<{ trackStats: Record<string, TrackStats> }>> {
   // Auth user 
-  if (!isMinister()) return new Response("Unauthorized", { status: 401 });
+  if (!isMinister()) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
   const { filter } = body;
@@ -22,37 +23,17 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // const tracksWithMeta: TrackWithStats[] = await Promise.all(trackDataWithPlays.map(async (track) => {
-  //   const totalPlays = track.TrackPlay.length;
-  //   const totalMS = totalPlays * (track.duration || 0);
-  //   const playsPerUser: Record<string, number> = {}; // Leave empty for now
-  //   return {
-  //     ...track,
-  //     totalPlays,
-  //     totalMS,
-  //     playsPerUser,
-  //     color: await getTrackBGColor(track.image || ""),
-  //   }
-  // }));
+  const tracksWithStats = await filterTracks(trackDataWithPlays, filter);
 
   const trackStats: Record<string, TrackStats> = {};
-  trackDataWithPlays.forEach(track => {
-    const totalPlays = track.TrackPlay.length;
-    const totalMS = totalPlays * (track.duration || 0);
-    const playsPerUser: Record<string, number> = {};
-
-    track.TrackPlay.forEach(play => {
-      playsPerUser[play.userId] = (playsPerUser[play.userId] || 0) + 1;
-    });
-
-    const trackHash = sha1(track.id + sha1(JSON.stringify(filter)));
-
+  tracksWithStats.forEach((track) => {
+    const trackHash = sha1(track.id + sha1(JSON.stringify(filter)))
     trackStats[trackHash] = {
+      totalMS: track.totalMS,
+      totalPlays: track.totalPlays,
+      playsPerUser: track.playsPerUser,
       trackId: track.id,
-      totalPlays,
-      totalMS,
-      playsPerUser,
-    };
+    }
   });
 
   return NextResponse.json({ trackStats });
