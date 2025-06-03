@@ -3,15 +3,24 @@
 import { UseFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
 import { UseLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useCallback } from "react";
 
 export default function FilterPanel({ className = "" }: { className?: string }) {
   const { fetchFilter, setFetchFilter } = UseFetchFilterContext();
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
+
+  const handleUserToggle = useCallback((value: string) => {
+    console.log(value);
+
+  }, []);
+
   return (
     <div className={`
       flex flex-row justify-center sm:justify-end
       pt-5 px-6
       overflow-y-auto
+      bg-white
+      z-20
       ${className}
     `}>
       {/* Nested divs in order to easily align everything toward the end of the container */}
@@ -21,28 +30,28 @@ export default function FilterPanel({ className = "" }: { className?: string }) 
         {/* User filter */}
         <div className="w-full flex flex-col items-center">
           <ToggleGroup
+            variant="outline"
             type="multiple"
-            className="w-fit flex-col *:w-full"
             defaultValue={fetchFilter.users.map(u => u.id)}
+            onValueChange={handleUserToggle}
+            className="w-fit flex-col *:w-full"
           >
-            {fetchFilter.users.map(u => {
-              return (
-                <ToggleGroupItem
-                  value={u.id}
-                  key={`user-${u.id}`}
-                  className={`
-                    bg-zinc-100 
+            {fetchFilter.users.map(u => (
+              <ToggleGroupItem
+                value={u.id}
+                key={`user-${u.id}`}
+                className={`
+                    bg-zinc-100 text-zinc-500 
                     aria-pressed:!bg-gray-600 aria-pressed:!text-white
                     first:rounded-none first:rounded-tl-lg first:rounded-tr-lg 
                     last:rounded-none last:rounded-bl-lg last:rounded-br-lg
                     first:pt-0.5 last:pb-0.5
                     px-1.5 py-0.5
                   `}
-                >
-                  {u.name}
-                </ToggleGroupItem>
-              )
-            })}
+              >
+                {u.name}
+              </ToggleGroupItem>
+            ))}
           </ToggleGroup>
         </div>
 

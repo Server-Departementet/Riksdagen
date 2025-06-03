@@ -35,7 +35,7 @@ export default async function SpotifyPage() {
           <LocalFilterContextProvider>
 
             {/* Filter panel will set fetch filters for getting track ids. Local filters such as search will also live here */}
-            <FilterPanel className="flex-1 sticky sm:static" />
+            <FilterPanel className="flex-1" />
 
             {/* Filtered tracks */}
             <TrackList className="flex-2" />
