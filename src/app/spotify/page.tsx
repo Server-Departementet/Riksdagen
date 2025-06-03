@@ -11,7 +11,7 @@ const clerk = await clerkClient();
 
 export default async function SpotifyPage() {
   // Auth check
-  // if (!(await isMinister())) return notFound();
+  if (!(await isMinister())) return notFound();
 
   const allUsers = (await clerk.users.getUserList({ orderBy: "+created_at" })).data;
   const users = (await Promise.all(

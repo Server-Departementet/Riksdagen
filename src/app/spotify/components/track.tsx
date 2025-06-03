@@ -1,6 +1,6 @@
 "use client";
 
-import type { TrackWithMeta } from "@/app/spotify/types";
+import type { Track, TrackStats } from "@/app/spotify/types";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 
 export default function TrackElement({
   trackData: track,
+  trackStats: stats,
   lineNumber,
   className = "",
 }: {
-  trackData: TrackWithMeta
+  trackData: Track
+  trackStats: TrackStats | null;
   lineNumber: number;
   className?: string;
 }) {
@@ -20,8 +22,8 @@ export default function TrackElement({
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  const prettyPlayCount = `${track.totalPlays} ${track.totalPlays > 1 ? "gånger" : "gång"}`;
-  const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
+  const prettyPlayCount = stats && `${stats.totalPlays} ${stats.totalPlays > 1 ? "gånger" : "gång"}`;
+  const prettyPlaytime = stats && `${Math.floor(stats.totalMS / 60000)} min`;
 
   return (
     <li
@@ -70,12 +72,12 @@ export default function TrackElement({
         {/* Duration (long) */}
         <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
-        <p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>
+        {stats && (<p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>)}
 
         {/* Duration (short) */}
         <p className="block sm:hidden">Längd {prettyDuration}</p>
         {/* Listening time (short) */}
-        <p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>
+        {stats && (<p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>)}
       </div>
 
       {/* Line number */}

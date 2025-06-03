@@ -25,7 +25,7 @@ export const defaultFetchFilter: FetchFilterPacket = {
 export const FetchFilterContext = createContext<FetchFilterPacket>(defaultFetchFilter);
 export const FetchFilterContextSetter = createContext<React.Dispatch<React.SetStateAction<FetchFilterPacket>>>(() => { });
 
-export function UseFetchFilterContext() {
+export function useFetchFilterContext() {
   const fetchFilter = useContext(FetchFilterContext);
   const setFetchFilter = useContext(FetchFilterContextSetter);
 

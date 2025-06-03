@@ -1,34 +1,76 @@
-import type { Track, TrackWithMeta } from "@/app/spotify/types";
+"use client";
+
+import type { Track, TrackStats } from "@/app/spotify/types";
 import TrackElement from "@/app/spotify/components/track";
-import { prisma } from "@/lib/prisma";
-import { getTrackBGColor } from "../functions/get-track-color";
+import { useEffect, useState } from "react";
+import { useFetchFilterContext } from "../context/fetch-filter-context";
+import { sha1 } from "@/lib/hash";
 
-export default async function TrackList({ className = "" }: { className?: string }) {
+export default function TrackList({ className = "" }: { className?: string }) {
+  const { fetchFilter } = useFetchFilterContext();
+  const [trackData, setTrackData] = useState<Track[]>([]);
+  const [trackStats, setTrackStats] = useState<Record<string, TrackStats>>({});
+  const [lastFilterHash, setLastFilterHash] = useState<string>(sha1(JSON.stringify(fetchFilter)));
 
-  const trackDataWithPlays = await prisma.track.findMany({
-    orderBy: {
-      TrackPlay: { _count: 'desc' },
-    },
-    take: 50,
-    include: {
-      album: true,
-      artists: true,
-      TrackPlay: true,
-    },
-  });
-
-  const tracksWithMeta: TrackWithMeta[] = await Promise.all(trackDataWithPlays.map(async (track) => {
-    const totalPlays = track.TrackPlay.length;
-    const totalMS = totalPlays * (track.duration || 0);
-    const playsPerUser: Record<string, number> = {}; // Leave empty for now
-    return {
-      ...track,
-      totalPlays,
-      totalMS,
-      playsPerUser,
-      color: await getTrackBGColor(track.image || ""),
+  // Keep filter hash in sync with fetchFilter
+  useEffect(() => {
+    const currentFilterHash = sha1(JSON.stringify(fetchFilter));
+    if (currentFilterHash !== lastFilterHash) {
+      setLastFilterHash(currentFilterHash);
     }
-  }));
+  }, [fetchFilter, lastFilterHash]);
+
+  // Fetch track data from /api/spotify/track-data with filter in body
+  useEffect(() => {
+    const fetchTrackData = async () => {
+      try {
+        const response = await fetch("/api/spotify/track-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", },
+          body: JSON.stringify({ filter: fetchFilter }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch track data");
+        }
+
+        const data = await response.json();
+        setTrackData(data.trackData);
+      } catch (error) {
+        console.error("Error fetching track data:", error);
+      }
+    };
+
+    if (!trackData.length) fetchTrackData();
+  }, [fetchFilter, trackData.length]);
+
+  // On filter change, refetch track stats from /api/spotify/track-stats with filter in body
+  useEffect(() => {
+    const fetchTrackStats = async () => {
+      try {
+        const response = await fetch("/api/spotify/track-stats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filter: fetchFilter }),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch track stats");
+        }
+        const data = await response.json();
+        const stats: Record<string, TrackStats> = data.trackStats;
+        setTrackStats(stats);
+      } catch (error) {
+        console.error("Error fetching track stats:", error);
+      }
+    };
+
+    // Refetch track stats if:
+    // 1. No track stats are present
+    // 2. The filter hash has changed
+    if (!Object.keys(trackStats).length || lastFilterHash !== sha1(JSON.stringify(fetchFilter))) {
+      fetchTrackStats();
+    }
+  }, [fetchFilter, lastFilterHash, trackStats]);
 
   return (
     <ul className={`
@@ -39,9 +81,10 @@ export default async function TrackList({ className = "" }: { className?: string
       *:first:mt-5 *:last:mb-10
       ${className}
     `}>
-      {tracksWithMeta.map((track, i) => (
+      {trackData.map((track, i) => (
         <TrackElement
           trackData={track}
+          trackStats={trackStats[sha1(track.id + sha1(JSON.stringify(fetchFilter)))] || null}
           lineNumber={i + 1}
           key={`track-${track.id}`}
         />

@@ -7,7 +7,6 @@ import type {
 } from "@/prisma/generated/client";
 
 // Extend Prisma types to include relations
-export type Track = PrismaTrack & { album: PrismaAlbum, artists: PrismaArtist[] };
 export type TrackPlay = PrismaTrackPlay & { track: Track };
 export type Genre = PrismaGenre;
 
@@ -16,17 +15,25 @@ export type User = {
   id: string; // User's ID provided by Clerk
 }
 
-export type TrackWithMeta = Track & {
+export type Track = PrismaTrack & {
+  album: PrismaAlbum;
+  artists: PrismaArtist[];
+  color?: string; // Color extracted from the track image, when missing it uses a default fallback
+};
+
+export type TrackStats = {
+  trackId: string;
   totalPlays: number;
   totalMS: number;
   playsPerUser: Record<string, number>;
-  color?: string; // Color extracted from the track image, when missing it uses a default fallback
-};
+}
+
+export type TrackWithStats = Track & TrackStats;
 
 export interface SortingOption {
   label: string; // User facing name
   id: string; // Used as key in object
-  func: (a: TrackWithMeta, b: TrackWithMeta) => number;
+  func: (a: TrackWithStats, b: TrackWithStats) => number;
 };
 
 export type LocalFilterPacket = {
