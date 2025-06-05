@@ -1,45 +1,20 @@
 "use client";
 
-import type { Track, TrackStats, TrackWithStats } from "@/app/spotify/types";
+import type { TrackStats, TrackWithStats } from "@/app/spotify/types";
 import TrackElement, { SkeletonTrackElement } from "@/app/spotify/components/track";
 import { useEffect, useState, useMemo } from "react";
 import { useFetchFilterContext } from "../context/fetch-filter-context";
 import { UseLocalFilterContext } from "../context/local-filter-context";
 import { sha1 } from "@/lib/hash";
 
-// Create session storage for track data and stats cache
-if (typeof window !== "undefined") {
-  const trackDataCache = sessionStorage.getItem("trackDataCache");
-  if (trackDataCache) {
-    try {
-      const parsedData = JSON.parse(trackDataCache) as Record<string, Track[]>; // Don't cache stats here, only track data
-      if (Array.isArray(parsedData)) {
-        sessionStorage.setItem("trackDataCache", JSON.stringify(parsedData));
-      }
-    } catch (error) {
-      console.error("Failed to parse track data cache:", error);
-      sessionStorage.removeItem("trackDataCache");
-    }
-  }
-  const trackStatsCache = sessionStorage.getItem("trackStatsCache");
-  if (trackStatsCache) {
-    try {
-      const parsedStats = JSON.parse(trackStatsCache) as Record<string, TrackStats>;
-      if (typeof parsedStats === "object") {
-        sessionStorage.setItem("trackStatsCache", JSON.stringify(parsedStats));
-      }
-    } catch (error) {
-      console.error("Failed to parse track stats cache:", error);
-      sessionStorage.removeItem("trackStatsCache");
-    }
-  }
-}
-
+// Cache helper functions
 const getTrackDataCache = () => {
+  if (typeof window === "undefined") return {};
+
   const cachedData = sessionStorage.getItem("trackDataCache");
   if (cachedData) {
     try {
-      return JSON.parse(cachedData) as Record<string, Track[]>;
+      return JSON.parse(cachedData) as Record<string, TrackWithStats[]>;
     } catch (error) {
       console.error("Failed to parse track data cache:", error);
       sessionStorage.removeItem("trackDataCache");
@@ -49,6 +24,8 @@ const getTrackDataCache = () => {
 }
 
 const getTrackStatsCache = () => {
+  if (typeof window === "undefined") return {};
+
   const cachedStats = sessionStorage.getItem("trackStatsCache");
   if (cachedStats) {
     try {
@@ -66,29 +43,20 @@ export default function TrackList({ className = "" }: { className?: string }) {
   const { localFilter } = UseLocalFilterContext();
   const [trackData, setTrackData] = useState<TrackWithStats[]>([]);
   const [trackStats, setTrackStats] = useState<Record<string, TrackStats>>({});
-  const [lastFilterHash, setLastFilterHash] = useState<string>(sha1(JSON.stringify(fetchFilter)));
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Keep filter hash in sync with fetchFilter
-  useEffect(() => {
-    const currentFilterHash = sha1(JSON.stringify(fetchFilter));
-    if (currentFilterHash !== lastFilterHash) {
-      setLastFilterHash(currentFilterHash);
-      setIsLoading(true); // Set loading when filter changes
-    }
-  }, [fetchFilter, lastFilterHash]);
+  // Memoize the current filter hash to avoid recalculating it
+  const currentFilterHash = useMemo(() => sha1(JSON.stringify(fetchFilter)), [fetchFilter]);
 
-  // Fetch track data from /api/spotify/track-data with filter in body
+  // Fetch track data when filter changes
   useEffect(() => {
-    const currentFilterHash = sha1(JSON.stringify(fetchFilter));
-
     const fetchTrackData = async () => {
       setIsLoading(true);
 
-      // Check if we have cached track data
+      // Check for cached track data first
       const trackDataCache = getTrackDataCache();
       if (trackDataCache[currentFilterHash]) {
-        setTrackData(trackDataCache[currentFilterHash] as TrackWithStats[]);
+        setTrackData(trackDataCache[currentFilterHash]);
         setTimeout(() => setIsLoading(false), 500);
         return;
       }
@@ -96,7 +64,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       try {
         const response = await fetch("/api/spotify/track-data", {
           method: "POST",
-          headers: { "Content-Type": "application/json", },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filter: fetchFilter }),
         });
 
@@ -107,10 +75,12 @@ export default function TrackList({ className = "" }: { className?: string }) {
         const data = await response.json() as { trackData: TrackWithStats[] };
         setTrackData(data.trackData);
 
-        // Set cached track data in session storage with filter hash
-        const trackDataCache = getTrackDataCache();
-        const newTrackDataCache = { ...trackDataCache, [currentFilterHash]: data.trackData };
-        sessionStorage.setItem("trackDataCache", JSON.stringify(newTrackDataCache));
+        // Cache the track data
+        const updatedCache = {
+          ...getTrackDataCache(),
+          [currentFilterHash]: data.trackData
+        };
+        sessionStorage.setItem("trackDataCache", JSON.stringify(updatedCache));
       } catch (error) {
         console.error("Error fetching track data:", error);
       } finally {
@@ -118,55 +88,72 @@ export default function TrackList({ className = "" }: { className?: string }) {
       }
     };
 
-    if (!trackData.length || lastFilterHash !== currentFilterHash) {
-      fetchTrackData();
-    }
-  }, [fetchFilter, lastFilterHash, trackData.length]);
+    fetchTrackData();
+  }, [fetchFilter, currentFilterHash]);
 
-  // On filter change, refetch track stats from /api/spotify/track-stats with filter in body
+  // Fetch track stats independently
   useEffect(() => {
     const fetchTrackStats = async () => {
+      // Check for cached stats first
+      const statsCache = getTrackStatsCache();
+      if (statsCache[currentFilterHash]) {
+        // Transform cached stats to match component state structure
+        const transformedStats: Record<string, TrackStats> = {};
+        const cachedFilterStats = statsCache[currentFilterHash];
+
+        Object.keys(cachedFilterStats).forEach(key => {
+          const stat = cachedFilterStats[key];
+          const trackHash = sha1(stat.trackId + currentFilterHash);
+          transformedStats[trackHash] = stat;
+        });
+
+        setTrackStats(transformedStats);
+        return;
+      }
+
       try {
         const response = await fetch("/api/spotify/track-stats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filter: fetchFilter }),
         });
+
         if (!response.ok) {
           throw new Error("Failed to fetch track stats");
         }
+
         const data = await response.json();
-        const stats: Record<string, TrackStats> = data.trackStats;
-        setTrackStats(prevStats => {
-          const newStats: Record<string, TrackStats> = {};
-          Object.keys(stats).forEach(key => {
-            const trackHash = sha1(stats[key].trackId + lastFilterHash);
-            newStats[trackHash] = stats[key];
-          });
-          return { ...prevStats, ...newStats };
+        const rawStats: Record<string, TrackStats> = data.trackStats;
+
+        // Transform stats for component state
+        const transformedStats: Record<string, TrackStats> = {};
+        Object.keys(rawStats).forEach(key => {
+          const stat = rawStats[key];
+          const trackHash = sha1(stat.trackId + currentFilterHash);
+          transformedStats[trackHash] = stat;
         });
-        // Append to cache
-        const trackStatsCache = getTrackStatsCache();
-        const newTrackStatsCache = { ...trackStatsCache, [lastFilterHash]: trackStats };
-        sessionStorage.setItem("trackStatsCache", JSON.stringify(newTrackStatsCache));
+
+        setTrackStats(transformedStats);
+
+        // Cache the raw stats
+        const updatedStatsCache = {
+          ...getTrackStatsCache(),
+          [currentFilterHash]: rawStats
+        };
+        sessionStorage.setItem("trackStatsCache", JSON.stringify(updatedStatsCache));
       } catch (error) {
         console.error("Error fetching track stats:", error);
       }
     };
 
-    // Refetch track stats if:
-    // 1. No track stats are present
-    // 2. The filter hash has changed
-    if (!Object.keys(trackStats).length || lastFilterHash !== sha1(JSON.stringify(fetchFilter))) {
-      fetchTrackStats();
-    }
-  }, [fetchFilter, lastFilterHash, trackStats]);
+    fetchTrackStats();
+  }, [currentFilterHash, fetchFilter]);
 
-  // Apply local filtering and sorting to tracks
+  // Apply local filtering and sorting
   const filteredTracks = useMemo(() => {
-    // Apply search filter if present
     let filtered = trackData;
 
+    // Apply search filter
     if (localFilter.search) {
       const searchLower = localFilter.search.toLowerCase();
       filtered = filtered.filter(track =>
@@ -176,12 +163,10 @@ export default function TrackList({ className = "" }: { className?: string }) {
       );
     }
 
-    // Apply local sorting
+    // Apply sorting
     if (localFilter.sort) {
-      const sortFunction = localFilter.sort.func;
-      filtered = [...filtered].sort(sortFunction);
+      filtered = [...filtered].sort(localFilter.sort.func);
 
-      // Apply reverse ordering if needed
       if (localFilter.reverseOrder) {
         filtered = filtered.reverse();
       }
@@ -210,7 +195,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {!isLoading && filteredTracks.map((track, i) => (
         <TrackElement
           trackData={track}
-          statOverride={trackStats[sha1(track.id + sha1(JSON.stringify(fetchFilter)))] || null}
+          statOverride={trackStats[sha1(track.id + currentFilterHash)] || null}
           lineNumber={i + 1}
           key={`track-${track.id}`}
         />
