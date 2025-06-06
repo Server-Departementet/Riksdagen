@@ -10,23 +10,40 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
 
+  let userToggleDebounceTimeout: NodeJS.Timeout | null = null;
   const handleUserToggle = useCallback((value: string[]) => {
+    // Clear previous timeout if it exists
+    if (userToggleDebounceTimeout) clearTimeout(userToggleDebounceTimeout);
+
     const userIds = value;
     const users = userIds.map(id => userMap[id]).filter(Boolean) as User[];
 
-    setFetchFilter(prev => ({
-      ...prev,
-      users,
-    }));
-  }, [setFetchFilter, userMap]);
+    // Set a new timeout to debounce the user toggle action
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    userToggleDebounceTimeout = setTimeout(() => {
+      setFetchFilter(prev => ({
+        ...prev,
+        users,
+      }));
+    }, 750);
+  }, [userToggleDebounceTimeout, setFetchFilter, userMap]);
 
+  let searchChangeDebounceTimeout: NodeJS.Timeout | null = null;
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    // Clear previous timeout if it exists
+    if (searchChangeDebounceTimeout) clearTimeout(searchChangeDebounceTimeout);
+
     const searchValue = e.target.value;
-    setLocalFilter(prev => ({
-      ...prev,
-      search: searchValue,
-    }));
-  }, [setLocalFilter]);
+
+    // Set a new timeout to debounce the search change action
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    searchChangeDebounceTimeout = setTimeout(() => {
+      setLocalFilter(prev => ({
+        ...prev,
+        search: searchValue,
+      }));
+    }, 750);
+  }, [searchChangeDebounceTimeout, setLocalFilter]);
 
   return (
     <div className={`
@@ -76,7 +93,7 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
             placeholder="Sök efter låtar..."
             defaultValue={localFilter.search}
             onChange={handleSearchChange}
-            className="w-full max-w-md p-2 border border-gray-300 rounded-lg"
+            className="w-full max-w-sm p-2 border border-gray-300 rounded-lg"
           />
         </div>
 

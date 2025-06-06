@@ -181,25 +181,29 @@ export default function TrackList({ className = "" }: { className?: string }) {
       flex flex-col
       gap-y-3
       px-6 sm:ps-0
-      *:first:mt-5 *:last:mb-10
+      *:first:mt-3 *:last:mb-10
       ${className}
     `}>
-      {isLoading && new Array(20).fill(0).map((_, i) => (
+      <p className="text-sm opacity-60 font-normal w-full text-center sm:text-start">
+        {filteredTracks.length} resultat
+      </p>
+
+      {isLoading && new Array(20).fill(0).map((_, i) =>
         <SkeletonTrackElement key={`skeleton-${i}`} />
-      ))}
-      {!isLoading && filteredTracks.length === 0 && (
+      )}
+      {!isLoading && filteredTracks.length === 0 &&
         <div className="py-10 text-center text-gray-500">
           Inget matchar aktiva filtret.
         </div>
-      )}
-      {!isLoading && filteredTracks.map((track, i) => (
+      }
+      {!isLoading && filteredTracks.map((track, i) =>
         <TrackElement
           trackData={track}
           statOverride={trackStats[sha1(track.id + currentFilterHash)] || null}
           lineNumber={i + 1}
           key={`track-${track.id}`}
         />
-      ))}
+      )}
     </ul>
   );
 }
