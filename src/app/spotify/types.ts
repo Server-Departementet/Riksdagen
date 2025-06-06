@@ -18,8 +18,8 @@ export type User = {
 }
 
 export type Track = PrismaTrack & {
-  album: PrismaAlbum;
-  artists: PrismaArtist[];
+  album: Album;
+  artists: Artist[];
   color?: string; // Color extracted from the track image, when missing it uses a default fallback
 };
 

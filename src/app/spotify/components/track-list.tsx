@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useFetchFilterContext } from "../context/fetch-filter-context";
 import { UseLocalFilterContext } from "../context/local-filter-context";
 import { sha1 } from "@/lib/hash";
+import "@/lib/protobuf/protobuf.min.js";
 
 // Cache helper functions
 const getTrackDataCache = () => {
@@ -22,7 +23,6 @@ const getTrackDataCache = () => {
   }
   return {};
 }
-
 const getTrackStatsCache = () => {
   if (typeof window === "undefined") return {};
 
@@ -148,6 +148,18 @@ export default function TrackList({ className = "" }: { className?: string }) {
 
     fetchTrackStats();
   }, [currentFilterHash, fetchFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const trackData = getTrackDataCache();
+    window.protobuf.load("../spotify.proto", (err, root) => {
+      if (err) {
+        console.error(err);
+        throw err;
+      }
+    });
+  }, []);
 
   // Apply local filtering and sorting
   const filteredTracks = useMemo(() => {
