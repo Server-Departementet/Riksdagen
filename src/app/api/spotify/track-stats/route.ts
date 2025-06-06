@@ -7,12 +7,27 @@ import filterTracks from "../lib/filter";
 
 export const dynamic = "force-dynamic";
 
+const cache: Record<string, Record<string, TrackStats>> = {};
+// Clear cache every day at 3 AM
+setInterval(() => {
+  const now = new Date();
+  if (now.getHours() === 3) {
+    console.info("Clearing track stats cache");
+    Object.keys(cache).forEach(key => delete cache[key]);
+  }
+}, 60 * 1000);
+
 export async function POST(req: NextRequest): Promise<NextResponse<{ trackStats: Record<string, TrackStats> }>> {
   // Auth user 
   if (!isMinister()) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
   const { filter } = body;
+
+  const filterHash = sha1(JSON.stringify(filter));
+  if (cache[filterHash]) {
+    return NextResponse.json({ trackStats: cache[filterHash] });
+  }
 
   const trackDataWithPlays = await prisma.track.findMany({
     orderBy: {
@@ -37,6 +52,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<{ trackStats:
       trackId: track.id,
     }
   });
+
+  // Cache the track stats
+  cache[filterHash] = trackStats;
 
   return NextResponse.json({ trackStats });
 }
