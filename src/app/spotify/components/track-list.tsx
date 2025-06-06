@@ -20,11 +20,65 @@ export default function TrackList({ className = "" }: { className?: string }) {
   // To prevent excessive re-renders, we use a ref to store the track index instead of state. 
   const trackIndexRef = useRef<TrackId[]>(trackIndex);
 
-  const [trackDataCache, setTrackDataCache] = useState<Record<TrackId, Track>>({});
-  const [trackStatsCache, setTrackStatsCache] = useState<Record<FilterHash, TrackStats[]>>({});
-
+  // const [trackDataCache, setTrackDataCache] = useState<Record<TrackId, Track>>({});
+  // const [trackStatsCache, setTrackStatsCache] = useState<Record<FilterHash, TrackStats[]>>({});
+  const trackDataCache = useRef<Record<TrackId, Track>>({});
+  const trackStatsCache = useRef<Record<FilterHash, TrackStats[]>>({});
 
   const currentFilterHash = useMemo(() => sha1(JSON.stringify(fetchFilter)), [fetchFilter]);
+
+  // Load cached data from localStorage and sessionStorage on initial render
+  useEffect(() => {
+    // Local storage
+    try {
+      const cachedData = localStorage.getItem("spotifyTrackData");
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData) as Record<TrackId, Track>;
+        // Initialize the track data cache with the parsed data
+        Object.entries(parsedData).forEach(([id, track]) => {
+          trackDataCache.current[id] = track;
+        });
+      }
+    }
+    catch (error) {
+      console.error("Error loading cached track data:", error);
+      // Clear the cache if there's an error
+      localStorage.removeItem("spotifyTrackData");
+      trackDataCache.current = {};
+    }
+
+    // Session storage
+    try {
+      const cachedStats = sessionStorage.getItem("spotifyTrackStats");
+      if (cachedStats) {
+        const parsedStats = JSON.parse(cachedStats) as Record<FilterHash, TrackStats[]>;
+        // Initialize the track stats cache with the parsed stats
+        Object.entries(parsedStats).forEach(([hash, stats]) => {
+          trackStatsCache.current[hash] = stats;
+        });
+      }
+    }
+    catch (error) {
+      console.error("Error loading cached track stats:", error);
+      // Clear the cache if there's an error
+      sessionStorage.removeItem("spotifyTrackStats");
+      trackStatsCache.current = {};
+    }
+  }, []);
+
+  // Update cache on changes in trackData and trackStats with a debounce
+  useEffect(() => {
+    const handleCacheUpdate = () => {
+      // Save track data cache to localStorage
+      localStorage.setItem("spotifyTrackData", JSON.stringify(trackDataCache.current));
+      // Save track stats cache to sessionStorage
+      sessionStorage.setItem("spotifyTrackStats", JSON.stringify(trackStatsCache.current));
+    };
+
+    const debounceTimeout = setTimeout(handleCacheUpdate, 1000);
+
+    return () => clearTimeout(debounceTimeout);
+  }, []);
 
   // Fetch track index, data and stats from the server or cache
   useEffect(() => {
@@ -53,7 +107,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
     const fetchTrackData = async () => {
       // Cache is a record of TrackId to compressed {Track} data so if all tracks in index are already cached, we can skip fetching them again
       if (trackDataCache && trackIndexRef.current.every(id => id in trackDataCache)) {
-        setTrackData(Object.fromEntries(trackIndexRef.current.map(id => [id, trackDataCache[id]])));
+        setTrackData(Object.fromEntries(trackIndexRef.current.map(id => [id, trackDataCache.current[id]])));
         return;
       }
 
@@ -74,16 +128,16 @@ export default function TrackList({ className = "" }: { className?: string }) {
 
       setTrackData(Object.fromEntries(trackData.map(t => [t.id, t])));
 
-      setTrackDataCache(prev => ({
-        ...prev,
+      trackDataCache.current = {
+        ...trackDataCache.current,
         ...Object.fromEntries(trackData.map(t => [t.id, t])),
-      }));
+      };
     }
 
     const fetchTrackStats = async () => {
       // Cache is a record of FilterHash to compressed {TrackStats} data so if current filter hash is already cached, we can skip fetching it again
-      if (trackStatsCache[currentFilterHash]) {
-        const cachedStats = trackStatsCache[currentFilterHash];
+      if (trackStatsCache.current[currentFilterHash]) {
+        const cachedStats = trackStatsCache.current[currentFilterHash];
         setTrackStats(Object.fromEntries(cachedStats.map(t => [t.trackId, t])));
         return;
       }
@@ -104,10 +158,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       const decodedTrackStats = decodeTrackStats(trackStats);
       setTrackStats(Object.fromEntries(decodedTrackStats.trackStats.map(t => [t.trackId, t])));
 
-      setTrackStatsCache(prev => ({
-        ...prev,
-        [decodedTrackStats.filterHash]: decodedTrackStats.trackStats,
-      }));
+      trackStatsCache.current[decodedTrackStats.filterHash] = decodedTrackStats.trackStats;
     }
 
     fetchTrackIndex()
