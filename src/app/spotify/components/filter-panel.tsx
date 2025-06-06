@@ -2,13 +2,13 @@
 
 import type { User } from "@/app/spotify/types";
 import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
-import { UseLocalFilterContext } from "@/app/spotify/context/local-filter-context";
+import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCallback } from "react";
 
 export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
-  const { localFilter, setLocalFilter } = UseLocalFilterContext();
+  const { localFilter, setLocalFilter } = useLocalFilterContext();
 
   let userToggleDebounceTimeout: NodeJS.Timeout | null = null;
   const handleUserToggle = useCallback((value: string[]) => {

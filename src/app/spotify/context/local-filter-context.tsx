@@ -13,7 +13,7 @@ export const defaultLocalFilter: LocalFilterPacket = {
 export const LocalFilterContext = createContext<LocalFilterPacket>(defaultLocalFilter);
 export const LocalFilterContextSetter = createContext<React.Dispatch<React.SetStateAction<LocalFilterPacket>>>(() => { });
 
-export function UseLocalFilterContext() {
+export function useLocalFilterContext() {
   const localFilter = useContext(LocalFilterContext);
   const setLocalFilter = useContext(LocalFilterContextSetter);
 

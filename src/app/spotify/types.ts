@@ -12,6 +12,9 @@ export type Genre = PrismaGenre;
 export type Album = PrismaAlbum;
 export type Artist = PrismaArtist;
 
+export type FilterHash = string;
+export type TrackId = string;
+
 export type User = {
   name: string; // User's name
   id: string; // User's ID provided by Clerk

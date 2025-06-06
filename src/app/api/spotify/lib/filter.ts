@@ -1,6 +1,7 @@
 import type { FetchFilterPacket, TrackWithPlays, TrackWithStats } from "@/app/spotify/types";
 
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
+import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
 
 export default async function filterTracks(tracks: TrackWithPlays[], filter: FetchFilterPacket): Promise<TrackWithStats[]> {
   const filteredTracks: TrackWithStats[] = await Promise.all(tracks
@@ -93,6 +94,7 @@ export default async function filterTracks(tracks: TrackWithPlays[], filter: Fet
         totalPlays,
         totalMS,
         playsPerUser,
+        color: await getTrackBGColor(track.image || ""),
       }
     }))
     /* Await stats */
