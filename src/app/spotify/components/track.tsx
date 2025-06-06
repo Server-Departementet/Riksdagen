@@ -33,7 +33,7 @@ export default function TrackElement({
   return (
     <li
       className={`
-      h-(--spotify-track-height) min-h-(--spotify-track-height) 
+      h-(--spotify-track-height) min-h-(--spotify-track-height) max-h-(--spotify-track-height) 
       w-full xl:w-2/3 max-w-prose min-w-[300px]
       bg-zinc-100
       flex-1 

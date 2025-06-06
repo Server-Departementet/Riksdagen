@@ -9,7 +9,7 @@ import { useCallback } from "react";
 export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
   const { localFilter, setLocalFilter } = UseLocalFilterContext();
-  
+
   const handleUserToggle = useCallback((value: string[]) => {
     const userIds = value;
     const users = userIds.map(id => userMap[id]).filter(Boolean) as User[];
@@ -19,6 +19,14 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
       users,
     }));
   }, [setFetchFilter, userMap]);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = e.target.value;
+    setLocalFilter(prev => ({
+      ...prev,
+      search: searchValue,
+    }));
+  }, [setLocalFilter]);
 
   return (
     <div className={`
@@ -61,6 +69,17 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
           </ToggleGroup>
         </div>
 
+        {/* Search filter */}
+        <div className="w-full flex flex-col items-center px-3">
+          <input
+            type="text"
+            placeholder="Sök efter låtar..."
+            defaultValue={localFilter.search}
+            onChange={handleSearchChange}
+            className="w-full max-w-md p-2 border border-gray-300 rounded-lg"
+          />
+        </div>
+
         <pre>
           Local =
           {JSON.stringify(localFilter, null, 2)}
@@ -68,7 +87,7 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
           <br />
           Fetch =
           {JSON.stringify(fetchFilter, null, 2)}
-        </pre >
+        </pre>
       </div>
     </div>
   );

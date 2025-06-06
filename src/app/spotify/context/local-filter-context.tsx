@@ -2,7 +2,7 @@
 
 import type { LocalFilterPacket } from "@/app/spotify/types";
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 export const defaultLocalFilter: LocalFilterPacket = {
   search: "",
@@ -25,7 +25,8 @@ export function UseLocalFilterContext() {
 }
 
 export default function LocalFilterContextProvider({ children }: { children: React.ReactNode }) {
-  const { localFilter, setLocalFilter } = UseLocalFilterContext();
+  const [localFilter, setLocalFilter] = useState<LocalFilterPacket>(defaultLocalFilter);
+
   return (
     <LocalFilterContext.Provider value={localFilter}>
       <LocalFilterContextSetter.Provider value={setLocalFilter}>
