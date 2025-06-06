@@ -56,7 +56,7 @@ export default function TrackElement({
         {track.name}
       </h5>
 
-      {/* Artists */}
+      {/* Artists and album */}
       <p className={`
         col-start-2 row-start-2 col-span-2 
         pb-1 leading-4 
@@ -65,6 +65,10 @@ export default function TrackElement({
         whitespace-nowrap text-ellipsis overflow-x-hidden
       `}>
         {track.artists.map(artist => artist.name).join(", ")}
+        &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+        <span>
+          {track.album.name}
+        </span>
       </p>
 
       {/* Stats */}
