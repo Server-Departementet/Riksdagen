@@ -190,7 +190,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       .then(() => {
         const endTime = performance.now();
         setIsLoading(false);
-        setFetchTime(endTime - startTime);
+        setFetchTime(Math.round(endTime - startTime));
       });
   }, [currentFilterHash, fetchFilter, trackDataCache, trackStatsCache]);
 
