@@ -16,10 +16,7 @@ export default async function filterTracks(tracks: TrackWithPlays[], filter: Fet
     /* User filter */
     .filter(track => {
       const users = filter.users;
-
-      // No users, include all tracks
-      if (users.length === 0) return true;
-
+      
       const touchedUsers = new Set(track.TrackPlay.map(play => play.userId));
 
       // If the track has plays by any of the users, include it

@@ -17,11 +17,8 @@ export default function TrackList({ className = "" }: { className?: string }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fetchTime, setFetchTime] = useState<number>(0);
 
-  // To prevent excessive re-renders, we use a ref to store the track index instead of state. 
+  // To prevent excessive re-renders, we use refs instead of state for caches
   const trackIndexRef = useRef<TrackId[]>(trackIndex);
-
-  // const [trackDataCache, setTrackDataCache] = useState<Record<TrackId, Track>>({});
-  // const [trackStatsCache, setTrackStatsCache] = useState<Record<FilterHash, TrackStats[]>>({});
   const trackDataCache = useRef<Record<TrackId, Track>>({});
   const trackStatsCache = useRef<Record<FilterHash, TrackStats[]>>({});
 
@@ -105,8 +102,14 @@ export default function TrackList({ className = "" }: { className?: string }) {
     };
 
     const fetchTrackData = async () => {
+      if (fetchFilter.users.length === 0) {
+        console.warn("No users selected in fetch filter, skipping track data fetch.");
+        setTrackData({});
+        return;
+      }
+
       // Cache is a record of TrackId to compressed {Track} data so if all tracks in index are already cached, we can skip fetching them again
-      if (trackDataCache && trackIndexRef.current.every(id => id in trackDataCache)) {
+      if (trackDataCache && trackIndexRef.current && trackIndexRef.current.every(id => id in trackDataCache)) {
         setTrackData(Object.fromEntries(trackIndexRef.current.map(id => [id, trackDataCache.current[id]])));
         return;
       }
@@ -124,6 +127,12 @@ export default function TrackList({ className = "" }: { className?: string }) {
       }
 
       const { trackData: encodedTrackData } = await response.json() as { trackData: Uint8Array };
+      // @ts-expect-error - This is checking the buffersize
+      if (encodedTrackData.data.length === 0) {
+        console.warn("Received empty track data, this might be due to an empty filter or no tracks matching the filter.");
+        setTrackData({});
+        return;
+      }
       const trackData = decodeTrackData(encodedTrackData).trackData;
 
       setTrackData(Object.fromEntries(trackData.map(t => [t.id, t])));
@@ -135,6 +144,12 @@ export default function TrackList({ className = "" }: { className?: string }) {
     }
 
     const fetchTrackStats = async () => {
+      if (fetchFilter.users.length === 0) {
+        console.warn("No users selected in fetch filter, skipping track stats fetch.");
+        setTrackStats({});
+        return;
+      }
+
       // Cache is a record of FilterHash to compressed {TrackStats} data so if current filter hash is already cached, we can skip fetching it again
       if (trackStatsCache.current[currentFilterHash]) {
         const cachedStats = trackStatsCache.current[currentFilterHash];
@@ -154,8 +169,14 @@ export default function TrackList({ className = "" }: { className?: string }) {
         return;
       }
 
-      const { trackStats } = await response.json() as { trackStats: Uint8Array };
-      const decodedTrackStats = decodeTrackStats(trackStats);
+      const { trackStats: encodedTrackStats } = await response.json() as { trackStats: Uint8Array };
+      // @ts-expect-error - This is checking the buffersize
+      if (encodedTrackStats.data.length === 0) {
+        console.warn("Received empty track stats, this might be due to an empty filter or no tracks matching the filter.");
+        setTrackStats({});
+        return;
+      }
+      const decodedTrackStats = decodeTrackStats(encodedTrackStats);
       setTrackStats(Object.fromEntries(decodedTrackStats.trackStats.map(t => [t.trackId, t])));
 
       trackStatsCache.current[decodedTrackStats.filterHash] = decodedTrackStats.trackStats;

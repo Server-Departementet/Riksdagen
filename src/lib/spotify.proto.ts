@@ -80,6 +80,10 @@ export function encodeTrackData(tracks: Track[]): Uint8Array {
 export function decodeTrackData(data: Uint8Array): { trackData: Track[] } {
   const decoded = TrackDataPacket.decode(Buffer.from(data)).toJSON();
 
+  if (!decoded.trackData || !Array.isArray(decoded.trackData)) {
+    return { trackData: [] };
+  }
+
   return {
     trackData: decoded.trackData,
   };
@@ -117,6 +121,10 @@ export function encodeTrackStats(stats: TrackStats[], filter: FetchFilterPacket)
 
 export function decodeTrackStats(data: Uint8Array): { filterHash: FilterHash; trackStats: TrackStats[] } {
   const decoded = TrackStatsPacket.decode(Buffer.from(data)).toJSON();
+
+  if (!decoded.trackStats || !Array.isArray(decoded.trackStats)) {
+    return { filterHash: decoded.filterHash, trackStats: [] };
+  }
 
   return {
     filterHash: decoded.filterHash,

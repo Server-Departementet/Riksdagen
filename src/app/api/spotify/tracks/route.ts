@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       delete track.totalMS; delete track.totalPlays; delete track.playsPerUser; delete track.trackId;
       return track;
     });
-    const encodedTrackData = encodeTrackData(strippedTracks, filter);
+    const encodedTrackData = encodeTrackData(strippedTracks);
     dataCache[filterHash] = encodedTrackData;
     return NextResponse.json({ trackData: encodedTrackData });
   }
