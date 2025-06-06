@@ -71,18 +71,16 @@ const TrackDataPacket = protobuf.Root.fromJSON({
   }
 }).lookupType("TrackDataPacket");
 
-export function encodeTrackData(tracks: Track[], filter: FetchFilterPacket): Uint8Array {
+export function encodeTrackData(tracks: Track[]): Uint8Array {
   return TrackDataPacket.encode({
-    filterHash: sha1(JSON.stringify(filter)),
     trackData: tracks,
   }).finish();
 }
 
-export function decodeTrackData(data: Uint8Array): { filterHash: FilterHash; trackData: Track[] } {
+export function decodeTrackData(data: Uint8Array): { trackData: Track[] } {
   const decoded = TrackDataPacket.decode(Buffer.from(data)).toJSON();
 
   return {
-    filterHash: decoded.filterHash,
     trackData: decoded.trackData,
   };
 }

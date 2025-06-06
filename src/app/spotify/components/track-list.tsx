@@ -1,10 +1,10 @@
 "use client";
 
-import type { Track, TrackId, TrackStats } from "@/app/spotify/types";
+import type { FilterHash, Track, TrackId, TrackStats } from "@/app/spotify/types";
 import TrackElement, { SkeletonTrackElement } from "@/app/spotify/components/track";
-import { useEffect, useState, useMemo } from "react";
-import { useFetchFilterContext } from "../context/fetch-filter-context";
-import { useLocalFilterContext } from "../context/local-filter-context";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
+import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { sha1 } from "@/lib/hash";
 import { decodeTrackData, decodeTrackIndex, decodeTrackStats } from "@/lib/spotify.proto";
 
@@ -17,8 +17,16 @@ export default function TrackList({ className = "" }: { className?: string }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fetchTime, setFetchTime] = useState<number>(0);
 
+  // To prevent excessive re-renders, we use a ref to store the track index instead of state. 
+  const trackIndexRef = useRef<TrackId[]>(trackIndex);
+
+  const [trackDataCache, setTrackDataCache] = useState<Record<TrackId, Track>>({});
+  const [trackStatsCache, setTrackStatsCache] = useState<Record<FilterHash, TrackStats[]>>({});
+
+
   const currentFilterHash = useMemo(() => sha1(JSON.stringify(fetchFilter)), [fetchFilter]);
 
+  // Fetch track index, data and stats from the server or cache
   useEffect(() => {
     const startTime = performance.now();
     setIsLoading(true);
@@ -39,9 +47,16 @@ export default function TrackList({ className = "" }: { className?: string }) {
       const decodedIndex = decodeTrackIndex(index);
 
       setTrackIndex(decodedIndex.trackIds);
+      trackIndexRef.current = decodedIndex.trackIds;
     };
 
     const fetchTrackData = async () => {
+      // Cache is a record of TrackId to compressed {Track} data so if all tracks in index are already cached, we can skip fetching them again
+      if (trackDataCache && trackIndexRef.current.every(id => id in trackDataCache)) {
+        setTrackData(Object.fromEntries(trackIndexRef.current.map(id => [id, trackDataCache[id]])));
+        return;
+      }
+
       const response = await fetch("/api/spotify/tracks?type=data",
         {
           method: "POST",
@@ -54,13 +69,25 @@ export default function TrackList({ className = "" }: { className?: string }) {
         return;
       }
 
-      const { trackData } = await response.json() as { trackData: Uint8Array };
-      const decodedTrackData = decodeTrackData(trackData);
+      const { trackData: encodedTrackData } = await response.json() as { trackData: Uint8Array };
+      const trackData = decodeTrackData(encodedTrackData).trackData;
 
-      setTrackData(Object.fromEntries(decodedTrackData.trackData.map(t => [t.id, t])));
+      setTrackData(Object.fromEntries(trackData.map(t => [t.id, t])));
+
+      setTrackDataCache(prev => ({
+        ...prev,
+        ...Object.fromEntries(trackData.map(t => [t.id, t])),
+      }));
     }
 
     const fetchTrackStats = async () => {
+      // Cache is a record of FilterHash to compressed {TrackStats} data so if current filter hash is already cached, we can skip fetching it again
+      if (trackStatsCache[currentFilterHash]) {
+        const cachedStats = trackStatsCache[currentFilterHash];
+        setTrackStats(Object.fromEntries(cachedStats.map(t => [t.trackId, t])));
+        return;
+      }
+
       const response = await fetch("/api/spotify/tracks?type=stats",
         {
           method: "POST",
@@ -76,22 +103,24 @@ export default function TrackList({ className = "" }: { className?: string }) {
       const { trackStats } = await response.json() as { trackStats: Uint8Array };
       const decodedTrackStats = decodeTrackStats(trackStats);
       setTrackStats(Object.fromEntries(decodedTrackStats.trackStats.map(t => [t.trackId, t])));
+
+      setTrackStatsCache(prev => ({
+        ...prev,
+        [decodedTrackStats.filterHash]: decodedTrackStats.trackStats,
+      }));
     }
 
-    // Fetch all data in parallel
-    (async () =>
-      Promise.all([
-        fetchTrackIndex(),
+    fetchTrackIndex()
+      .then(() => Promise.all([
         fetchTrackData(),
         fetchTrackStats(),
-      ])
-    )()
+      ]))
       .then(() => {
         const endTime = performance.now();
         setIsLoading(false);
         setFetchTime(endTime - startTime);
       });
-  }, [fetchFilter]);
+  }, [currentFilterHash, fetchFilter, trackDataCache, trackStatsCache]);
 
   // Apply local filtering and sorting
   const filteredTracks = useMemo(() => {
