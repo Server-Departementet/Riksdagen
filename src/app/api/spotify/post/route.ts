@@ -6,6 +6,7 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 import { PrismaClient } from "@root/prisma/generated/client";
+import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 
 const prisma = new PrismaClient();
@@ -212,7 +213,7 @@ export async function POST() {
     }
   }
 
-  return Response.json({
+  return NextResponse.json({
     message: "200 OK",
   });
 }

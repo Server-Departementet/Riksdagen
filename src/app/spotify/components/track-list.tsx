@@ -15,11 +15,12 @@ export default function TrackList({ className = "" }: { className?: string }) {
   const [trackData, setTrackData] = useState<Record<TrackId, Track>>({});
   const [trackStats, setTrackStats] = useState<Record<TrackId, TrackStats>>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [fetchTime, setFetchTime] = useState<number>(0);
 
-  // Memoize the current filter hash to avoid recalculating it
   const currentFilterHash = useMemo(() => sha1(JSON.stringify(fetchFilter)), [fetchFilter]);
 
   useEffect(() => {
+    const startTime = performance.now();
     setIsLoading(true);
 
     const fetchTrackIndex = async () => {
@@ -77,9 +78,19 @@ export default function TrackList({ className = "" }: { className?: string }) {
       setTrackStats(Object.fromEntries(decodedTrackStats.trackStats.map(t => [t.trackId, t])));
     }
 
-    fetchTrackIndex();
-    fetchTrackData().then(() => setIsLoading(false));
-    fetchTrackStats();
+    // Fetch all data in parallel
+    (async () =>
+      Promise.all([
+        fetchTrackIndex(),
+        fetchTrackData(),
+        fetchTrackStats(),
+      ])
+    )()
+      .then(() => {
+        const endTime = performance.now();
+        setIsLoading(false);
+        setFetchTime(endTime - startTime);
+      });
   }, [fetchFilter]);
 
   // Apply local filtering and sorting
@@ -120,7 +131,8 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {/* Stats */}
       <p className="text-sm opacity-60 font-normal w-full text-center sm:text-start">
         {filteredTracks.length} resultat
-        {/* &nbsp;&middot;&nbsp; */}
+        &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+        {fetchTime} ms
       </p>
 
       {/* Skeletons */}
@@ -129,7 +141,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       )}
 
       {/* No result */}
-      {!isLoading && (trackIndex.length === 0 || filteredTracks.length === 0) &&
+      {!isLoading && filteredTracks.length === 0 &&
         <div className="py-10 text-center text-gray-500">
           Inget matchar aktiva filtret.
         </div>

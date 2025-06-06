@@ -64,7 +64,10 @@ export default function TrackElement({
         opacity-75 
         whitespace-nowrap text-ellipsis overflow-x-hidden
       `}>
-        {track.artists.map(artist => artist.name).join(", ")}
+        {/* {track.artists.map(artist => artist.name).join(", ")} */}
+        {new Intl.ListFormat("sv-SE", { style: "short", type: "conjunction" }).format(
+          track.artists.map(artist => artist.name)
+        )}
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;
         <span>
           {track.album.name}
@@ -76,12 +79,18 @@ export default function TrackElement({
         {/* Duration (long) */}
         <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
-        {stats && (<p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>)}
+        {stats
+          ? (<p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>)
+          : <p className="hidden sm:block">&middot;&middot;&middot;</p>
+        }
 
         {/* Duration (short) */}
         <p className="block sm:hidden">Längd {prettyDuration}</p>
         {/* Listening time (short) */}
-        {stats && (<p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>)}
+        {stats
+          ? (<p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>)
+          : <p className="block sm:hidden">&middot;&middot;&middot;</p>
+        }
       </div>
 
       {/* Line number */}
