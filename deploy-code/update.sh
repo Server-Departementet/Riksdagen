@@ -7,5 +7,8 @@ git checkout origin/Dev --force
 yarn install
 yarn build
 
+# Make /deploy-code executable
+chmod +x deploy-code/*
+
 # Restart
 reboot
