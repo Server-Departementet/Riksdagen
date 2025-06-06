@@ -129,7 +129,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       )}
 
       {/* No result */}
-      {!isLoading && trackIndex.length === 0 && filteredTracks.length === 0 &&
+      {!isLoading && (trackIndex.length === 0 || filteredTracks.length === 0) &&
         <div className="py-10 text-center text-gray-500">
           Inget matchar aktiva filtret.
         </div>
