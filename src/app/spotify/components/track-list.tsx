@@ -184,18 +184,24 @@ export default function TrackList({ className = "" }: { className?: string }) {
       *:first:mt-3 *:last:mb-10
       ${className}
     `}>
+      {/* Stats */}
       <p className="text-sm opacity-60 font-normal w-full text-center sm:text-start">
         {filteredTracks.length} resultat
       </p>
 
+      {/* Skeletons */}
       {isLoading && new Array(20).fill(0).map((_, i) =>
         <SkeletonTrackElement key={`skeleton-${i}`} />
       )}
+
+      {/* No result */}
       {!isLoading && filteredTracks.length === 0 &&
         <div className="py-10 text-center text-gray-500">
           Inget matchar aktiva filtret.
         </div>
       }
+
+      {/* Results */}
       {!isLoading && filteredTracks.map((track, i) =>
         <TrackElement
           trackData={track}
