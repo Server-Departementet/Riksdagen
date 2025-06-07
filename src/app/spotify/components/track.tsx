@@ -44,13 +44,11 @@ export default function TrackElement({
       {...track.color ? { style: { backgroundColor: track.color } } : {}}
     >
       {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
-      <button className="col-start-1 row-start-1 row-span-4">
-        <Image
-          width={128} height={128}
-          className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square bg-gray-200"
-          src={track.image ?? CrownSVG} alt="Låtbild"
-        />
-      </button>
+      <Image
+        width={128} height={128}
+        className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square bg-gray-200"
+        src={track.image ?? CrownSVG} alt="Låtbild"
+      />
 
       {/* Track Title */}
       <h5 className={`
@@ -75,7 +73,7 @@ export default function TrackElement({
               target="_blank" rel="noopener noreferrer">
               {a.name}
             </Link>
-            {i < track.artists.length - 1 &&<span>,&nbsp;</span>}
+            {i < track.artists.length - 1 && <span>,&nbsp;</span>}
           </Fragment>
         )}
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;

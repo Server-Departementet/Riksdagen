@@ -9,11 +9,12 @@ import type {
 // Extend Prisma types to include relations
 export type TrackPlay = PrismaTrackPlay;
 export type Genre = PrismaGenre;
-export type Album = PrismaAlbum;
+export type Album = PrismaAlbum & { trackCount: number };
 export type Artist = PrismaArtist;
 
 export type FilterHash = string;
 export type TrackId = string;
+export type AlbumId = string;
 
 export type User = {
   name: string; // User's name
@@ -47,6 +48,13 @@ export type LocalFilterPacket = {
   search: string;
   sort: SortingOption["id"];
   reverseOrder: boolean;
+  album: {
+    sort: {
+      id: "name" | "track_count"; // Sorting options for albums
+      reverseOrder: boolean; // Whether to reverse the order of the sort
+    },
+    include: AlbumId[];
+  };
 };
 
 export type FetchFilterPacket = {

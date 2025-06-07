@@ -8,6 +8,13 @@ export const defaultLocalFilter: LocalFilterPacket = {
   search: "",
   sort: defaultFetchFilter.sort,
   reverseOrder: false,
+  album: {
+    sort: {
+      id: "name",
+      reverseOrder: false,
+    },
+    include: [],
+  }
 }
 
 export const LocalFilterContext = createContext<LocalFilterPacket>(defaultLocalFilter);
