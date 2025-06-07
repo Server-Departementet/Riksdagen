@@ -43,11 +43,13 @@ export default function TrackElement({
       {...track.color ? { style: { backgroundColor: track.color } } : {}}
     >
       {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
-      <Image
-        width={128} height={128}
-        className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square"
-        src={track.image ?? CrownSVG} alt="Låtbild"
-      />
+      <button className="col-start-1 row-start-1 row-span-4">
+        <Image
+          width={128} height={128}
+          className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square"
+          src={track.image ?? CrownSVG} alt="Låtbild"
+        />
+      </button>
 
       <h5 className={`
           col-start-2 row-start-1 col-span-2
@@ -60,18 +62,25 @@ export default function TrackElement({
       <p className={`
         col-start-2 row-start-2 col-span-2 
         pb-1 leading-4 
-        font-semibold text-sm 
+        text-sm
         opacity-75 
         whitespace-nowrap text-ellipsis overflow-x-hidden
       `}>
-        {/* {track.artists.map(artist => artist.name).join(", ")} */}
-        {new Intl.ListFormat("sv-SE", { style: "short", type: "conjunction" }).format(
-          track.artists.map(artist => artist.name)
+        {track.artists.map((a, i) =>
+          <>
+            <Link href={a.url}
+              className="font-semibold"
+              key={`artist-${i}-${a.id}`}
+              target="_blank" rel="noopener noreferrer">
+              {a.name}
+            </Link>
+            {i < track.artists.length - 1 && <span>, </span>}
+          </>
         )}
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;
-        <span>
+        <Link href={track.album.url} target="_blank" rel="noopener noreferrer">
           {track.album.name}
-        </span>
+        </Link>
       </p>
 
       {/* Stats */}

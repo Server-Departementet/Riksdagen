@@ -9,6 +9,7 @@ import { sortingFunctions } from "../functions/track-sorting";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SortAscIcon, SortDescIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
@@ -49,11 +50,19 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
     }, 750);
   }, [searchChangeDebounceTimeout, setLocalFilter]);
 
+  let sortChangeDebounceTimeout: NodeJS.Timeout | null = null;
   const handleSortChange = useCallback((value: string) => {
-    setLocalFilter(prev => ({
-      ...prev,
-      sort: value as typeof prev.sort,
-    }));
+    // Clear previous timeout if it exists
+    if (sortChangeDebounceTimeout) clearTimeout(sortChangeDebounceTimeout);
+
+    // Set a new timeout to debounce the sort change action
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    sortChangeDebounceTimeout = setTimeout(() => {
+      setLocalFilter(prev => ({
+        ...prev,
+        sort: value as typeof prev.sort,
+      }));
+    }, 750);
   }, [setLocalFilter]);
 
   return (
@@ -130,9 +139,9 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
 
         {/* Search filter */}
         <div className="w-full flex flex-col items-center px-3">
-          <input
+          <Input
             type="text"
-            placeholder="Sök efter låtar..."
+            placeholder="Sök låt, artist, album..."
             defaultValue={localFilter.search}
             onChange={handleSearchChange}
             className="w-full max-w-sm p-2 border border-gray-300 rounded-lg"
@@ -140,11 +149,11 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
         </div>
 
         <pre>
-          Local =
+          Local =&nbsp;
           {JSON.stringify(localFilter, null, 2)}
           <br />
           <br />
-          Fetch =
+          Fetch =&nbsp;
           {JSON.stringify(fetchFilter, null, 2)}
         </pre>
       </div>
