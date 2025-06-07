@@ -6,7 +6,7 @@ import { createContext, useContext, useState } from "react";
 
 export const defaultFetchFilter: FetchFilterPacket = {
   users: [],
-  sort: sortingFunctions.default,
+  sort: sortingFunctions.play_count.id,
   reverseOrder: false,
   albums: {
     include: [],

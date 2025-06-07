@@ -1,7 +1,7 @@
 import type { SortingOption, TrackWithStats } from "@/app/spotify/types";
 
 export const sortingFunctions: Record<
-  "playtime" | "play_count" | "track_length" | "track_name" | "artist_name" | "default",
+  "playtime" | "play_count" | "track_length" | "track_name" | "artist_name",
   SortingOption
 > = {
   playtime: {
@@ -34,10 +34,4 @@ export const sortingFunctions: Record<
       return aArtists.localeCompare(bArtists);
     },
   },
-  default: {
-    label: "Default",
-    id: "default",
-    func: (_a, _b) => 0,
-  }
 };
-sortingFunctions.default = { ...sortingFunctions.play_count };

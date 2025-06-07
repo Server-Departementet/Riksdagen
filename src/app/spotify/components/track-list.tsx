@@ -7,6 +7,7 @@ import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-contex
 import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { sha1 } from "@/lib/hash";
 import { decodeTrackData, decodeTrackIndex, decodeTrackStats } from "@/lib/spotify.proto";
+import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 
 export default function TrackList({ className = "" }: { className?: string }) {
   const { fetchFilter } = useFetchFilterContext();
@@ -210,7 +211,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
 
     // Apply sorting
     if (localFilter.sort) {
-      filtered = [...filtered].sort(localFilter.sort.func);
+      filtered = [...filtered].sort(sortingFunctions[localFilter.sort].func);
 
       if (localFilter.reverseOrder) {
         filtered = filtered.reverse();

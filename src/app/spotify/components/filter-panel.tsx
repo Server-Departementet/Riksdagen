@@ -5,6 +5,10 @@ import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-contex
 import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCallback } from "react";
+import { sortingFunctions } from "../functions/track-sorting";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SortAscIcon, SortDescIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function FilterPanel({ userMap, className = "" }: { userMap: Record<string, User>, className?: string }) {
   const { fetchFilter, setFetchFilter } = useFetchFilterContext();
@@ -45,13 +49,20 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
     }, 750);
   }, [searchChangeDebounceTimeout, setLocalFilter]);
 
+  const handleSortChange = useCallback((value: string) => {
+    setLocalFilter(prev => ({
+      ...prev,
+      sort: value as typeof prev.sort,
+    }));
+  }, [setLocalFilter]);
+
   return (
     <div className={`
       flex flex-row justify-center sm:justify-end
       pt-5 px-6
       overflow-y-auto
       bg-white
-      z-20
+        z-20
       ${className}
     `}>
       {/* Nested divs in order to easily align everything toward the end of the container */}
@@ -84,6 +95,37 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
+        </div>
+
+        {/* Sort */}
+        <div className="full flex flex-row items-center justify-center gap-x-1">
+          <Select defaultValue={localFilter.sort || fetchFilter.sort} onValueChange={handleSortChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sortera..." />
+            </SelectTrigger>
+
+            <SelectContent>
+              {Object.values(sortingFunctions).map((sortingFunc, i) => (
+                <SelectItem
+                  key={`sorting-${i}-${sortingFunc.id}`}
+                  value={sortingFunc.id}
+                >
+                  {sortingFunc.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Reverse order */}
+          <Button variant={"ghost"} size={"icon"} onClick={() => setLocalFilter(prev => ({
+            ...prev,
+            reverseOrder: !prev.reverseOrder,
+          }))}>
+            {localFilter.reverseOrder
+              ? <SortAscIcon />
+              : <SortDescIcon />
+            }
+          </Button>
         </div>
 
         {/* Search filter */}

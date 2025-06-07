@@ -1,12 +1,12 @@
 "use client";
 
 import type { LocalFilterPacket } from "@/app/spotify/types";
-import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 import { createContext, useContext, useState } from "react";
+import { defaultFetchFilter } from "@/app/spotify/context/fetch-filter-context";
 
 export const defaultLocalFilter: LocalFilterPacket = {
   search: "",
-  sort: sortingFunctions.default,
+  sort: defaultFetchFilter.sort,
   reverseOrder: false,
 }
 

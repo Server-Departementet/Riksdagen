@@ -39,18 +39,18 @@ export type TrackWithPlays = Track & { TrackPlay: TrackPlay[] };
 
 export interface SortingOption {
   label: string; // User facing name
-  id: "playtime" | "play_count" | "track_length" | "track_name" | "artist_name" | "default"; // Used as key in object
+  id: "playtime" | "play_count" | "track_length" | "track_name" | "artist_name";
   func: (a: TrackWithStats, b: TrackWithStats) => number;
 };
 
 export type LocalFilterPacket = {
   search: string;
-  sort: SortingOption;
+  sort: SortingOption["id"];
   reverseOrder: boolean;
 };
 
 export type FetchFilterPacket = {
-  sort: SortingOption;
+  sort: SortingOption["id"];
   reverseOrder: boolean;
   users: User[]; // User ID's to include in the filter
   genres: {

@@ -2,6 +2,7 @@ import type { FetchFilterPacket, TrackWithPlays, TrackWithStats } from "@/app/sp
 
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
+import { defaultFetchFilter } from "@/app/spotify/context/fetch-filter-context";
 
 export default async function filterTracks(tracks: TrackWithPlays[], filter: FetchFilterPacket): Promise<TrackWithStats[]> {
   const filteredTracks: TrackWithStats[] = await Promise.all(tracks
@@ -103,7 +104,7 @@ export default async function filterTracks(tracks: TrackWithPlays[], filter: Fet
         return trackWithoutPlays;
       })
       /* Sort */
-      .sort(sortingFunctions[filter.sort.id]?.func || sortingFunctions.default.func)
+      .sort(sortingFunctions[filter.sort]?.func || sortingFunctions[defaultFetchFilter.sort]?.func || sortingFunctions.play_count.func)
     );
 
   return filteredTracks;
