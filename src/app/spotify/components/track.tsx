@@ -6,6 +6,7 @@ import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.sv
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Fragment } from "react";
 
 export default function TrackElement({
   trackData: track,
@@ -46,11 +47,12 @@ export default function TrackElement({
       <button className="col-start-1 row-start-1 row-span-4">
         <Image
           width={128} height={128}
-          className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square"
+          className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square bg-gray-200"
           src={track.image ?? CrownSVG} alt="Låtbild"
         />
       </button>
 
+      {/* Track Title */}
       <h5 className={`
           col-start-2 row-start-1 col-span-2
           leading-5 py-1 overflow-x-hidden whitespace-nowrap text-ellipsis overflow-y-hidden
@@ -67,15 +69,14 @@ export default function TrackElement({
         whitespace-nowrap text-ellipsis overflow-x-hidden
       `}>
         {track.artists.map((a, i) =>
-          <>
+          <Fragment key={`artist-${i}-${a.id}-${track.id}`}>
             <Link href={a.url}
               className="font-semibold"
-              key={`artist-${i}-${a.id}`}
               target="_blank" rel="noopener noreferrer">
               {a.name}
             </Link>
-            {i < track.artists.length - 1 && <span>, </span>}
-          </>
+            {i < track.artists.length - 1 &&<span>,&nbsp;</span>}
+          </Fragment>
         )}
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;
         <Link href={track.album.url} target="_blank" rel="noopener noreferrer">
