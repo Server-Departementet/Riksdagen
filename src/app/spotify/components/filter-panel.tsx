@@ -148,14 +148,14 @@ export default function FilterPanel({ userMap, className = "" }: { userMap: Reco
           />
         </div>
 
-        <pre>
+        {/* <pre>
           Local =&nbsp;
           {JSON.stringify(localFilter, null, 2)}
           <br />
           <br />
           Fetch =&nbsp;
           {JSON.stringify(fetchFilter, null, 2)}
-        </pre>
+        </pre> */}
       </div>
     </div>
   );
