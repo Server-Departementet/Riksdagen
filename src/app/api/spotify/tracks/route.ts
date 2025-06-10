@@ -11,16 +11,13 @@ export const dynamic = "force-dynamic";
 const statsCache: Record<FilterHash, Uint8Array> = {};
 const dataCache: Record<FilterHash, Uint8Array> = {};
 const indexCache: Record<FilterHash, Uint8Array> = {};
-// Clear cache every night
+// Clear cache on interval
 setInterval(() => {
-  const now = new Date();
-  if (now.getHours() === 2) {
-    console.info("Clearing cache");
-    Object.keys(statsCache).forEach(key => delete statsCache[key]);
-    Object.keys(dataCache).forEach(key => delete dataCache[key]);
-    Object.keys(indexCache).forEach(key => delete indexCache[key]);
-  }
-}, 60 * 1000); // Check every minute
+  console.info("Clearing cache");
+  Object.keys(statsCache).forEach(key => delete statsCache[key]);
+  Object.keys(dataCache).forEach(key => delete dataCache[key]);
+  Object.keys(indexCache).forEach(key => delete indexCache[key]);
+}, 10 * 60 * 1000);
 
 export async function POST(req: NextRequest) {
   // Auth user 
