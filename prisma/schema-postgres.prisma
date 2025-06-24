@@ -1,11 +1,11 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../prisma/generated/client"
+  output   = "../prisma/generated-postgres/client"
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("MARIADB_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model TrackPlay {

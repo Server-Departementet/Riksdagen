@@ -5,7 +5,7 @@
  */
 
 import { clerkClient } from "@clerk/nextjs/server";
-import { PrismaClient } from "@root/prisma/generated/client";
+import { PrismaClient } from "@root/prisma/generated-postgres/client";
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 

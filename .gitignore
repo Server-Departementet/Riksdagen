@@ -46,4 +46,4 @@ next-env.d.ts
 /.clerk/
 
 # Prisma
-/prisma/generated
+/prisma/generated*

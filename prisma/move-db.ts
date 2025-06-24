@@ -1,9 +1,17 @@
 import { PrismaClient } from "./generated-postgres/client/client.js";
+import { PrismaClient as RemotePrismaClient } from "./generated-postgres/client/client.js";
+
+
+/** 
+ * Basically just the seed script but for moving data from the old postgres database to mariadb.
+ */
+
 
 const prisma = new PrismaClient();
 
 const remoteDB = process.env.REMOTE_DB_URL;
-const remotePrisma = new PrismaClient({ datasourceUrl: remoteDB });
+const remotePrisma = new RemotePrismaClient({ datasourceUrl: remoteDB });
+
 
 const seedAlbums = async () => {
   console.debug("Seeding albums...");
@@ -47,7 +55,7 @@ const seedArtists = async () => {
   console.debug(`Found ${remoteArtists.length} artists to migrate`);
 
   // Process in batches to avoid memory issues with large datasets
-  const batchSize = 500;
+  const batchSize = 100;
   for (let i = 0; i < remoteArtists.length; i += batchSize) {
     const batch = remoteArtists.slice(i, i + batchSize);
 
@@ -118,7 +126,7 @@ const seedTracks = async () => {
   console.debug(`Found ${remoteTracks.length} tracks to migrate`);
 
   // Process in batches for better performance
-  const batchSize = 500;
+  const batchSize = 100;
   for (let i = 0; i < remoteTracks.length; i += batchSize) {
     const batch = remoteTracks.slice(i, i + batchSize);
 
@@ -163,7 +171,7 @@ const seedTrackPlays = async () => {
   console.debug(`Found ${remoteTrackPlays.length} track plays to migrate`);
 
   // Process in larger batches since these are simpler records
-  const batchSize = 2000;
+  const batchSize = 1000;
   for (let i = 0; i < remoteTrackPlays.length; i += batchSize) {
     const batch = remoteTrackPlays.slice(i, i + batchSize);
 
