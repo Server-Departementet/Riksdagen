@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../prisma/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TrackPlay {
+  id String @id // Custom UID
+
+  trackId  String
+  playedAt DateTime
+  userId   String
+
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@index([playedAt])
+}
+
+model Track {
+  id String @id // Spotify's track UID
+
+  name     String
+  duration Int
+  url      String
+  image    String?
+  albumId  String
+
+  album     Album       @relation(fields: [albumId], references: [id])
+  artists   Artist[]
+  TrackPlay TrackPlay[]
+}
+
+model Artist {
+  id String @id // Spotify's artist UID
+
+  name  String
+  url   String
+  image String?
+
+  tracks Track[]
+  genres Genre[]
+}
+
+model Album {
+  id String @id // Spotify's album UID
+
+  name  String
+  url   String
+  image String?
+
+  tracks Track[]
+}
+
+model Genre {
+  name String @id // Spotify's genre name as UID
+
+  artists Artist[]
+}
