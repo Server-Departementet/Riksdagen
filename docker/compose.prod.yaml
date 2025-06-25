@@ -1,0 +1,7 @@
+name: riksdagen-production-compose
+
+services:
+  db:
+    image: mariadb:lts
+
+  app:
