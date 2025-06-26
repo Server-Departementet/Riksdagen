@@ -3,5 +3,38 @@ name: riksdagen-production-compose
 services:
   db:
     image: mariadb:lts
+    restart: always
+    networks:
+      - internal_network
+    volumes:
+      - staging_data:/mariadb
+    environment:
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      start_period: 1m
+      start_interval: 5s
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
   app:
+    image: ghcr.io/sustainable-action-foundation/eco-planner:dev
+    pull_policy: always
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+      - internal_network
+    ports:
+      - "3000:3000"
+    environment:
+      # Database connection string
+      - DATABASE_URL=${MARIADB_DATABASE}
+
+networks:
+  internal_network:
+    internal: true
