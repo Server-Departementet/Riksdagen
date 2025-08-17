@@ -5,10 +5,9 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/root/Riksdagen/
-ExecStart=/bin/bash /root/Riksdagen/deploy-code/yarn-start.sh
+ExecStart=/bin/bash -c "source /root/.nvm/nvm.sh && chmod +x deploy-code/* && deploy-code/deploy.sh"
 Restart=always
 RestartSec=3
-Environment=NODE_ENV=production
 
 [Install]
 WantedBy=multi-user.target

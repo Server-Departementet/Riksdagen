@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "yarn cache:colors & yarn next build",
+    "build": "yarn cache:colors && yarn next build",
     "start": "next start",
     "lint": "next lint",
     "cache:colors": "tsx src/scripts/pre-fill-spotify-colors.ts"

@@ -1,13 +1,10 @@
 import type { NextConfig } from "next";
+import { env } from "node:process";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   experimental: {
     useCache: true,
   },
-  allowedDevOrigins: [
-    "laptop-nti.tailad6f63.ts.net"
-  ],
   images: {
     remotePatterns: [
       {
@@ -16,6 +13,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  ...env.CI ? { output: "standalone", } : {},
 };
 
 export default nextConfig;

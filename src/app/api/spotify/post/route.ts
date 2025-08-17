@@ -137,7 +137,18 @@ async function storeTrackPlay(userId: string, track: SpotifyApi.TrackObjectFull,
   });
 }
 
+const lastFetch: Date = new Date();
+const fetchInterval = 60 * 1000; // 1 minute
+
 export async function POST() {
+  if (lastFetch && lastFetch > new Date(Date.now() - fetchInterval)) {
+    console.warn("API already fetched recently. Skipping this run.");
+    return NextResponse.json({
+      message: "Already fetched recently. Skipping.",
+    });
+  }
+  lastFetch.setTime(Date.now());
+
   const client = await clerkClient();
   const users = await client.users.getUserList();
 
