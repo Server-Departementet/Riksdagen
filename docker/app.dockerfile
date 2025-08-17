@@ -82,18 +82,11 @@ RUN --mount=type=cache,target=/app/.next/cache \
 # ============================================================================
 FROM base AS runner
 
-ARG GIT_LONG_HASH
-ARG GIT_SHORT_HASH
-
-# Build arguments for git information (for debugging/monitoring)
-ENV GIT_LONG_HASH=${GIT_LONG_HASH}
-ENV GIT_SHORT_HASH=${GIT_SHORT_HASH}
-
 # Set production environment variables
 ENV NODE_ENV=production
 # Next.js collects completely anonymous telemetry data about general usage. Learn more here: https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=8081
+ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Copy public assets
@@ -105,10 +98,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Ensure proper permissions
 RUN mkdir -p .next && chown -R nextjs:nodejs .next
-
-# App has an API endpoint which always returns 200 OK
-HEALTHCHECK --interval=3s --timeout=10s --start-period=3s --retries=10 \
-  CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
 # Switch to non-root user for security
 USER nextjs
