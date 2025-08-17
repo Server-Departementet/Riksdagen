@@ -22,6 +22,7 @@
       "@/*": ["./src/*"],
       "@root/*": ["./*"],
       "@types": ["./src/types"],
+      "@prisma/client": ["./src/prisma/"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
