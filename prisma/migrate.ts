@@ -1,5 +1,6 @@
-import { Socket } from "node:net";
 import { PrismaClient, TrackPlay } from "../src/prisma/client";
+// This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
+import trackPlays from "../../PostgresMigrate/trackPlays.json" with { type: "json" };
 
 const prisma = new PrismaClient();
 
@@ -94,22 +95,8 @@ const seedTracks = async () => {
 const seedTrackPlays = async () => {
   console.debug("Seeding track plays...");
 
-  const remoteTrackPlays: TrackPlay[] = [];
-
-  const socketConnection = new Socket();
-  socketConnection.connect(port, host, () => {
-    console.debug(`Connected to API at ${host}:${port}`);
-
-    socketConnection.on("data", (data) => {
-      const trackPlay = JSON.parse(data.toString());
-      remoteTrackPlays.push(trackPlay);
-    });
-  });
-
-  // const remoteTrackPlays = await (await fetch(apiUrl + "/trackplays")).json();  
-
   await prisma.trackPlay.createMany({
-    data: remoteTrackPlays,
+    data: trackPlays as TrackPlay[],
     skipDuplicates: true,
   });
 
