@@ -45,16 +45,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ trackStats: statsCache[filterHash] });
   }
 
-  const tracks: TrackWithPlays[] = await prisma.track.findMany({
+  const tracks: TrackWithPlays[] = (await prisma.track.findMany({
     orderBy: {
       TrackPlay: { _count: 'desc' },
     },
     include: {
-      artists: true,
-      album: true,
       TrackPlay: true,
+      album: {
+        include: {
+          _count: {
+            select: { tracks: true }
+          }
+        }
+      },
+      artists: true,
     }
-  });
+  })).map(track => ({
+    ...track,
+    album: {
+      ...track.album,
+      trackCount: track.album._count.tracks,
+    }
+  }));
+
 
   const trackData = await filterTracks(tracks, filter);
 

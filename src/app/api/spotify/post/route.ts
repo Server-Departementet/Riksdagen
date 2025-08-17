@@ -37,7 +37,7 @@ async function storeTrackPlay(userId: string, track: SpotifyApi.TrackObjectFull,
   });
 
   // Check database for existing artists.
-  const artistsDB = new Set(
+  const existingArtists = new Set(
     (
       await prisma.artist.findMany({
         where: {
@@ -49,7 +49,7 @@ async function storeTrackPlay(userId: string, track: SpotifyApi.TrackObjectFull,
   );
 
   // Upsert each Artist and handle Genre connections.
-  for (const artist of track.artists.filter((artist) => !artistsDB.has(artist.id))) {
+  for (const artist of track.artists.filter((artist) => !existingArtists.has(artist.id))) {
     // Fetch artist details from Spotify API.
     const response = await fetch(artist.href, {
       method: "GET",

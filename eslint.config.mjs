@@ -24,7 +24,10 @@ const eslintConfig = [
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/no-confusing-non-null-assertion": "error",
       "prefer-const": "warn"
-    }
+    },
+    ignorePatterns: [
+      "src/prisma",
+    ],
   }),
 ];
 

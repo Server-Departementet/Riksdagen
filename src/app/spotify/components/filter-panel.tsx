@@ -4,7 +4,7 @@ import type { Album, User } from "@/app/spotify/types";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
 import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { sortingFunctions } from "../functions/track-sorting";
 import { ChevronsUpDownIcon, SortAscIcon, SortDescIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import Image from "next/image";
 
 export default function FilterPanel({
