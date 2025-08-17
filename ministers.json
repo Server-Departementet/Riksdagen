@@ -26,7 +26,7 @@
   },
   "transportminister": {
     "title": "Transport\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Transportministern ansvarar för allt inom transport. Från tåg till pirror."
   },
   "ordinarieutrikesminister": {
@@ -36,7 +36,7 @@
   },
   "suppleantutrikesminister": {
     "title": "Suppleant\u00ADutrikes\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ställföreträdande utrikesminister."
   },
   "lag-%20och-%20rattminister": {
@@ -56,12 +56,12 @@
   },
   "under-y-63-byggminister": {
     "title": "Under-y-63-bygg\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för byggfrågor under y-63."
   },
   "den-%20ena-%20broministern": {
     "title": "Den ena bro\u00ADministern",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för broministerfrågor."
   },
   "forsvarsminister": {
@@ -71,7 +71,7 @@
   },
   "jordbruksminister": {
     "title": "Jordbruks\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för jordbruksfrågor och landsbygdspolitik."
   },
   "sjukvardsminister": {
@@ -91,7 +91,7 @@
   },
   "tagminister": {
     "title": "Tåg\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för tågtrafik och järnvägspolitik."
   },
   "musikminister": {
@@ -151,7 +151,7 @@
   },
   "schaktminister": {
     "title": "Schakt\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för schaktning och byggfrågor."
   },
   "hissminister": {
@@ -166,7 +166,7 @@
   },
   "osakerhetsminister": {
     "title": "Osäkerhets\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för osäkerhetsfrågor och riskhantering."
   },
   "%22musik%22-minister": {
@@ -176,7 +176,7 @@
   },
   "kistminister": {
     "title": "Kist\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för kistor och begravningsfrågor."
   },
   "geogissningsminister": {
@@ -211,7 +211,7 @@
   },
   "mattminister": {
     "title": "Matt\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för mattor och textilier."
   },
   "pythonminister": {
@@ -221,7 +221,7 @@
   },
   "javascriptminister": {
     "title": "Javascript\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för JavaScript-programmering och relaterade frågor."
   },
   "typescriptminister": {
@@ -231,7 +231,7 @@
   },
   "oppositionsminister": {
     "title": "Oppositions\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för oppositionens frågor och kritik."
   },
   "vice-oppositionsminister": {
@@ -271,7 +271,7 @@
   },
   "mellanosternminister": {
     "title": "Mellanöstern\u00ADminister",
-    "name": "Viggo S.E.S.",
+    "name": "Vena S.E.S.",
     "description": "Ansvarar för frågor relaterade till Mellanöstern."
   },
   "sparvagnsminister": {

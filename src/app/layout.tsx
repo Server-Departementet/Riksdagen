@@ -16,7 +16,7 @@ const _openSans = Open_Sans({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Riksdagen",
   authors: [
-    { name: "Viggo Ström", url: "https://viggostrom.github.io/" },
+    { name: "Vena Ström", url: "https://venastrom.se/" },
     { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
     { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
   ],
@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
               <ExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ExternalLink>
-              <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Viggos Radio</ExternalLink>
+              <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Venas Radio</ExternalLink>
             </Sidebar>
           </div>
         </header>
@@ -65,7 +65,7 @@ export default async function RootLayout({ children }: {
         <Toaster theme="light" />
 
         <footer className="p-3 mt-5">
-          <p>© 2025 Viggo Ström, Axel Thornberg & Emil Winroth</p>
+          <p>© 2025 Vena Ström, Axel Thornberg & Emil Winroth</p>
         </footer>
       </body>
     </html>
