@@ -3,6 +3,7 @@ import { PrismaClient } from "../src/prisma/client";
 const prisma = new PrismaClient();
 
 const remoteDB = process.env.REMOTE_DB_URL;
+if (!remoteDB) throw new Error("REMOTE_DB_URL environment variable is not set");
 const remotePrisma = new PrismaClient({ datasourceUrl: remoteDB });
 
 const seedAlbums = async () => {
@@ -145,9 +146,20 @@ const seedTrackPlays = async () => {
   console.debug("Seeding track plays complete.");
 };
 
+async function main() {
+  await seedAlbums();
+  await seedGenres();
+  await seedArtists();
+  await seedTracks();
+  await seedTrackPlays();
+}
 
-await seedAlbums();
-await seedGenres();
-await seedArtists();
-await seedTracks();
-await seedTrackPlays();
+main()
+  .then(() => {
+    console.debug("Seeding completed successfully.");
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error("Error during seeding:", error);
+    process.exit(1);
+  });
