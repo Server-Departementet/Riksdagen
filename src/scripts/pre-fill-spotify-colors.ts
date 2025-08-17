@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../prisma/generated/client/client.js";
+import { PrismaClient } from "@prisma/client";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
 

@@ -10,7 +10,7 @@
     "build": "yarn cache:colors & yarn next build",
     "start": "next start",
     "lint": "next lint",
-    "cache:colors": "node src/scripts/pre-fill-spotify-colors.ts"
+    "cache:colors": "tsx src/scripts/pre-fill-spotify-colors.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.1",
@@ -43,7 +43,8 @@
     "react-dom": "^19.1.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.20.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -57,15 +58,6 @@
     "prisma": "^6.14.0",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2"
-  },
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": ">=22.7.0"
-    }
-  },
-  "prisma": {
-    "seed": "node --experimental-transform-types prisma/seed.ts"
   },
   "type": "module"
 }
