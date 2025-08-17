@@ -2,6 +2,21 @@
 
 export CI=true
 
+# Handle .env file
+if [ -n "$1" ]; then
+    # If an argument is provided, download the .env file from the URL
+    echo "Downloading .env file from $1"
+    curl -o .env "$1"
+    if [ ! -f .env ]; then
+        echo "Failed to download .env file from $1" 1>&2
+        exit 1
+    fi
+elif [ ! -f ".env" ]; then
+    # If no argument is provided and .env file does not exist, exit
+    echo "No .env file found. Please provide a URL to download it from or create it manually." 1>&2
+    exit 1
+fi
+
 yarn install --frozen-lockfile
 yarn build
 
