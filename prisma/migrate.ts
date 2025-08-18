@@ -1,4 +1,4 @@
-import { PrismaClient, TrackPlay } from "../src/prisma/client";
+import { Artist, PrismaClient } from "../src/prisma/client";
 // This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
 import trackPlays from "../../PostgresMigrate/trackPlays.json" with { type: "json" };
 
@@ -8,115 +8,97 @@ const port = 2500;
 const host = "localhost";
 const apiUrl = `http://${host}:${port}`;
 
-const seedAlbums = async () => {
-  console.debug("Seeding albums...");
+const albumData = await (await fetch(apiUrl + "/albums")).json();
+const artistData = await (await fetch(apiUrl + "/artists")).json();
+const genreData = await (await fetch(apiUrl + "/genres")).json();
+const trackData = await (await fetch(apiUrl + "/tracks")).json();
+const trackPlayData = trackPlays as unknown[];
 
-  const remoteAlbums = await (await fetch(apiUrl + "/albums")).json();
-
-  await prisma.album.createMany({
-    data: remoteAlbums,
+// Create basic entities
+await prisma.$transaction([
+  prisma.genre.createMany({
+    data: genreData.map(g => {
+      const { artists, ...data } = g;
+      return data;
+    }),
     skipDuplicates: true,
-  });
+  }),
+  prisma.artist.createMany({
+    data: artistData.map(a => {
+      const { tracks, genres, ...data } = a;
+      return data;
+    }),
+    skipDuplicates: true,
+  }),
+  prisma.album.createMany({
+    data: albumData.map(a => {
+      const { tracks, ...data } = a;
+      return data;
+    }),
+    skipDuplicates: true,
+  }),
+  prisma.track.createMany({
+    data: trackData.map(t => {
+      const { album, artists, ...data } = t;
+      return data;
+    }),
+    skipDuplicates: true,
+  }),
+  prisma.trackPlay.createMany({
+    data: trackPlayData.map((tp: any) => {
+      const { track, ...data } = tp;
+      return data;
+    }),
+    skipDuplicates: true,
+  }),
+]);
 
-  console.debug("Seeding albums complete.");
-};
-
-const seedArtists = async () => {
-  console.debug("Seeding artists...");
-
-  const remoteArtists = await (await fetch(apiUrl + "/artists")).json();
-
-
-  for (const artist of remoteArtists) {
-    const { genres, ...artistData } = artist;
-
-    await prisma.artist.upsert({
+// Link after initial creation
+await prisma.$transaction([
+  ...artistData.map((artist: any) =>
+    prisma.artist.update({
       where: { id: artist.id },
-      update: {
-        ...artistData,
+      data: {
+        tracks: {
+          connect: artist.tracks.map((t: any) => ({ id: t.id })) || [],
+        },
         genres: {
-          connect: genres?.map((genre: { name: string }) => ({ name: genre.name })).filter(Boolean),
+          connect: artist.genres.map((g: any) => ({ name: g.name })) || [],
         },
       },
-      create: {
-        ...artistData,
-        genres: {
-          connect: genres?.map((genre: { name: string }) => ({ name: genre.name })).filter(Boolean),
+    })
+  ),
+  ...albumData.map((album: any) =>
+    prisma.album.update({
+      where: { id: album.id },
+      data: {
+        tracks: {
+          connect: album.tracks.map((t: any) => ({ id: t.id })) || [],
         },
       },
-    });
-  }
-
-  console.debug("Seeding artists complete.");
-};
-
-const seedGenres = async () => {
-  console.debug("Seeding genres...");
-
-  const remoteGenres = await (await fetch(apiUrl + "/genres")).json();
-
-  await prisma.genre.createMany({
-    data: remoteGenres,
-    skipDuplicates: true,
-  });
-
-  console.debug("Seeding genres complete.");
-};
-
-const seedTracks = async () => {
-  console.debug("Seeding tracks...");
-
-  const remoteTracks = await (await fetch(apiUrl + "/tracks")).json();
-
-  // Create each track with its artist relationships
-  for (const track of remoteTracks) {
-    const { artists, ...trackData } = track;
-
-    await prisma.track.upsert({
+    })
+  ),
+  ...trackData.map((track: any) =>
+    prisma.track.update({
       where: { id: track.id },
-      update: {
-        ...trackData,
+      data: {
+        album: {
+          connect: { id: track.album.id },
+        },
         artists: {
-          connect: artists?.map((artist: { id: string }) => ({ id: artist.id })).filter(Boolean),
+          connect: track.artists.map((a: any) => ({ id: a.id })) || [],
         },
       },
-      create: {
-        ...trackData,
-        artists: {
-          connect: artists?.map((artist: { id: string }) => ({ id: artist.id })).filter(Boolean),
+    })
+  ),
+  ...trackPlayData.map((tp: any) =>
+    prisma.trackPlay.update({
+      where: { id: tp.id },
+      data: {
+        track: {
+          connect: { id: tp.track.id },
         },
       },
-    });
-  }
-
-  console.debug("Seeding tracks complete.");
-};
-
-const seedTrackPlays = async () => {
-  console.debug("Seeding track plays...");
-
-  await prisma.trackPlay.createMany({
-    data: trackPlays as TrackPlay[],
-    skipDuplicates: true,
-  });
-
-  console.debug("Seeding track plays complete.");
-};
-
-async function main() {
-  await seedAlbums();
-  await seedGenres();
-  await seedArtists();
-  await seedTracks();
-  await seedTrackPlays();
-}
-
-main()
-  .then(() => {
-    console.debug("Seeding completed successfully.");
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error("Error during seeding:", error);
-    process.exit(1);
-  });
+    })
+  ),
+]);
