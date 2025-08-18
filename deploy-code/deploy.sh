@@ -20,6 +20,14 @@ fi
 yarn install --frozen-lockfile
 yarn build
 
+# Enable the the services
+cp deploy-code/spotify-ping.service /etc/systemd/system/
+cp deploy-code/spotify-ping.timer /etc/systemd/system/
+cp deploy-code/next-start.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now spotify-ping.timer
+systemctl enable --now next-start.service
+
 # Copy necessary files to the standalone directory
 cp .env .next/standalone/
 cp -r public .next/standalone/
