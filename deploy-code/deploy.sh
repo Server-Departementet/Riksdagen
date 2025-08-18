@@ -28,6 +28,10 @@ systemctl daemon-reload
 systemctl enable --now spotify-ping.timer
 systemctl enable --now next-start.service
 
+# Log if the timer is active
+echo "Spotify ping timer status:"
+sudo systemctl list-timers spotify-ping.timer
+
 # Copy necessary files to the standalone directory
 cp .env .next/standalone/
 cp -r public .next/standalone/
