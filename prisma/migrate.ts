@@ -1,4 +1,4 @@
-import { Artist, PrismaClient } from "../src/prisma/client";
+import { PrismaClient } from "../src/prisma/client";
 // This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
 import trackPlays from "../../PostgresMigrate/trackPlays.json" with { type: "json" };
 

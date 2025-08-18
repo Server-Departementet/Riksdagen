@@ -50,3 +50,5 @@ next-env.d.ts
 src/prisma
 
 standalone/
+
+prisma/usermap.json
