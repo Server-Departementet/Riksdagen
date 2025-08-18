@@ -17,7 +17,9 @@ elif [ ! -f ".env" ]; then
     exit 1
 fi
 
+npm i -g yarn
 yarn install --frozen-lockfile
+yarn prisma generate
 yarn build
 
 # Enable the the services

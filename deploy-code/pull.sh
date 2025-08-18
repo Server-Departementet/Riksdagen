@@ -4,7 +4,8 @@ git fetch --all
 git checkout origin/main --force
 
 # Build
-yarn install
+yarn install --frozen-lockfile
+yarn prisma generate
 yarn build
 bash /root/Riksdagen/deploy-code/deploy.sh
 
