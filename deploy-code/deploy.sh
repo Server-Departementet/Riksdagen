@@ -23,7 +23,7 @@ yarn build
 # Copy necessary files to the standalone directory
 cp .env .next/standalone/
 cp -r public .next/standalone/
-
+cp -r cache .next/standalone/
 
 cd .next
 cp -r static standalone/.next/
