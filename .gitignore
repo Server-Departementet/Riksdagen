@@ -52,3 +52,6 @@ src/prisma
 standalone/
 
 prisma/usermap.json
+prisma/trackPlaysDump.json
+
+cache/
