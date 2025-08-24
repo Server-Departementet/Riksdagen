@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../prisma/client";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
+import path from "node:path";
 
 const prisma = new PrismaClient();
 
@@ -8,8 +9,15 @@ const images = (await prisma.track.findMany())
   .map(track => track.image)
   .filter(Boolean) as string[];
 
-const colorCachePath = "./cache/spotify-color-cache.json";
-if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
+const colorCachePath = path.join("./cache", "spotify-color-cache.json");
+if (!fs.existsSync(colorCachePath)) {
+  // Make sure cache directory exists
+  if (!fs.existsSync(path.dirname(colorCachePath))) {
+    fs.mkdirSync(path.dirname(colorCachePath), { recursive: true });
+  }
+  // Create empty cache file
+  fs.writeFileSync(colorCachePath, JSON.stringify({}), { encoding: "utf-8" });
+}
 const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 
