@@ -7,7 +7,10 @@ git checkout origin/main --force
 chmod +x deploy-code/*
 
 # Build
-bash /root/Riksdagen/deploy-code/deploy.sh
+npm i -g yarn
+yarn install --frozen-lockfile
+yarn prisma generate
+CI=true yarn build
 
 # Restart
 reboot

@@ -17,6 +17,7 @@ elif [ ! -f ".env" ]; then
     exit 1
 fi
 
+# Build
 npm i -g yarn
 yarn install --frozen-lockfile
 yarn prisma generate
