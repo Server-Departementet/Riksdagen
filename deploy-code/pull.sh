@@ -7,10 +7,7 @@ git checkout origin/main --force
 chmod +x deploy-code/*
 
 # Build
-npm i -g yarn
-yarn install --frozen-lockfile
-yarn prisma generate
-CI=true yarn build
+bash deploy-code/build.sh
 
 # Restart
 reboot

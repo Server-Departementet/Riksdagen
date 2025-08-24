@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CI=true
+cd /root/Riksdagen
 
 # Handle .env file
 if [ -n "$1" ]; then
@@ -18,10 +18,7 @@ elif [ ! -f ".env" ]; then
 fi
 
 # Build
-npm i -g yarn
-yarn install --frozen-lockfile
-yarn prisma generate
-CI=true yarn build
+bash deploy-code/build.sh
 
 # Enable the the services
 cp deploy-code/spotify-ping.service /etc/systemd/system/
@@ -35,15 +32,7 @@ systemctl enable --now next-start.service
 echo "Spotify ping timer status:"
 sudo systemctl list-timers spotify-ping.timer
 
-# Copy necessary files to the standalone directory
-cp .env .next/standalone/
-cp -r public .next/standalone/
-cp -r cache .next/standalone/
-
-cd .next
-cp -r static standalone/.next/
-
-cd standalone
+cd /root/Riksdagen/.next/standalone
 
 # Start in the standalone directory
 node server.js &
