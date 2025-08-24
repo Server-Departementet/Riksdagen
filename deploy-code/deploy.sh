@@ -20,7 +20,7 @@ fi
 npm i -g yarn
 yarn install --frozen-lockfile
 yarn prisma generate
-yarn build
+CI=true yarn build
 
 # Enable the the services
 cp deploy-code/spotify-ping.service /etc/systemd/system/
