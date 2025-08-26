@@ -1,6 +1,18 @@
-import { PrismaClient } from "../src/prisma/client";
+import { PrismaClient, Track, TrackPlay } from "../src/prisma/client";
+import { createHash } from "node:crypto";
 // This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
 import trackPlays from "../../PostgresMigrate/trackPlays.json" with { type: "json" };
+// This json file is not provided. It maps old user ids to new user ids
+// "old_user_id": {
+//   "_name": "Users name for logging",
+//   "prod": "new_user_id",
+// },
+import usermap from "./usermap.json" with { type: "json" };
+
+function generateDeterministicId(userId: string, trackId: string, playedAt: string): string {
+  const uniqueString = `${userId}:${trackId}:${playedAt}`;
+  return createHash("md5").update(uniqueString).digest("hex");
+}
 
 const prisma = new PrismaClient();
 
@@ -12,7 +24,38 @@ const albumData = await (await fetch(apiUrl + "/albums")).json();
 const artistData = await (await fetch(apiUrl + "/artists")).json();
 const genreData = await (await fetch(apiUrl + "/genres")).json();
 const trackData = await (await fetch(apiUrl + "/tracks")).json();
-const trackPlayData = trackPlays as unknown[];
+const trackPlayData: {
+  id: string;
+  trackId: string;
+  playedAt: string;
+  userId: string;
+  track: {
+    id: string;
+  };
+}[] = (trackPlays as {
+  id: string;
+  trackId: string;
+  playedAt: string;
+  userId: string;
+  track: {
+    id: string;
+  };
+}[]).map((play) => {
+  if (!usermap[play.userId as keyof typeof usermap]) {
+    throw new Error(`User ${play.userId} not found in usermap`);
+  }
+  const newUserId = usermap[play.userId as keyof typeof usermap].prod;
+  const newId = generateDeterministicId(newUserId, play.track.id, play.playedAt);
+  return {
+    id: newId,
+    trackId: play.track.id,
+    playedAt: play.playedAt,
+    userId: newUserId,
+    track: {
+      id: play.track.id,
+    },
+  };
+});
 
 // Create basic entities
 await prisma.$transaction([
