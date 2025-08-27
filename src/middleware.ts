@@ -4,21 +4,27 @@ import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
 
 export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
-  const response = NextResponse.next();
+
+  // Redirect tailscale to public domain
+  if (req.headers.get("x-forwarded-host")?.includes(".ts.net")) {
+    console.log("redirecting to public domain");
+    const newURL = new URL(`https://dev.riksdagen.net${req.nextUrl.pathname}`, req.url)
+    return NextResponse.redirect(newURL, 301);
+  }
 
   // Spotify
   if (isSpotifyRoute(req)) {
     const user = await auth();
 
     if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
-      return response;
+      return NextResponse.next();
     }
     else {
       return notFound(req);
     }
   }
 
-  return response;
+  return NextResponse.next();
 });
 
 export const config = {

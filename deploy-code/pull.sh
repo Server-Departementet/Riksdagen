@@ -1,7 +1,7 @@
 #!/bin/bash
 
 git fetch --all
-git checkout origin/main --force
+git checkout origin/dev --force
 
 # Make /deploy-code executable
 chmod +x deploy-code/*
