@@ -1,7 +1,11 @@
 import { PrismaClient, Track, TrackPlay } from "../src/prisma/client";
 import { createHash } from "node:crypto";
 // This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
-import trackPlays from "../../PostgresMigrate/trackPlays.json" with { type: "json" };
+import albumData from "../dump/albums.json" with { type: "json" };
+import artistData from "../dump/artists.json" with { type: "json" };
+import genreData from "../dump/genres.json" with { type: "json" };
+import trackData from "../dump/tracks.json" with { type: "json" };
+import trackPlays from "../dump/trackPlays.json" with { type: "json" };
 // This json file is not provided. It maps old user ids to new user ids
 // "old_user_id": {
 //   "_name": "Users name for logging",
@@ -16,14 +20,10 @@ function generateDeterministicId(userId: string, trackId: string, playedAt: stri
 
 const prisma = new PrismaClient();
 
-const port = 2500;
-const host = "localhost";
-const apiUrl = `http://${host}:${port}`;
-
-const albumData = await (await fetch(apiUrl + "/albums")).json();
-const artistData = await (await fetch(apiUrl + "/artists")).json();
-const genreData = await (await fetch(apiUrl + "/genres")).json();
-const trackData = await (await fetch(apiUrl + "/tracks")).json();
+// const albumData = await (await fetch(apiUrl + "/albums")).json();
+// const artistData = await (await fetch(apiUrl + "/artists")).json();
+// const genreData = await (await fetch(apiUrl + "/genres")).json();
+// const trackData = await (await fetch(apiUrl + "/tracks")).json();
 const trackPlayData: {
   id: string;
   trackId: string;
