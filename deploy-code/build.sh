@@ -7,6 +7,7 @@ export CI=true
 # Build
 npm i -g yarn
 yarn install --frozen-lockfile
+yarn prisma migrate deploy
 yarn prisma generate
 CI=true yarn build
 
