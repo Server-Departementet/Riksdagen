@@ -11,10 +11,12 @@ export function SidebarLink(
     href,
     children,
     className = "",
+    target,
   }: {
     href: string,
     children: React.ReactNode
     className?: string
+    target?: string
   }
 ) {
   const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -26,8 +28,11 @@ export function SidebarLink(
   };
 
   return (
-    <Link href={href} className={`w-full ${className}`}
+    <Link
+      href={href}
+      className={`w-full ${className}`}
       onClick={onClick}
+      {...(target ? { target } : {})}
     >
       <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full !flex !flex-row !gap-x-2 !items-center">
         {children}
@@ -49,7 +54,7 @@ export function ExternalLink(
 ) {
 
   return (
-    <SidebarLink href={href} className={`${className}`}>
+    <SidebarLink target="_blank" href={href} className={`${className}`}>
       {children}
       <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
     </SidebarLink>

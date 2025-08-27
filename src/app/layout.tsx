@@ -7,7 +7,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
+import { ProtectedExternalLink, ProtectedLink } from "@/components/sidebar/sidebar-protected";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -53,8 +53,8 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
-              <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
-              <ExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ExternalLink>
+              <ProtectedLink href="/spotify">Spotify-Statistik</ProtectedLink>
+              <ProtectedExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ProtectedExternalLink>
               <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Venas Radio</ExternalLink>
             </Sidebar>
           </div>
@@ -66,6 +66,7 @@ export default async function RootLayout({ children }: {
 
         <footer className="p-3 mt-5">
           <p>© 2025 Vena Ström, Axel Thornberg & Emil Winroth</p>
+          <p className="text-sm">Källkod: <a href="https://github.com/Server-Departementet/Riksdagen" target="_blank">github.com</a></p>
         </footer>
       </body>
     </html>
