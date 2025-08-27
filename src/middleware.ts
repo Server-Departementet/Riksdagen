@@ -6,7 +6,7 @@ const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
 export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
 
   // Redirect tailscale to public domain
-  if (req.headers.get("x-forwarded-host")?.includes(".ts.net")) {
+  if (req.headers.get("x-forwarded-host")?.includes("dev.ts.net")) {
     console.log("redirecting to public domain");
     const newURL = new URL(`https://dev.riksdagen.net${req.nextUrl.pathname}`, req.url)
     return NextResponse.redirect(newURL, 301);
