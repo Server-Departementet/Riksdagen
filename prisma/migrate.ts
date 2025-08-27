@@ -1,6 +1,6 @@
-import { PrismaClient, Track, TrackPlay } from "../src/prisma/client";
+import { PrismaClient } from "../src/prisma/client";
 import { createHash } from "node:crypto";
-// This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
+// This json file is not provided. These are dumps of the database tables I made via a little script.
 import albumData from "../dump/albums.json" with { type: "json" };
 import artistData from "../dump/artists.json" with { type: "json" };
 import genreData from "../dump/genres.json" with { type: "json" };
@@ -11,7 +11,7 @@ import trackPlays from "../dump/trackPlays.json" with { type: "json" };
 //   "_name": "Users name for logging",
 //   "prod": "new_user_id",
 // },
-import usermap from "./usermap.json" with { type: "json" };
+import usermap from "./reverse-usermap.json" with { type: "json" };
 
 function generateDeterministicId(userId: string, trackId: string, playedAt: string): string {
   const uniqueString = `${userId}:${trackId}:${playedAt}`;
@@ -20,10 +20,7 @@ function generateDeterministicId(userId: string, trackId: string, playedAt: stri
 
 const prisma = new PrismaClient();
 
-// const albumData = await (await fetch(apiUrl + "/albums")).json();
-// const artistData = await (await fetch(apiUrl + "/artists")).json();
-// const genreData = await (await fetch(apiUrl + "/genres")).json();
-// const trackData = await (await fetch(apiUrl + "/tracks")).json();
+// Remake the ids to use the correct user ids
 const trackPlayData: {
   id: string;
   trackId: string;
