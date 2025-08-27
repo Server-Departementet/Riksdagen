@@ -9,17 +9,25 @@ const images = (await prisma.track.findMany())
   .map(track => track.image)
   .filter(Boolean) as string[];
 
+const preferredCachePath = path.join("../", ".next", "standalone", "cache", "spotify-color-cache.json");
 const colorCachePath = path.join("./cache", "spotify-color-cache.json");
-if (!fs.existsSync(colorCachePath)) {
-  // Make sure cache directory exists
-  if (!fs.existsSync(path.dirname(colorCachePath))) {
-    fs.mkdirSync(path.dirname(colorCachePath), { recursive: true });
-  }
-  // Create empty cache file
-  fs.writeFileSync(colorCachePath, JSON.stringify({}), { encoding: "utf-8" });
+
+let cachePath = preferredCachePath;
+
+if (fs.existsSync(preferredCachePath)) {
+  cachePath = preferredCachePath;
+} 
+else {
+  cachePath = colorCachePath;
 }
-const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
-process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
+
+if (!fs.existsSync(cachePath)) {
+  if (!fs.existsSync(path.dirname(cachePath))) fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+  // Create empty cache file
+  fs.writeFileSync(cachePath, JSON.stringify({}), { encoding: "utf-8" });
+}
+const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(cachePath, "utf-8"));
+process.on("beforeExit", () => fs.writeFileSync(cachePath, JSON.stringify(colorCache), "utf-8"));
 
 const processImage = async (url: string) => {
   if (colorCache[url]) return colorCache[url];
