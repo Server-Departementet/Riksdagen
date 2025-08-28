@@ -54,15 +54,15 @@ export async function StatsskickPage() {
 
           <div className="flex flex-col gap-y-4">
             <p className="[&>span]:font-normal">
-              Regeringen är vår Discord-server där vi, ministrarna, håller kontakt. Servern är uppdelad i olika kategorier, främst <span>RIKSDAGEN</span> och <span>DEPARTEMENT</span>.
+              Regeringen är vår Discord-server där vi, ministrarna, håller kontakt. Servern är uppdelad i olika kategorier, främst <span>Riksdagen</span> och <span>Departement</span>.
             </p>
 
             <p className="[&>span]:font-normal">
-              Vi röstar och diskuterar olika beslut och lagförslag i kanalen <span>#motioner</span> som ligger under <span>RIKSDAGEN</span>. Kanalen <span>#domstolen</span> hittas även där. Där skapar, spårar och dokumenterar vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
+              Vi röstar och diskuterar olika beslut och lagförslag i kanalen <span>#motioner</span> som ligger under <span>Riksdagen</span>. Kanalen <span>#domstolen</span> hittas även där. Där skapar, spårar och dokumenterar vi rättsfall som kommer ske, pågår eller har skett. Alla ministrar har rätt att stämma varandra inför domstolen av i princip vilken anledning som helst.
             </p>
 
             <p className="[&>span]:font-normal">
-              Under <span>DEPARTEMENT</span> ligger kanalerna för många av de olika departementen som leds av respektive minister. Exempelvis har vi <span>#transport-departementet</span> där allt transportrelaterat diskuteras.
+              Under <span>Departement</span> ligger kanalerna för många av de olika departementen som leds av respektive minister. Exempelvis har vi <span>#transport-departementet</span> där allt transportrelaterat diskuteras.
             </p>
 
             <p className="[&>span]:font-normal">
