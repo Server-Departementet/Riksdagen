@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClerkLogin } from "@/components/login-button";
-import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
+import { Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { ProtectedExternalLink, ProtectedLink } from "@/components/sidebar/sidebar-protected";
+import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
 
 // Fonts
 const _fontOutfit = Font_Outfit({ subsets: ["latin"] });
