@@ -83,8 +83,15 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify">Spotify-Statistik</ProtectedLink>
-              <ProtectedExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ProtectedExternalLink>
-              <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Venas Radio</ExternalLink>
+              {/* 
+                Add a new link with these components:
+                <SidebarLink href="/path">Title</SidebarLink>
+                <ExternalLink href="https://example.com">Title</ExternalLink> (Target="_blank")
+
+                # Requires login
+                <ProtectedLink href="/path">Title</ProtectedLink> 
+                <ProtectedExternalLink href="https://example.com">Title</ProtectedExternalLink> (Target="_blank")
+               */}
             </Sidebar>
           </div>
         </header>
