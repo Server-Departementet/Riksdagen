@@ -1,9 +1,10 @@
-import { clerkMiddleware, ClerkMiddlewareAuth, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { isMinister } from "./lib/auth";
 
 const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
 
-export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
+export default clerkMiddleware(async (_auth, req) => {
 
   // Redirect tailscale to public domain
   if (req.headers.get("x-forwarded-host")?.includes("dev.ts.net")) {
@@ -12,17 +13,8 @@ export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextReques
     return NextResponse.redirect(newURL, 301);
   }
 
-  // Spotify
-  if (isSpotifyRoute(req)) {
-    const user = await auth();
-
-    if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
-      return NextResponse.next();
-    }
-    else {
-      return notFound(req);
-    }
-  }
+  // Spotify protected route
+  if (isSpotifyRoute(req) && !isMinister()) notFound(req);
 
   return NextResponse.next();
 });
