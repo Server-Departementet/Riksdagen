@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /root/Riksdagen
+cd /root/Riksdagen || exit 1
 
 # Handle .env file
 if [ -n "$1" ]; then

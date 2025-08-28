@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /root/Riksdagen
+cd /root/Riksdagen || exit 1
 
 export CI=true
 
