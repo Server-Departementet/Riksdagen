@@ -1,16 +1,14 @@
-import { MinisterPosts } from "@/components/minister-posts";
+import { MinistersList } from "@/components/minister-posts";
 import { Metadata } from "next";
-import { metadata as rootMetadata } from "@/app/layout";
 
 export const metadata: Metadata = {
-  ...rootMetadata,
-  title: "Riksdagen - Ministrar",
-}
+  title: "Ministrar"
+};
 
 export default function Page() {
   return (
     <main>
-      <MinisterPosts />
+      <MinistersList />
     </main>
-  )
+  );
 }
