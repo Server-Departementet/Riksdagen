@@ -1,6 +1,6 @@
 import "@/app/global.tw.css";
-import { Open_Sans, Outfit } from "next/font/google";
-import type { Metadata } from "next";
+import { Open_Sans as Font_Open_Sans, Outfit as Font_Outfit } from "next/font/google";
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -9,20 +9,49 @@ import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedExternalLink, ProtectedLink } from "@/components/sidebar/sidebar-protected";
 
-/* Used in global css */
-const _outfit = Outfit({ subsets: ["latin"] });
-const _openSans = Open_Sans({ subsets: ["latin"] });
+// Fonts
+const _fontOutfit = Font_Outfit({ subsets: ["latin"] });
+const _fontOpenSans = Font_Open_Sans({ subsets: ["latin"] });
 
+const appName = "Riksdagen";
+const description = "Samlingsplatsen för 'Regeringens' alla ärenden.";
+const url = process.env.CANONICAL_URL || "";
 export const metadata: Metadata = {
-  title: "Riksdagen",
+  title: {
+    default: appName,
+    template: `%s | ${appName}`,
+  },
+  description,
   authors: [
     { name: "Vena Ström", url: "https://venastrom.se/" },
     { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
     { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
   ],
-  description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
+  twitter: {
+    card: "summary_large_image",
+    title: appName,
+    description,
+    images: [`${url}/icons/regeringen/regeringen-favicon.svg`],
+  },
+  openGraph: {
+    title: appName,
+    siteName: appName,
+    url,
+    description,
+    images: [
+      {
+        url: `${url}/icons/regeringen/regeringen-favicon.svg`,
+        width: 512,
+        height: 512,
+      },
+    ],
+    countryName: "Sweden",
+    locale: "sv_SE",
+    type: "website",
+  },
   icons: {
-    icon: "/icons/regeringen/regeringen-favicon.svg",
+    icon: `${url}/icons/regeringen/regeringen-favicon.svg`,
+    apple: `${url}/icons/regeringen/regeringen-favicon.svg`,
   },
 };
 
