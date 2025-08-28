@@ -1,287 +1,587 @@
 {
-  "den-andra-typen-av-forsvarsminister-minister": {
-    "title": "Den-andra-typen-av-försvars\u00ADminister-minister",
-    "name": "Arvid",
+  "1173949754602950757": {
+    "holder": "Arvid",
+    "title": "Den-andra-typen-av-försvars\u00administer-minister",
+    "role": "Den-andra-typen-av-försvarsminister-minister",
+    "createdAt": "2023-11-14T11:37:12.429Z",
+    "order": 78,
+    "color": "#206694",
     "description": "Ansvarar för den andra typen av försvarsfrågor. Har aldrig vunnit i rätten."
   },
-  "finansminister": {
-    "title": "Finans\u00ADminister",
-    "name": "Arvid",
+  "1167419438254014495": {
+    "holder": "Arvid",
+    "title": "Finans\u00administer",
+    "role": "Finansminister",
+    "createdAt": "2023-10-27T11:08:03.684Z",
+    "order": 73,
+    "color": "#3498db",
     "description": "Ansvarar för statens finanser och ekonomiska politik."
   },
-  "utbildningsminister": {
-    "title": "Utbildnings\u00ADminister",
-    "name": "A.J. Öhman",
+  "1167420075750465596": {
+    "holder": "A.J. Öhman",
+    "title": "Utbildnings\u00administer",
+    "role": "Utbildningsminister",
+    "createdAt": "2023-10-27T11:10:35.675Z",
+    "order": 72,
+    "color": "#1abc9c",
     "description": "Ansvarar för utbildningsfrågor och skolpolitik."
   },
-  "industriminister": {
-    "title": "Industri\u00ADminister",
-    "name": "Axel Thornberg",
+  "1168587817698480129": {
+    "holder": "Axel Thornberg",
+    "title": "Industri\u00administer",
+    "role": "Industriminister",
+    "createdAt": "2023-10-30T16:30:47.051Z",
+    "order": 71,
+    "color": "#e67e22",
     "description": "Ansvarar för industripolitik och näringslivsfrågor."
   },
-  "citatminister": {
-    "title": "Citat\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1167424162030178405": {
+    "holder": "Emil S. Winroth",
+    "title": "Citat\u00administer",
+    "role": "Citatminister",
+    "createdAt": "2023-10-27T11:26:49.920Z",
+    "order": 70,
+    "color": "#11806a",
     "description": "Ansvarar för citat och visdomsord."
   },
-  "transportminister": {
-    "title": "Transport\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1167420238388805674": {
+    "holder": "Vena S.",
+    "title": "Transport\u00administer",
+    "role": "Transportminister",
+    "createdAt": "2023-10-27T11:11:14.451Z",
+    "order": 69,
+    "color": "#c27c0e",
     "description": "Transportministern ansvarar för allt inom transport. Från tåg till pirror."
   },
-  "ordinarieutrikesminister": {
-    "title": "Ordinarie\u00ADutrikes\u00ADminister",
-    "name": "A.J. Öhman",
+  "1180415312148041838": {
+    "holder": "A.J. Öhman",
+    "title": "Ordinarie\u00adutrikes\u00administer",
+    "role": "Ordinarieutrikesminister",
+    "createdAt": "2023-12-02T07:49:01.472Z",
+    "order": 68,
+    "color": "#5110cb",
     "description": "Ansvarar för utrikespolitik och internationella relationer."
   },
-  "suppleantutrikesminister": {
-    "title": "Suppleant\u00ADutrikes\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1180415647625265182": {
+    "holder": "Vena S.",
+    "title": "Suppleant\u00adutrikes\u00administer",
+    "role": "Suppleantutrikesminister",
+    "createdAt": "2023-12-02T07:50:21.456Z",
+    "order": 67,
+    "color": "#2c9dc9",
     "description": "Ställföreträdande utrikesminister."
   },
-  "lag-%20och-%20rattminister": {
-    "title": "Lag- och Rätt\u00ADminister",
-    "name": "Emil S. Winroth",
-    "description": "Ansvarar för lag och rättsfrågor."
-  },
-  "domstolsminister": {
-    "title": "Domstols\u00ADminister",
-    "name": "A.J. Öhman",
+  "1173654332948893776": {
+    "holder": "A.J. Öhman",
+    "title": "Domstols\u00administer",
+    "role": "Domstolsminister",
+    "createdAt": "2023-11-13T16:03:18.418Z",
+    "order": 65,
+    "color": "#3f7093",
     "description": "Ansvarar för domstolsväsendet och rättskipning."
   },
-  "befolkningsminister": {
-    "title": "Befolknings\u00ADminister",
-    "name": "L. Emil A.",
+  "1168588157218992198": {
+    "holder": "L. Emil A.",
+    "title": "Befolknings\u00administer",
+    "role": "Befolkningsminister",
+    "createdAt": "2023-10-30T16:32:07.999Z",
+    "order": 64,
+    "color": "#992d22",
     "description": "Ansvarar för befolkningsfrågor och demografi. Har även det yttersta ansvaret för befolkningens \"aktivitet\"."
   },
-  "under-y-63-byggminister": {
-    "title": "Under-y-63-bygg\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1191757902881488937": {
+    "holder": "Vena S.",
+    "title": "Under-y-63-bygg\u00administer",
+    "role": "Under-y-63-byggminister",
+    "createdAt": "2024-01-02T15:00:25.838Z",
+    "order": 63,
+    "color": "#474747",
     "description": "Ansvarar för byggfrågor under y-63."
   },
-  "den-%20ena-%20broministern": {
-    "title": "Den ena bro\u00ADministern",
-    "name": "Vena S.E.S.",
-    "description": "Ansvarar för broministerfrågor."
-  },
-  "forsvarsminister": {
-    "title": "Försvars\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1167419477688860782": {
+    "holder": "Emil S. Winroth",
+    "title": "Försvars\u00administer",
+    "role": "Försvarsminister",
+    "createdAt": "2023-10-27T11:08:13.086Z",
+    "order": 61,
+    "color": "#992d22",
     "description": "Försvarsministern står för försvaret, som är separerat från militären för att inte skapa en maktinbalans."
   },
-  "jordbruksminister": {
-    "title": "Jordbruks\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1168587994035400725": {
+    "holder": "Vena S.",
+    "title": "Jordbruks\u00administer",
+    "role": "Jordbruksminister",
+    "createdAt": "2023-10-30T16:31:29.093Z",
+    "order": 60,
+    "color": "#1f8b4c",
     "description": "Ansvarar för jordbruksfrågor och landsbygdspolitik."
   },
-  "sjukvardsminister": {
-    "title": "Sjukvårds\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1168594060336971816": {
+    "holder": "Emil S. Winroth",
+    "title": "Sjukvårds\u00administer",
+    "role": "Sjukvårdsminister",
+    "createdAt": "2023-10-30T16:55:35.412Z",
+    "order": 59,
+    "color": "#ff0000",
     "description": "Ansvarar för sjukafrågor och ohälsosam politik. Företräder också folkhälsomyndigheten och meddelar dess rekommendationer."
   },
-  "bokminister": {
-    "title": "Bok\u00ADminister",
-    "name": "L. Emil A.",
+  "1171176488888979557": {
+    "holder": "L. Emil A.",
+    "title": "Bok\u00administer",
+    "role": "Bokminister",
+    "createdAt": "2023-11-06T19:57:14.358Z",
+    "order": 58,
+    "color": "#a84300",
     "description": "Ansvarar för litteratur och bokfrågor."
   },
-  "hastminister": {
-    "title": "Häst\u00ADminister",
-    "name": "A.J. Öhman",
+  "1167419548446756874": {
+    "holder": "A.J. Öhman",
+    "title": "Häst\u00administer",
+    "role": "Hästminister",
+    "createdAt": "2023-10-27T11:08:29.956Z",
+    "order": 57,
+    "color": "#1f8b4c",
     "description": "Ansvarar för hästfrågor och hästsport."
   },
-  "tagminister": {
-    "title": "Tåg\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1167421379113660507": {
+    "holder": "Vena S.",
+    "title": "Tåg\u00administer",
+    "role": "Tågminister",
+    "createdAt": "2023-10-27T11:15:46.421Z",
+    "order": 56,
+    "color": "#546e7a",
     "description": "Ansvarar för tågtrafik och järnvägspolitik."
   },
-  "musikminister": {
-    "title": "Musik\u00ADminister",
-    "name": "Axel Thornberg",
+  "1180414463267049472": {
+    "holder": "Axel Thornberg",
+    "title": "Musik\u00administer",
+    "role": "Musikminister",
+    "createdAt": "2023-12-02T07:45:39.083Z",
+    "order": 55,
+    "color": "#1ed760",
     "description": "Ansvarar för musikfrågor och kulturpolitik."
   },
-  "metalminister": {
-    "title": "Metal\u00ADminister",
-    "name": "Axel Thornberg",
+  "1171370608387428423": {
+    "holder": "Axel Thornberg",
+    "title": "Metal\u00administer",
+    "role": "Metalminister",
+    "createdAt": "2023-11-07T08:48:36.053Z",
+    "order": 54,
+    "color": "#607d8b",
     "description": "Ansvarar för metalmusik och relaterade kulturfrågor."
   },
-  "ministerminister": {
-    "title": "Minister\u00ADminister",
-    "name": "Axel Thornberg",
+  "1178080834964701216": {
+    "holder": "Axel Thornberg",
+    "title": "Minister\u00administer",
+    "role": "Ministerminister",
+    "createdAt": "2023-11-25T21:12:38.739Z",
+    "order": 53,
+    "color": "#5ab3b5",
     "description": "Ansvarar för ministerfrågor och samordning av ministerposter."
   },
-  "inredningsminister": {
-    "title": "Inrednings\u00ADminister",
-    "name": "A.J. Öhman",
+  "1174009725910794250": {
+    "holder": "A.J. Öhman",
+    "title": "Inrednings\u00administer",
+    "role": "Inredningsminister",
+    "createdAt": "2023-11-14T15:35:30.703Z",
+    "order": 52,
+    "color": "#37dc90",
     "description": "Ansvarar för inredningsfrågor och design."
   },
-  "flygminister": {
-    "title": "Flyg\u00ADminister",
-    "name": "L. Emil A.",
+  "1167484739209396294": {
+    "holder": "L. Emil A.",
+    "title": "Flyg\u00administer",
+    "role": "Flygminister",
+    "createdAt": "2023-10-27T15:27:32.645Z",
+    "order": 51,
+    "color": "#ffffff",
     "description": "Ansvarar för flygtrafik och luftfartspolitik."
   },
-  "den-%20andra-%20broministern": {
-    "title": "Den andra bro\u00ADministern",
-    "name": "L. Emil A.",
-    "description": "Ansvarar för broministerfrågor."
-  },
-  "humorminister": {
-    "title": "Humor\u00ADminister",
-    "name": "L. Emil A.",
+  "1171176621592559767": {
+    "holder": "L. Emil A.",
+    "title": "Humor\u00administer",
+    "role": "Humorminister",
+    "createdAt": "2023-11-06T19:57:45.997Z",
+    "order": 49,
+    "color": "#fdff00",
     "description": "Ansvarar för humor och underhållning."
   },
-  "swiftminister": {
-    "title": "Swift\u00ADminister",
-    "name": "A.J. Öhman",
+  "1171370738255679499": {
+    "holder": "A.J. Öhman",
+    "title": "Swift\u00administer",
+    "role": "Swiftminister",
+    "createdAt": "2023-11-07T08:49:07.016Z",
+    "order": 48,
+    "color": "#f1c40f",
     "description": "Ansvarar för Swift-programmering och relaterade frågor (folklore)."
   },
-  "ravminister": {
-    "title": "Räv\u00ADminister",
-    "name": "Axel Thornberg",
+  "1168904019742302269": {
+    "holder": "Axel Thornberg",
+    "title": "Räv\u00administer",
+    "role": "Rävminister",
+    "createdAt": "2023-10-31T13:27:15.493Z",
+    "order": 47,
+    "color": "#e3921c",
     "description": "Ansvarar för rävfrågor och viltvård."
   },
-  "ek-minister": {
-    "title": "EK-\u00ADminister",
-    "name": "L. Emil A.",
+  "1167421201702998057": {
+    "holder": "L. Emil A.",
+    "title": "EK-\u00administer",
+    "role": "EK-minister",
+    "createdAt": "2023-10-27T11:15:04.123Z",
+    "order": 46,
+    "color": "#206694",
     "description": "Ansvarar för ekologi och miljöfrågor."
   },
-  "modminister": {
-    "title": "Mod\u00ADminister",
-    "name": "Axel Thornberg",
+  "1167436609709420565": {
+    "holder": "Axel Thornberg",
+    "title": "Mod\u00administer",
+    "role": "Modminister",
+    "createdAt": "2023-10-27T12:16:17.678Z",
+    "order": 45,
+    "color": "#4800ff",
     "description": "Ansvarar för mod och tapperhet."
   },
-  "schaktminister": {
-    "title": "Schakt\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1180416169795145779": {
+    "holder": "Vena S.",
+    "title": "Schakt\u00administer",
+    "role": "Schaktminister",
+    "createdAt": "2023-12-02T07:52:25.951Z",
+    "order": 44,
+    "color": "#827857",
     "description": "Ansvarar för schaktning och byggfrågor."
   },
-  "hissminister": {
-    "title": "Hiss\u00ADminister",
-    "name": "L. Emil A.",
+  "1171176283057700925": {
+    "holder": "L. Emil A.",
+    "title": "Hiss\u00administer",
+    "role": "Hissminister",
+    "createdAt": "2023-11-06T19:56:25.284Z",
+    "order": 43,
+    "color": "#3498db",
     "description": "Ansvarar för hissar och vertikal transport."
   },
-  "sakerhetsminister": {
-    "title": "Säkerhets\u00ADminister",
-    "name": "A.J. Öhman",
+  "1174009830541885572": {
+    "holder": "A.J. Öhman",
+    "title": "Säkerhets\u00administer",
+    "role": "Säkerhetsminister",
+    "createdAt": "2023-11-14T15:35:55.649Z",
+    "order": 42,
+    "color": "#00ff1b",
     "description": "Ansvarar för säkerhetsfrågor och skydd."
   },
-  "osakerhetsminister": {
-    "title": "Osäkerhets\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1174009864926789714": {
+    "holder": "Vena S.",
+    "title": "Osäkerhets\u00administer",
+    "role": "Osäkerhetsminister",
+    "createdAt": "2023-11-14T15:36:03.847Z",
+    "order": 41,
+    "color": "#ff0000",
     "description": "Ansvarar för osäkerhetsfrågor och riskhantering."
   },
-  "%22musik%22-minister": {
-    "title": "<span class='italic'>\u0022Musik\u0022</span>\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1180414749364731914": {
+    "holder": "Emil S. Winroth",
+    "title": "<span class='italic'>\"Musik\"</span>\u00administer",
+    "role": "\"Musik\"minister",
+    "createdAt": "2023-12-02T07:46:47.294Z",
+    "order": 40,
+    "color": "#e1289f",
     "description": "Ansvarar för musikfrågor inom citattecken."
   },
-  "kistminister": {
-    "title": "Kist\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1168631587383038103": {
+    "holder": "Vena S.",
+    "title": "Kist\u00administer",
+    "role": "Kistminister",
+    "createdAt": "2023-10-30T19:24:42.557Z",
+    "order": 39,
+    "color": "#fff800",
     "description": "Ansvarar för kistor och begravningsfrågor."
   },
-  "geogissningsminister": {
-    "title": "Geogissnings\u00ADminister",
-    "name": "Axel Thornberg",
+  "1203385747424415754": {
+    "holder": "Axel Thornberg",
+    "title": "Geogissnings\u00administer",
+    "role": "Geogissningsminister",
+    "createdAt": "2024-02-03T17:05:20.012Z",
+    "order": 38,
+    "color": "#992d22",
     "description": "Ansvarar för geogissning och kartfrågor."
   },
-  "odenminister": {
-    "title": "Oden\u00ADminister",
-    "name": "Axel Thornberg",
+  "1173598976180764796": {
+    "holder": "Axel Thornberg",
+    "title": "Oden\u00administer",
+    "role": "Odenminister",
+    "createdAt": "2023-11-13T12:23:20.336Z",
+    "order": 37,
+    "color": "#781414",
     "description": "Ansvarar för frågor relaterade till Oden."
   },
-  "torminister": {
-    "title": "Tor\u00ADminister",
-    "name": "Axel Thornberg",
+  "1173599015598837800": {
+    "holder": "Axel Thornberg",
+    "title": "Tor\u00administer",
+    "role": "Torminister",
+    "createdAt": "2023-11-13T12:23:29.734Z",
+    "order": 36,
+    "color": "#2a1165",
     "description": "Ansvarar för frågor relaterade till Tor."
   },
-  "lokeminister": {
-    "title": "Loke\u00ADminister",
-    "name": "Arvid",
+  "1173599030807379968": {
+    "holder": "Arvid",
+    "title": "Loke\u00administer",
+    "role": "Lokeminister",
+    "createdAt": "2023-11-13T12:23:33.360Z",
+    "order": 35,
+    "color": "#787544",
     "description": "Ansvarar för lokomotiv och järnvägsfrågor."
   },
-  "idunminister": {
-    "title": "Idun\u00ADminister",
-    "name": "L. Emil A.",
+  "1173707757707333714": {
+    "holder": "L. Emil A.",
+    "title": "Idun\u00administer",
+    "role": "Idunminister",
+    "createdAt": "2023-11-13T19:35:35.873Z",
+    "order": 34,
+    "color": "#b100ff",
     "description": "Ansvarar för frågor relaterade till Idun."
   },
-  "hustomtsminister": {
-    "title": "Hustomts\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1170496284965216368": {
+    "holder": "Emil S. Winroth",
+    "title": "Hustomts\u00administer",
+    "role": "Hustomtsminister",
+    "createdAt": "2023-11-04T22:54:21.105Z",
+    "order": 33,
+    "color": "#7c5944",
     "description": "Ansvarar för hustomtar och folktro. Bor i din källare."
   },
-  "mattminister": {
-    "title": "Matt\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1168903741131468960": {
+    "holder": "Vena S.",
+    "title": "Matt\u00administer",
+    "role": "Mattminister",
+    "createdAt": "2023-10-31T13:26:09.067Z",
+    "order": 32,
+    "color": "#009811",
     "description": "Ansvarar för mattor och textilier."
   },
-  "pythonminister": {
-    "title": "Python\u00ADminister",
-    "name": "Axel Thornberg",
+  "1167426765245919242": {
+    "holder": "Axel Thornberg",
+    "title": "Python\u00administer",
+    "role": "Pythonminister",
+    "createdAt": "2023-10-27T11:37:10.575Z",
+    "order": 30,
+    "color": "#bec025",
     "description": "Ansvarar för Python-programmering och relaterade frågor."
   },
-  "javascriptminister": {
-    "title": "Javascript\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1167426964718624798": {
+    "holder": "Vena S.",
+    "title": "Javascript\u00administer",
+    "role": "Javascriptminister",
+    "createdAt": "2023-10-27T11:37:58.133Z",
+    "order": 29,
+    "color": "#b36ddd",
     "description": "Ansvarar för JavaScript-programmering och relaterade frågor."
   },
-  "typescriptminister": {
-    "title": "Typescript\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1167427083870425088": {
+    "holder": "Emil S. Winroth",
+    "title": "Typescript\u00administer",
+    "role": "Typescriptminister",
+    "createdAt": "2023-10-27T11:38:26.541Z",
+    "order": 28,
+    "color": "#0075ff",
     "description": "Ansvarar för TypeScript-programmering och relaterade frågor."
   },
-  "oppositionsminister": {
-    "title": "Oppositions\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1167419353596182568": {
+    "holder": "Vena S.",
+    "title": "Oppositions\u00administer",
+    "role": "Oppositionsminister",
+    "createdAt": "2023-10-27T11:07:43.500Z",
+    "order": 27,
+    "color": "#a84300",
     "description": "Ansvarar för oppositionens frågor och kritik."
   },
-  "vice-oppositionsminister": {
-    "title": "Vice-Oppositions\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1331725512241840138": {
+    "holder": "Emil S. Winroth",
+    "title": "Vice-Oppositions\u00administer",
+    "role": "Vice-Oppositionsminister",
+    "createdAt": "2025-01-22T20:41:44.382Z",
+    "order": 26,
+    "color": "#a84300",
     "description": "Ställföreträdande oppositionsminister."
   },
-  "vice-vice-oppositionsminister-minister": {
-    "title": "Vice-Vice-Oppositions\u00ADminister-minister",
-    "name": "L. Emil A.",
+  "1331725787820327042": {
+    "holder": "L. Emil A.",
+    "title": "Vice-Vice-Oppositions\u00administer-minister",
+    "role": "Vice-Vice-Oppositionsminister-Minister",
+    "createdAt": "2025-01-22T20:42:50.085Z",
+    "order": 25,
+    "color": "#a84300",
     "description": "Ställföreträdande vice-oppositionsminister."
   },
-  "personlighetsminister": {
-    "title": "Personlighets\u00ADminister",
-    "name": "A.J. Öhman",
+  "1221411618328416307": {
+    "holder": "A.J. Öhman",
+    "title": "Personlighets\u00administer",
+    "role": "Personlighetsminister",
+    "createdAt": "2024-03-24T10:53:42.540Z",
+    "order": 24,
+    "color": "#d61151",
     "description": "Ansvarar för personlighetsfrågor och psykologi."
   },
-  "tagluffarminister": {
-    "title": "Tågluffar\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1218671186746019850": {
+    "holder": "Emil S. Winroth",
+    "title": "Tågluffar\u00administer",
+    "role": "Tågluffarminister",
+    "createdAt": "2024-03-16T21:24:12.736Z",
+    "order": 23,
+    "color": "#979c9f",
     "description": "Ansvarar för tågluffning och resor."
   },
-  "redaktionsminister": {
-    "title": "Redaktions\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1247123305291321435": {
+    "holder": "Emil S. Winroth",
+    "title": "Redaktions\u00administer",
+    "role": "Redaktionsminister",
+    "createdAt": "2024-06-03T09:42:46.412Z",
+    "order": 22,
+    "color": "#ffffff",
     "description": "Ansvarar för redaktionella frågor och publicering."
   },
-  "norgeminister": {
-    "title": "Norge\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1234872519534841937": {
+    "holder": "Emil S. Winroth",
+    "title": "Norge\u00administer",
+    "role": "Norgeminister",
+    "createdAt": "2024-04-30T14:22:31.479Z",
+    "order": 20,
+    "color": "#ba0c2f",
     "description": "Ansvarar för frågor relaterade till Norge."
   },
-  "danmarksminister": {
-    "title": "Danmarks\u00ADminister",
-    "name": "A.J. Öhman",
+  "1234873352032747580": {
+    "holder": "A.J. Öhman",
+    "title": "Danmarks\u00administer",
+    "role": "Danmarksminister",
+    "createdAt": "2024-04-30T14:25:49.962Z",
+    "order": 19,
+    "color": "#c8102e",
     "description": "Ansvarar för frågor relaterade till Danmark."
   },
-  "mellanosternminister": {
-    "title": "Mellanöstern\u00ADminister",
-    "name": "Vena S.E.S.",
+  "1234874033489575936": {
+    "holder": "Vena S.",
+    "title": "Mellanöstern\u00administer",
+    "role": "Mellanösternminister",
+    "createdAt": "2024-04-30T14:28:32.434Z",
+    "order": 18,
+    "color": "#000000",
     "description": "Ansvarar för frågor relaterade till Mellanöstern."
   },
-  "sparvagnsminister": {
-    "title": "Spårvagns\u00ADminister",
-    "name": "L. Emil A.",
+  "1290374856151666783": {
+    "holder": "L. Emil A.",
+    "title": "Spårvagns\u00administer",
+    "role": "Spårvagnsminister",
+    "createdAt": "2024-09-30T18:08:59.712Z",
+    "order": 16,
+    "color": "#206694",
     "description": "Ansvarar för spårvagnar och kollektivtrafik."
   },
-  "ovrigtminister": {
-    "title": "Övrigt\u00ADminister",
-    "name": "Emil S. Winroth",
+  "1326624392482127873": {
+    "holder": "Emil S. Winroth",
+    "title": "Övrigt\u00administer",
+    "role": "Övrigtminister",
+    "createdAt": "2025-01-08T18:51:42.657Z",
+    "order": 15,
+    "color": "#607d8b",
     "description": "Ansvarar för övriga frågor som inte faller under andra ministerposter."
+  },
+  "1170496444210356304": {
+    "name": "Emil S. Winroth",
+    "title": "Lag- och Rätt\u00ADminister",
+    "role": "Lag- och Rättminister",
+    "createdAt": "2023-11-04T22:54:59.072Z",
+    "order": 66,
+    "color": "#f6f897",
+    "description": "Ansvarar för lag och rättsfrågor."
+  },
+  "1183844694090842116": {
+    "holder": "Vena S.",
+    "title": "Den ena bro\u00ADministern",
+    "role": "Den ena broministern",
+    "createdAt": "2023-12-11T18:56:09.842Z",
+    "order": 62,
+    "color": "#e67e22",
+    "description": "Ansvarar för broministerfrågor."
+  },
+  "1183844805529317496": {
+    "holder": "L. Emil A.",
+    "title": "Den andra bro\u00ADministern",
+    "role": "Den andra broministern",
+    "createdAt": "2023-12-11T18:56:36.411Z",
+    "order": 50,
+    "color": "#e67e22",
+    "description": "Ansvarar för broministerfrågor."
+  },
+  "1234873602218790992": {
+    "holder": "L. Emil A.",
+    "title": "Finlands\u00ADminister",
+    "role": "Finlandsminister",
+    "createdAt": "2024-04-30T14:26:49.611Z",
+    "order": 21,
+    "color": "#002f6c",
+    "description": "Ansvarar för frågor relaterade till Finland."
+  },
+  "1377623821523353600": {
+    "holder": "L. Emil A.",
+    "title": "KAJ-\u00administer",
+    "role": "KAJ-minister",
+    "createdAt": "2025-05-29T12:25:14.064Z",
+    "order": 14,
+    "color": "#a84300",
+    "description": "Expert på KAJ."
+  },
+  "1377624005804036156": {
+    "holder": "Vena S.",
+    "title": "Mode\u00administer",
+    "role": "Modeminister",
+    "createdAt": "2025-05-29T12:25:58.000Z",
+    "order": 13,
+    "color": "#e91e63",
+    "description": "Expert om mode."
+  },
+  "1377624229444452423": {
+    "holder": "Vena S.",
+    "title": "USA-\u00administer",
+    "role": "USA-ministern",
+    "createdAt": "2025-05-29T12:26:51.320Z",
+    "order": 17,
+    "color": "#ff0000",
+    "description": "Motvilligt kunnig om allt USA."
+  },
+  "1377624507765751828": {
+    "holder": "Axel Thornberg",
+    "title": "Kart\u00administer",
+    "role": "Kartminister",
+    "createdAt": "2025-05-29T12:27:57.677Z",
+    "order": 31,
+    "color": "#e67e22",
+    "description": "Ansvarig för navigationsfrågor och kartläggning."
+  },
+  "1382613221554393118": {
+    "holder": "Emil S. Winroth",
+    "title": "<span class='italic'>\"Mode\"</span>-\u00administer",
+    "role": "\"Mode\"minister",
+    "createdAt": "2025-06-12T06:51:19.730Z",
+    "order": 12,
+    "color": "#ad1457",
+    "description": "Ansvarar för modefrågor inom citattecken."
+  },
+  "1386433592837804176": {
+    "holder": "Axel Thornberg",
+    "title": "Stek\u00administer",
+    "role": "Stekminister",
+    "createdAt": "2025-06-22T19:52:07.223Z",
+    "order": 11,
+    "color": "#a84300",
+    "description": "Förste stekansvarig. Hans stekmetoder är ifrågasatta."
+  },
+  "1386433737142698197": {
+    "holder": "L. Emil A.",
+    "title": "Vice-\u00adStek\u00administer",
+    "role": "Vice-Stekminister",
+    "createdAt": "2025-06-22T19:52:41.628Z",
+    "order": 10,
+    "color": "#a84300",
+    "description": "Andre stekansvarig. Ifrågasätter ofta förste stekministers stekmetoder."
   }
 }
