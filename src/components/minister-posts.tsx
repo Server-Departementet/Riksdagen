@@ -30,22 +30,26 @@ function MinisterItem({
   ministerId: string,
   minister: Minister
 }) {
+  const formattedTitle = md(minister.title);
   return (
     <AccordionItem key={ministerId} value={ministerId}>
       {/* Minister Title */}
       <AccordionTrigger className="cursor-pointer flex flex-row justify-start items-center gap-x-3">
-        <div className="rounded-full size-4" style={{ 
+        {/* Color dot */}
+        <div className="rounded-full size-4" style={{
           backgroundColor: minister.color,
           ...(isLightColor(minister.color) ? { border: "1px solid #ccc" } : {}),
-          }}></div>
-        <p className="flex-1" dangerouslySetInnerHTML={md(minister.title)}></p>
+        }}></div>
+
+        {/* Minister Title */}
+        <p className="flex-1" dangerouslySetInnerHTML={formattedTitle}></p>
       </AccordionTrigger>
 
       {/* Expanded Content */}
       <AccordionContent>
         {/* Title and holder */}
         <div className="flex flex-row items-center gap-x-2">
-          <h4 className="w-fit" dangerouslySetInnerHTML={md(minister.title)}></h4>
+          <h4 className="w-fit" dangerouslySetInnerHTML={formattedTitle}></h4>
           {"-"}
           <p className="text-base">{minister.holder}</p>
         </div>
