@@ -7,6 +7,10 @@ import TrackList from "@/app/spotify/components/track-list";
 import getMinisters from "./functions/get-users";
 import getAlbums from "./functions/get-albums";
 
+export const metadata: Metadata = {
+  title: "Spotify-statistik",
+  description: "Se statistik över ministrarnas Spotify-användning",
+};
 
 export default async function SpotifyPage() {
   // Auth check
