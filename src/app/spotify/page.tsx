@@ -6,6 +6,7 @@ import FilterPanel from "@/app/spotify/components/filter-panel";
 import TrackList from "@/app/spotify/components/track-list";
 import getMinisters from "./functions/get-users";
 import getAlbums from "./functions/get-albums";
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Spotify-statistik",
