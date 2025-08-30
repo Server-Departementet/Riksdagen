@@ -1,25 +1,51 @@
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
+import path from "node:path";
 
-// Color cache
-const colorCachePath = "./cache/spotify-color-cache.json";
-if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
-const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
-process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
-setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
+// Try reading cache file
+const colorCachePath = path.join("./", "cache", "spotify-color-cache.json");
+const colorCache: Record<string, string> = {};
+if (fs.existsSync(colorCachePath)) {
+  try {
+    const data = fs.readFileSync(colorCachePath, "utf-8");
+    const parsed = JSON.parse(data);
+    if (typeof parsed === "object" && parsed !== null) {
+      Object.assign(colorCache, parsed);
+    }
+  } catch (error) {
+    console.error("Error reading color cache:", error);
+  }
+}
+// Write cache file on exit
+process.on("beforeExit", () => {
+  try {
+    // Ensure cache directory exists
+    const dir = path.dirname(colorCachePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8");
+  }
+  catch (error) {
+    console.error("Error writing color cache:", error);
+  }
+});
 
 /** 
  * Extracts prominent color from the image in the url and caches it to a file.
  */
-export async function getTrackBGColor(url: string): Promise<string | undefined> {
-  if (!url) return undefined;
-  
+export async function getTrackBGColor(url: string | null): Promise<string | null> {
+  "use cache";
+  // This use cache might be excessive
+
+  if (!url) return null;
+
   // Validate URL
   try {
     new URL(url);
   } catch (error) {
     console.error("Invalid URL provided:", url, error);
-    return undefined;
+    return null;
   }
 
   // Return cache
@@ -33,11 +59,11 @@ export async function getTrackBGColor(url: string): Promise<string | undefined> 
   }
   catch (error) {
     console.error("Error fetching color from URL:", url, error);
-    return undefined;
+    return null;
   }
 
-  // If no color found, return default
-  if (!color) return undefined;
+  // If no color found
+  if (!color) return null;
 
   // Set cache
   if (color) colorCache[url] = color;
