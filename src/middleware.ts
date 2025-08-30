@@ -1,32 +1,39 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { hasRole } from "./lib/auth";
+import { notFound } from "next/navigation";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/statsskick",
-  "/ministrar/(.*)",
-  "/api/spotify/post",
+const isMinisterRoute = createRouteMatcher([
+  "/spotify(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // Redirect tailscale to public domain
+  // Redirect tailscale to public domain TODO: remove once tailscale funnel is gone
   if (req.headers.get("x-forwarded-host")?.includes("dev.ts.net")) {
     console.log("redirecting to public domain");
     const newURL = new URL(`https://dev.riksdagen.net${req.nextUrl.pathname}`, req.url)
     return NextResponse.redirect(newURL, 301);
   }
 
-  // Protected routes
-  if (!isPublicRoute(req)) {
-    console.log((await auth()).has({ role: "minister" }));
-    await auth.protect({ role: "minister" });
-  }
-  // Public routes
-  else {
-    return NextResponse.next();
+  // Allow ministers to access protected routes
+  if (isMinisterRoute(req)) {
+    // Is not signed in, 404
+    if (!(await auth()).userId) {
+      return notFound();
+    }
+
+    // Allow if minister
+    if (await hasRole(auth, "minister")) {
+      return NextResponse.next();
+    }
+    // Hide protected routes
+    else {
+      return notFound();
+    }
   }
 
-  return NextResponse.json("Bad request", { status: 400 });
+  // Public routes
+  return NextResponse.next();
 });
 
 export const config = {

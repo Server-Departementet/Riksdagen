@@ -1,5 +1,5 @@
 import "server-only";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { clerkClient, ClerkMiddlewareAuth, currentUser } from "@clerk/nextjs/server";
 
 const clerk = await clerkClient();
 
@@ -18,4 +18,8 @@ export async function isMinister(userId?: string): Promise<boolean> {
     if (!user.publicMetadata.role) return false;
     return authedRoles.includes(user.publicMetadata.role as typeof authedRoles[number]);
   }
+}
+
+export async function hasRole(auth: ClerkMiddlewareAuth, role: string): Promise<boolean> {
+  return ((await auth.protect()).sessionClaims["metadata"] as { role: string })["role"] == role;
 }
