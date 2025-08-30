@@ -1,11 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { isMinister } from "./lib/auth";
+import { NextResponse } from "next/server";
 
-const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/statsskick",
+  "/ministrar/(.*)",
+  "/api/spotify/post",
+]);
 
-export default clerkMiddleware(async (_auth, req) => {
-
+export default clerkMiddleware(async (auth, req) => {
   // Redirect tailscale to public domain
   if (req.headers.get("x-forwarded-host")?.includes("dev.ts.net")) {
     console.log("redirecting to public domain");
@@ -13,10 +16,17 @@ export default clerkMiddleware(async (_auth, req) => {
     return NextResponse.redirect(newURL, 301);
   }
 
-  // Spotify protected route
-  if (isSpotifyRoute(req) && !isMinister()) notFound(req);
+  // Protected routes
+  if (!isPublicRoute(req)) {
+    console.log((await auth()).has({ role: "minister" }));
+    await auth.protect({ role: "minister" });
+  }
+  // Public routes
+  else {
+    return NextResponse.next();
+  }
 
-  return NextResponse.next();
+  return NextResponse.json("Bad request", { status: 400 });
 });
 
 export const config = {
@@ -27,7 +37,3 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
-
-function notFound(req: NextRequest) {
-  return NextResponse.rewrite(new URL("/not-found", req.url));
-}

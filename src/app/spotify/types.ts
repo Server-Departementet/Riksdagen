@@ -38,55 +38,45 @@ export type TrackWithStats = Track & TrackStats;
 
 export type TrackWithPlays = Track & { TrackPlay: TrackPlay[] };
 
-export interface SortingOption {
-  label: string; // User facing name
-  id: "playtime" | "play_count" | "track_length" | "track_name" | "artist_name";
-  func: (a: TrackWithStats, b: TrackWithStats) => number;
+export const SortingMethod = {
+  Default: "play_time",
+  PlayTime: "play_time",
+  PlayCount: "play_count",
+  TrackLength: "track_length",
+  TrackName: "track_name",
+  ArtistName: "artist_name",
+} as const;
+export type SortingMethod = (typeof SortingMethod)[keyof typeof SortingMethod];
+
+export const SortingMethodNames: Record<SortingMethod, string> = {
+  play_time: "Speltid",
+  play_count: "Lyssningar",
+  track_length: "Låtlängd",
+  track_name: "Låtnamn",
+  artist_name: "Artist",
 };
 
-export type LocalFilterPacket = {
-  search: string;
-  sort: SortingOption["id"];
-  reverseOrder: boolean;
-  album: {
-    sort: {
-      id: "name" | "track_count"; // Sorting options for albums
-      reverseOrder: boolean; // Whether to reverse the order of the sort
-    },
-    include: AlbumId[];
-  };
+export const sortingFunctions: Record<SortingMethod, (a: TrackWithStats, b: TrackWithStats) => number> = {
+  play_time: (a: TrackWithStats, b: TrackWithStats) => b.totalMS - a.totalMS,
+  play_count: (a: TrackWithStats, b: TrackWithStats) => b.totalPlays - a.totalPlays,
+  track_length: (a: TrackWithStats, b: TrackWithStats) => b.duration - a.duration,
+  track_name: (a: TrackWithStats, b: TrackWithStats) => a.name.localeCompare(b.name),
+  artist_name: (a: TrackWithStats, b: TrackWithStats) => {
+    const aArtists = a.artists.map(artist => artist.name).join(", ");
+    const bArtists = b.artists.map(artist => artist.name).join(", ");
+    return aArtists.localeCompare(bArtists);
+  },
 };
 
-export type FetchFilterPacket = {
-  sort: SortingOption["id"];
-  reverseOrder: boolean;
-  users: User[]; // User ID's to include in the filter
-  genres: {
-    include: string[]; // Genre ID's
-    exclude: string[]; // Genre ID's
-  };
-  artists: {
-    include: string[]; // Artist ID's
-    exclude: string[]; // Artist ID's
-  };
-  albums: {
-    include: string[]; // Album ID's
-    exclude: string[]; // Album ID's
-  };
-  playedAtRange?: {
-    start?: Date; // If null, assume start of time
-    end?: Date; // If null, assume end of time
-  };
-  playCountRange?: {
-    min?: number; // If null, assume 0
-    max?: number; // If null, assume max value of the dataset
-  };
-  playtimeRange?: {
-    min?: number; // If null, assume 0
-    max?: number; // If null, assume max value of the dataset
-  };
-  trackLengthRange?: {
-    min?: number; // If null, assume 0
-    max?: number; // If null, assume max value of the dataset
-  };
+export type Filter = {
+  sort: SortingMethod,
+  reverse: boolean,
+  selectedUsers: User[],
+  search: string,
 };
+export const defaultFilter: Filter = {
+  sort: SortingMethod.Default,
+  reverse: false,
+  selectedUsers: [],
+  search: "",
+}

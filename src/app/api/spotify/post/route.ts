@@ -1,5 +1,3 @@
-"use server";
-
 /** 
  * This API endpoint gets called by the Spotify cron job running on an always-on server external to the Next.js app.
  */

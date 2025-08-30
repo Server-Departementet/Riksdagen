@@ -1,5 +1,4 @@
-"use server";
-
+import "server-only";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 
 const clerk = await clerkClient();
@@ -12,7 +11,8 @@ export async function isMinister(userId?: string): Promise<boolean> {
     if (!user) return false;
     if (!user.publicMetadata.role) return false;
     return authedRoles.includes(user.publicMetadata.role as typeof authedRoles[number]);
-  } else {
+  }
+  else {
     const user = await currentUser();
     if (!user) return false;
     if (!user.publicMetadata.role) return false;

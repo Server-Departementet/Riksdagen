@@ -1,3 +1,4 @@
+import "server-only";
 import { ExternalLink, SidebarLink } from "@/components/sidebar/sidebar";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";

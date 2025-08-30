@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { Album } from "../types";
 
+/** 
+ * TODO: use this
+ */
 export default async function getAlbums() {
   "use cache";
 

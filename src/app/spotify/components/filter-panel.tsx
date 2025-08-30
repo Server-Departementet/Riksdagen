@@ -1,11 +1,6 @@
-"use client";
-
-import type { Album, User } from "@/app/spotify/types";
+import { sortingFunctions, SortingMethodNames, SortingMethod, type Album, type User } from "@/app/spotify/types";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
-import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
-import { useLocalFilterContext } from "@/app/spotify/context/local-filter-context";
 import { useCallback, useMemo } from "react";
-import { sortingFunctions } from "../functions/track-sorting";
 import { ChevronsUpDownIcon, SortAscIcon, SortDescIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,21 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import Image from "next/image";
+import { useFilterContext } from "../context/filter-context";
 
 export default function FilterPanel({
   userMap,
-  albums,
   className = ""
 }: {
   userMap: Record<string, User>,
-  albums: Album[],
   className?: string
 }) {
-  const { fetchFilter, setFetchFilter } = useFetchFilterContext();
-  const { localFilter, setLocalFilter } = useLocalFilterContext();
+  const { filter, setFilter } = useFilterContext();
 
   let userToggleDebounceTimeout: NodeJS.Timeout | null = null;
-  const handleUserToggle = useCallback((value: string[]) => {
+  function handleUserToggle(value: string[]) {
     // Clear previous timeout if it exists
     if (userToggleDebounceTimeout) clearTimeout(userToggleDebounceTimeout);
 
@@ -36,70 +29,43 @@ export default function FilterPanel({
     const users = userIds.map(id => userMap[id]).filter(Boolean) as User[];
 
     // Set a new timeout to debounce the user toggle action
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     userToggleDebounceTimeout = setTimeout(() => {
-      setFetchFilter(prev => ({
+      setFilter(prev => ({
         ...prev,
-        users,
+        selectedUsers: users,
       }));
     }, 750);
-  }, [userToggleDebounceTimeout, setFetchFilter, userMap]);
+  }
 
   let searchChangeDebounceTimeout: NodeJS.Timeout | null = null;
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     // Clear previous timeout if it exists
     if (searchChangeDebounceTimeout) clearTimeout(searchChangeDebounceTimeout);
 
     const searchValue = e.target.value;
 
     // Set a new timeout to debounce the search change action
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     searchChangeDebounceTimeout = setTimeout(() => {
-      setLocalFilter(prev => ({
+      setFilter(prev => ({
         ...prev,
         search: searchValue,
       }));
     }, 750);
-  }, [searchChangeDebounceTimeout, setLocalFilter]);
+  }
 
   let sortChangeDebounceTimeout: NodeJS.Timeout | null = null;
-  const handleSortChange = useCallback((value: string) => {
+  function handleSortChange(value: string) {
     // Clear previous timeout if it exists
     if (sortChangeDebounceTimeout) clearTimeout(sortChangeDebounceTimeout);
 
     // Set a new timeout to debounce the sort change action
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     sortChangeDebounceTimeout = setTimeout(() => {
-      setLocalFilter(prev => ({
+      setFilter(prev => ({
         ...prev,
         sort: value as typeof prev.sort,
       }));
     }, 750);
-  }, [setLocalFilter]);
-
-
-  const albumSortingAlgorithms = useMemo(() => ({
-    name: {
-      label: "Namn",
-      id: "name",
-      func: (a: Album, b: Album) => a.name.localeCompare(b.name),
-    },
-    track_count: {
-      label: "Antal låtar",
-      id: "track_count",
-      func: (a: Album, b: Album) => {
-        // First by track count, then by name
-        const countDiff = b.trackCount - a.trackCount;
-        return countDiff !== 0 ? countDiff : a.name.localeCompare(b.name);
-      },
-    }
-  }), []);
-  const sortedAlbums = useMemo(() => {
-    const { id, reverseOrder } = localFilter.album.sort || { id: "name", reverseOrder: false };
-    const sortingFunc = albumSortingAlgorithms[id].func;
-    const sorted = [...albums].sort(sortingFunc);
-    return reverseOrder ? sorted.reverse() : sorted;
-  }, [albumSortingAlgorithms, albums, localFilter.album]);
+  }
 
   return (
     <div className={`
@@ -119,7 +85,7 @@ export default function FilterPanel({
           <ToggleGroup
             variant="outline"
             type="multiple"
-            defaultValue={fetchFilter.users.map(u => u.id)}
+            defaultValue={filter.selectedUsers.map(u => u.id)}
             onValueChange={handleUserToggle}
             className="w-fit flex-col *:w-full"
           >
@@ -144,29 +110,29 @@ export default function FilterPanel({
 
         {/* Sort */}
         <div className="full flex flex-row items-center justify-center gap-x-1">
-          <Select defaultValue={localFilter.sort || fetchFilter.sort} onValueChange={handleSortChange}>
+          <Select defaultValue={filter.sort} onValueChange={handleSortChange}>
             <SelectTrigger>
               <SelectValue placeholder="Sortera..." />
             </SelectTrigger>
 
             <SelectContent>
-              {Object.values(sortingFunctions).map((sortingFunc, i) => (
+              {Object.values(SortingMethod).map(method => (
                 <SelectItem
-                  key={`sorting-${i}-${sortingFunc.id}`}
-                  value={sortingFunc.id}
+                  key={`sorting-method-${method}`}
+                  value={method}
                 >
-                  {sortingFunc.label}
+                  {SortingMethodNames[method]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           {/* Reverse order */}
-          <Button variant={"ghost"} size={"icon"} onClick={() => setLocalFilter(prev => ({
+          <Button variant={"ghost"} size={"icon"} onClick={() => setFilter(prev => ({
             ...prev,
-            reverseOrder: !prev.reverseOrder,
+            reverse: !prev.reverse,
           }))}>
-            {localFilter.reverseOrder
+            {filter.reverse
               ? <SortAscIcon />
               : <SortDescIcon />
             }
@@ -178,119 +144,11 @@ export default function FilterPanel({
           <Input
             type="text"
             placeholder="Sök låt, artist, album..."
-            defaultValue={localFilter.search}
+            defaultValue={filter.search}
             onChange={handleSearchChange}
             className="w-full max-w-sm p-2 border border-gray-300 rounded-lg"
           />
         </div>
-
-        {/* Album select */}
-        <div className="w-full flex flex-col items-center">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                Album
-                <ChevronsUpDownIcon />
-              </Button>
-            </PopoverTrigger>
-
-            <PopoverContent>
-              <Command>
-                <CommandInput placeholder="Sök på album..." />
-
-                <div className="flex flex-row items-center justify-center gap-x-1 p-2">
-                  {/* Sort */}
-                  <Select
-                    defaultValue={localFilter.album.sort.id || "name"}
-                    onValueChange={(value) => {
-                      setLocalFilter(prev => ({
-                        ...prev,
-                        album: {
-                          ...prev.album,
-                          sort: {
-                            id: value as keyof typeof albumSortingAlgorithms,
-                            reverseOrder: prev.album.sort.reverseOrder,
-                          },
-                        },
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sortera..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(albumSortingAlgorithms).map((sortingFunc, i) => (
-                        <SelectItem
-                          key={`album-sorting-${i}-${sortingFunc.id}`}
-                          value={sortingFunc.id}
-                        >
-                          {sortingFunc.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {/* Reverse order */}
-                  <Button
-                    variant={"ghost"}
-                    onClick={() => setLocalFilter(prev => ({
-                      ...prev,
-                      album: {
-                        ...prev.album,
-                        reverseOrder: !prev.album.sort.reverseOrder,
-                      },
-                    }))}
-                  >
-                    {localFilter.album.sort.reverseOrder
-                      ? <SortAscIcon />
-                      : <SortDescIcon />
-                    }
-                  </Button>
-                </div>
-
-                <CommandSeparator />
-
-                <CommandList>
-                  <CommandEmpty>Inga resultat.</CommandEmpty>
-
-                  <CommandGroup>
-                    {sortedAlbums.map(album => (
-                      <CommandItem
-                        key={`album-${album.id}`}
-                        onSelect={() => {
-                          setLocalFilter(prev => ({
-                            ...prev,
-                            album: {
-                              ...prev.album,
-                              id: album.id,
-                            },
-                          }));
-                        }}
-                        className="gap-x-3 cursor-pointer data-[selected=true]:bg-gray-200"
-                      >
-                        <Image alt="Albumcover" src={album.image || CrownSVG}
-                          loading="lazy" height={42} width={42}
-                          className="rounded-[4px]"
-                        />
-                        <span className="flex-1">{album.name}</span>
-                        <span>{album.trackCount}</span>
-                      </CommandItem>
-                    ))}
-                    {/* <CommandItem>Settings</CommandItem> */}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <pre>
-          Local =&nbsp;
-          {JSON.stringify(localFilter, null, 2)}
-          <br />
-          <br />
-          Fetch =&nbsp;
-          {JSON.stringify(fetchFilter, null, 2)}
-        </pre>
       </div>
     </div >
   );
