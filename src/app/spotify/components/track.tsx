@@ -123,7 +123,7 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
 
 export function SkeletonTrackElement() {
   return (
-    <div className="flex-1 h-[128px] flex flex-row gap-x-6">
+    <div className="flex-1 h-[128px] w-full max-w-prose min-w-[300px] flex flex-row gap-x-6">
       {/* "Img" */}
       <div className="size-[128px] rounded-[4px] bg-gray-600 pulse-animation"></div>
 

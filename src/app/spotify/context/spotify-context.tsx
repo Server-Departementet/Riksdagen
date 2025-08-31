@@ -50,11 +50,12 @@ export default function SpotifyContextProvider({
   const loadIncrement = 100;
   const [visibleTracks, setVisibleTracks] = useState<number>(loadIncrement);
 
+  // Fetch on scroll
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleScroll = () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
         setVisibleTracks((prev) => prev + loadIncrement);
       }
     };
@@ -65,6 +66,7 @@ export default function SpotifyContextProvider({
     };
   }, []);
 
+  // Fetch tracks when visibleTracks changes
   useEffect(() => {
     (async () => {
       const newTrackIds = trackIds.slice(loadedTracks.length, visibleTracks);

@@ -9,11 +9,11 @@ export default function TrackList({ className = "" }: { className?: string }) {
   return (
     <ul className={`
       overflow-y-auto 
-      flex flex-col
+      flex flex-col items-center
       gap-y-3
       px-6 sm:ps-0
       *:first:mt-3 *:last:mb-10
-      w-fit
+      w-full sm:w-3/4
       ${className}
     `}>
       {tracks.length ? tracks.map((track, i) =>
