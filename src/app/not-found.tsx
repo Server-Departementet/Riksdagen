@@ -20,7 +20,7 @@ export default function Custom404() {
       </section>
 
       {/* Big background crowns */}
-      <div className="absolute opacity-50 flex flex-col justify-center items-center gap-x-2">
+      <div className="pointer-events-none absolute opacity-50 flex flex-col justify-center items-center gap-x-2">
         <div className="flex flex-row justify-center items-center gap-x-2">
           <Image src={CrownSVG} height={230} width={230} alt="" />
           <Image src={CrownSVG} height={230} width={230} alt="" />
