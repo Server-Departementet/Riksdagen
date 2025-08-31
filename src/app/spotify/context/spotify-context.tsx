@@ -47,7 +47,7 @@ export default function SpotifyContextProvider({
   });
 
   const [loadedTracks, setLoadedTracks] = useState<string[]>([]); // To avoid fetching the same tracks again
-  const loadIncrement = 100;
+  const loadIncrement = 50;
   const [visibleTracks, setVisibleTracks] = useState<number>(loadIncrement);
 
   // Fetch on scroll
