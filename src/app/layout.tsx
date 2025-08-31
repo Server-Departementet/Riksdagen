@@ -82,7 +82,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
-              <ProtectedLink href="/spotify">Spotify-Statistik</ProtectedLink>
+              <ProtectedLink hidden={false} href="/spotify">Spotify-Statistik</ProtectedLink>
               {/* 
                 Add a new link with these components:
                 <SidebarLink href="/path">Title</SidebarLink>
@@ -106,5 +106,5 @@ export default async function RootLayout({ children }: {
         </footer>
       </body>
     </html>
-  </ClerkProvider>)
+  </ClerkProvider>);
 }

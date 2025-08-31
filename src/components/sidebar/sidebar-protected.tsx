@@ -2,20 +2,21 @@ import "server-only";
 import { ExternalLink, SidebarLink } from "@/components/sidebar/sidebar";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
-import { isMinister } from "@/lib/auth";
 
 export async function ProtectedLink(
   {
     href,
+    hidden,
     children,
     className = "",
   }: {
-    href: string,
-    children: React.ReactNode
-    className?: string
+    href: string;
+    hidden: boolean;
+    children: React.ReactNode;
+    className?: string;
   }
 ) {
-  if (!await isMinister()) return null;
+  if (!hidden) return null;
 
   return (
     <SidebarLink href={href} className={className}>
@@ -28,15 +29,17 @@ export async function ProtectedLink(
 export async function ProtectedExternalLink(
   {
     href,
+    hidden,
     children,
     className = "",
   }: {
-    href: string,
-    children: React.ReactNode
-    className?: string
+    href: string;
+    hidden: boolean;
+    children: React.ReactNode;
+    className?: string;
   }
 ) {
-  if (!await isMinister()) return null;
+  if (!hidden) return null;
 
   return (
     <ExternalLink href={href} className={className}>

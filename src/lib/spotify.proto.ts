@@ -1,4 +1,4 @@
-import type { FetchFilterPacket, FilterHash, Track, TrackId, TrackStats } from "@/app/spotify/types";
+import { FetchFilterPacket, FilterHash, Track, TrackId, TrackStats } from "@/app/spotify/types";
 import * as protobuf from "protobufjs";
 import { sha1 } from "@/lib/hash";
 

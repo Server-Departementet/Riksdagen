@@ -1,6 +1,4 @@
-"use client";
-
-import type { Track, TrackStats } from "@/app/spotify/types";
+import { TrackWithStats } from "@/app/spotify/types";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
@@ -8,14 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "react";
 
-export default function TrackElement({
+export function TrackElement({
   trackData: track,
-  trackStats: stats,
   lineNumber,
   className = "",
 }: {
-  trackData: Track
-  trackStats: TrackStats | null;
+  trackData: TrackWithStats
   lineNumber: number;
   className?: string;
 }) {
@@ -23,8 +19,8 @@ export default function TrackElement({
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  const prettyPlayCount = stats && `${stats.totalPlays} ${stats.totalPlays > 1 ? "gånger" : "gång"}`;
-  const prettyPlaytime = stats && `${Math.floor(stats.totalMS / 60000)} min`;
+  const prettyPlayCount = `${track.totalPlays} ${track.totalPlays > 1 ? "gånger" : "gång"}`;
+  const prettyPlaytime = `${Math.floor(track.totalMS / 60000)} min`;
 
   return (
     <li
@@ -87,18 +83,12 @@ export default function TrackElement({
         {/* Duration (long) */}
         <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
-        {stats
-          ? (<p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>)
-          : <p className="hidden sm:block">&middot;&middot;&middot;</p>
-        }
+        <p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>
 
         {/* Duration (short) */}
         <p className="block sm:hidden">Längd {prettyDuration}</p>
         {/* Listening time (short) */}
-        {stats
-          ? (<p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>)
-          : <p className="block sm:hidden">&middot;&middot;&middot;</p>
-        }
+        <p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>
       </div>
 
       {/* Line number */}

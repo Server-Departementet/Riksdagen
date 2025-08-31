@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, useState } from "react";
 import { defaultFilter, Filter, TrackWithStats, User } from "../types";
 
@@ -5,11 +7,13 @@ type SpotifyContextType = {
   filer: Filter;
   users: User[]; // To make the filter panel and such
   tracks: TrackWithStats[]; // result of the filter
+  trackIds: string[];
 }
 const defaultSpotifyContextState: SpotifyContextType = {
   filer: defaultFilter,
   users: [],
   tracks: [],
+  trackIds: [],
 };
 
 export const SpotifyContext = createContext<SpotifyContextType>(defaultSpotifyContextState);
@@ -28,14 +32,17 @@ export function useSpotifyContext() {
 
 export default function SpotifyContextProvider({
   users,
+  trackIds, // Used for children to fetch
   children
 }: {
   users: User[];
-  children?: React.ReactNode
+  trackIds: string[];
+  children?: React.ReactNode;
 }) {
   const [spotifyContext, setSpotifyContext] = useState<SpotifyContextType>({
     ...defaultSpotifyContextState,
     users,
+    trackIds,
   });
 
   return (

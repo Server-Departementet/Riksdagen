@@ -1,4 +1,4 @@
-import type { FetchFilterPacket, TrackStats, TrackWithPlays, FilterHash } from "@/app/spotify/types";
+import { FetchFilterPacket, TrackStats, TrackWithPlays, FilterHash } from "@/app/spotify/types";
 import { NextResponse, type NextRequest } from "next/server";
 import { isMinister } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";

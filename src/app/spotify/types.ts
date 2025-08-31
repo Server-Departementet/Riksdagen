@@ -1,4 +1,4 @@
-import type {
+import {
   Genre as PrismaGenre,
   Album as PrismaAlbum,
   Artist as PrismaArtist,
@@ -24,7 +24,7 @@ export type User = {
 export type Track = PrismaTrack & {
   album: Album;
   artists: Artist[];
-  color?: string; // Color extracted from the track image, when missing it uses a default fallback
+  color: string | null; // Color extracted from the track image, when missing it uses a default fallback
 };
 
 export type TrackStats = {

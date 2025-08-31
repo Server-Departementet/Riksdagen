@@ -1,4 +1,4 @@
-import type { FetchFilterPacket, TrackWithPlays, TrackWithStats } from "@/app/spotify/types";
+import { FetchFilterPacket, TrackWithPlays, TrackWithStats } from "@/app/spotify/types";
 
 import { sortingFunctions } from "@/app/spotify/functions/track-sorting";
 import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";

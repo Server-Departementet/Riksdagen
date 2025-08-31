@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { hasRole } from "./lib/auth";
 import { notFound } from "next/navigation";
+import { hasRole } from "./lib/auth";
 
 const isMinisterRoute = createRouteMatcher([
   "/spotify(.*)",

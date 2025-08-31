@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import { NextConfig } from "next";
 import { env } from "node:process";
 
 const nextConfig: NextConfig = {
