@@ -63,6 +63,23 @@ export default async function RootLayout({ children }: {
   return (<ClerkProvider>
     <html lang="sv">
       <body>
+        {/* Dev notice */}
+        {process.env.CANONICAL_URL?.includes("dev") &&
+          <p
+            className={`
+              fixed
+              text-9xl
+              font-extrabold
+              -rotate-30
+              top-[40%]
+              pointer-events-none
+              text-gray-500/30
+            `}
+          >
+            DU ÄR PÅ DEV
+          </p>
+        }
+
         {/* Header */}
         <header className="z-40 py-3 px-5 h-(--header-height)">
           {/* Logo */}
