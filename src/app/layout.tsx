@@ -8,6 +8,8 @@ import { ClerkLogin } from "@/components/login-button";
 import { Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
+import { isMinister } from "@/lib/auth";
+import { auth } from "@clerk/nextjs/server";
 
 // Fonts
 const _fontOutfit = Font_Outfit({ subsets: ["latin"] });
@@ -82,7 +84,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
-              <ProtectedLink hidden={false} href="/spotify">Spotify-Statistik</ProtectedLink>
+              <ProtectedLink hidden={await isMinister(auth)} href="/spotify">Spotify-Statistik</ProtectedLink>
               {/* 
                 Add a new link with these components:
                 <SidebarLink href="/path">Title</SidebarLink>

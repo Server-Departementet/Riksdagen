@@ -1,5 +1,5 @@
-import { ClerkMiddlewareAuth } from "@clerk/nextjs/server";
 import "server-only";
+import { ClerkMiddlewareAuth } from "@clerk/nextjs/server";
 
 export async function isMinister(auth: ClerkMiddlewareAuth): Promise<boolean> {
   return hasRole(auth, "minister");

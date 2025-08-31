@@ -18,9 +18,7 @@ export default clerkMiddleware(async (auth, req) => {
   // Allow ministers to access protected routes
   if (isMinisterRoute(req)) {
     // Is not signed in, 404
-    if (!(await auth()).userId) {
-      return notFound();
-    }
+    if (!(await auth()).userId) return notFound();
 
     // Allow if minister
     if (await hasRole(auth, "minister")) {
