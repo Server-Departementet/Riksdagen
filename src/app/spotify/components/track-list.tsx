@@ -13,15 +13,18 @@ export default function TrackList({ className = "" }: { className?: string }) {
       gap-y-3
       px-6 sm:ps-0
       *:first:mt-3 *:last:mb-10
+      w-fit
       ${className}
     `}>
-      {tracks.map((track, i) =>
+      {tracks.length ? tracks.map((track, i) =>
         <TrackElement
           key={`track-${track.id}`}
           trackData={track}
           lineNumber={i + 1}
-        />
-      )}
+        />)
+        :
+        new Array(20).fill(0).map((_, i) => <SkeletonTrackElement key={"track-skeleton-" + i} />)
+      }
 
       {/* Stats */}
       {/* <p className="text-sm opacity-60 font-normal w-full text-center sm:text-start">

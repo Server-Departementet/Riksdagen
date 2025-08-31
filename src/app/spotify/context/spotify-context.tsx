@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { defaultFilter, Filter, TrackWithStats, User } from "../types";
+import { getTracks } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filer: Filter;
@@ -44,6 +45,41 @@ export default function SpotifyContextProvider({
     users,
     trackIds,
   });
+
+  const [loadedTracks, setLoadedTracks] = useState<string[]>([]); // To avoid fetching the same tracks again
+  const loadIncrement = 100;
+  const [visibleTracks, setVisibleTracks] = useState<number>(loadIncrement);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleScroll = () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+        setVisibleTracks((prev) => prev + loadIncrement);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const newTrackIds = trackIds.slice(loadedTracks.length, visibleTracks);
+      if (newTrackIds.length === 0) return;
+
+      setLoadedTracks((prev) => [...new Set([...prev, ...newTrackIds])]);
+
+      const newTracks = await getTracks(newTrackIds);
+
+      setSpotifyContext((prev) => ({
+        ...prev,
+        tracks: [...prev.tracks, ...newTracks],
+      }));
+    })();
+  }, [visibleTracks, trackIds, loadedTracks.length]);
 
   return (
     <SpotifyContext.Provider value={spotifyContext}>

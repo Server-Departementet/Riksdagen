@@ -1,3 +1,5 @@
+"use server";
+import "server-only";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
 import path from "node:path";

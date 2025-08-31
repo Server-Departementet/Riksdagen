@@ -1,11 +1,15 @@
+"use server";
+import "server-only";
 import { prisma } from "@/lib/prisma";
 import { TrackWithStats } from "../types";
 import { getTrackBGColor } from "./get-track-color";
 
-export async function getTracks() {
+export async function getTracks(ids?: string[]) {
   "use cache";
 
   const tracks: TrackWithStats[] = (await prisma.track.findMany({
+    // Select specific ids if provided
+    ...(ids ? { where: { id: { in: ids } } } : {}),
     orderBy: { TrackPlay: { _count: "desc" } },
     include: {
       _count: {

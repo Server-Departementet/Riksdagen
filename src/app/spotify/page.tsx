@@ -54,7 +54,7 @@ export default async function SpotifyPage() {
           users={Object.values(ministers)}
           trackIds={trackIds}
         >
-          {/* <TrackList /> */}
+          <TrackList />
         </SpotifyContextProvider>
       </section>
     </main>

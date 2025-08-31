@@ -26,7 +26,7 @@ export function TrackElement({
     <li
       className={`
       h-(--spotify-track-height) min-h-(--spotify-track-height) max-h-(--spotify-track-height) 
-      w-full xl:w-2/3 max-w-prose min-w-[300px]
+      w-full max-w-prose min-w-[300px]
       bg-zinc-100
       flex-1 
       grid 
@@ -129,7 +129,7 @@ export function SkeletonTrackElement() {
 
       <div className="flex-1">
         {/* "Track name" */}
-        <div className="h-5 w-[16ch] md:w-1/2 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
+        <div className="h-5 w-11/12 md:w-3/5 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
       </div>
     </div>
   );
