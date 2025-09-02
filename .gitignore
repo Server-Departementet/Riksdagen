@@ -51,9 +51,11 @@ src/prisma
 
 standalone/
 
-prisma/usermap.json
+prisma/*usermap.json
 prisma/trackPlaysDump.json
 
 cache/
 
 dump/
+dump.tar.gz
+dump.zip
