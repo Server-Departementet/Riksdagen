@@ -5,16 +5,20 @@ import { defaultFilter, Filter, TrackWithStats, User } from "../types";
 import { getTracks } from "../functions/get-tracks";
 
 type SpotifyContextType = {
-  filer: Filter;
+  filter: Filter;
   users: User[]; // To make the filter panel and such
   tracks: TrackWithStats[]; // result of the filter
   trackIds: string[];
+  lastFetchDuration: number; // ms it took to fetch the last batch of tracks
+  resultCount: number; // Total number of tracks matching the filter
 }
 const defaultSpotifyContextState: SpotifyContextType = {
-  filer: defaultFilter,
+  filter: defaultFilter,
   users: [],
   tracks: [],
   trackIds: [],
+  lastFetchDuration: 0,
+  resultCount: 0,
 };
 
 export const SpotifyContext = createContext<SpotifyContextType>(defaultSpotifyContextState);
@@ -50,7 +54,7 @@ export default function SpotifyContextProvider({
   const loadIncrement = 50;
   const [visibleTracks, setVisibleTracks] = useState<number>(loadIncrement);
 
-  // Fetch on scroll
+  // Allow more fetch on scroll
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -74,11 +78,18 @@ export default function SpotifyContextProvider({
 
       setLoadedTracks((prev) => [...new Set([...prev, ...newTrackIds])]);
 
+      const startTime = performance.now(); // Stats
+
       const newTracks = await getTracks(newTrackIds);
+
+      const endTime = performance.now(); // Stats
+      const fetchTime = Math.round(endTime - startTime); // Stats
 
       setSpotifyContext((prev) => ({
         ...prev,
         tracks: [...prev.tracks, ...newTracks],
+        lastFetchDuration: fetchTime, // Stats
+        resultCount: trackIds.length, // Stats TODO: This should be the filtered count 
       }));
     })();
   }, [visibleTracks, trackIds, loadedTracks.length]);
