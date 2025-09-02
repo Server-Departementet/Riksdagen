@@ -1,10 +1,26 @@
 import "server-only";
-import { ClerkMiddlewareAuth } from "@clerk/nextjs/server";
+import { User } from "@/app/spotify/types";
+import { clerkClient } from "@clerk/nextjs/server";
 
-export async function isMinister(auth: ClerkMiddlewareAuth): Promise<boolean> {
-  return hasRole(auth, "minister");
+// TODO - refetch every now and then
+const clerk = await clerkClient();
+const usersRes = await clerk.users.getUserList();
+const ministers: User[] = usersRes.data
+  .filter(u => u.publicMetadata.role === "minister")
+  .map(u => ({
+    id: u.id,
+    name: u.firstName || "Okänt namn",
+  }));
+const ministerMap = Object.fromEntries(ministers.map(m => [m.id, m]));
+
+export function getMinisters(): User[] {
+  return ministers;
+}
+export function getMinisterMap(): Record<string, User> {
+  return ministerMap;
 }
 
-export async function hasRole(auth: ClerkMiddlewareAuth, role: string): Promise<boolean> {
-  return ((await auth.protect()).sessionClaims["metadata"] as { role: string })["role"] == role;
+export function isMinister(userId: string | null): boolean {
+  if (!userId) return false;
+  return ministers.some(m => m.id === userId);
 }

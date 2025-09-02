@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
 import { isMinister } from "@/lib/auth";
 import { auth } from "@clerk/nextjs/server";
+import React from "react";
 
 // Fonts
 const _fontOutfit = Font_Outfit({ subsets: ["latin"] });
@@ -101,7 +102,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
-              <ProtectedLink hidden={await isMinister(auth)} href="/spotify">Spotify-Statistik</ProtectedLink>
+              <ProtectedLink hidden={isMinister((await auth()).userId)} href="/spotify">Spotify-Statistik</ProtectedLink>
               {/* 
                 Add a new link with these components:
                 <SidebarLink href="/path">Title</SidebarLink>

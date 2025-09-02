@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { notFound } from "next/navigation";
-import { hasRole } from "./lib/auth";
+import { isMinister } from "./lib/auth";
 
 const isMinisterRoute = createRouteMatcher([
   "/spotify(.*)",
@@ -18,10 +18,11 @@ export default clerkMiddleware(async (auth, req) => {
   // Allow ministers to access protected routes
   if (isMinisterRoute(req)) {
     // Is not signed in, 404
-    if (!(await auth()).userId) return notFound();
+    const userId = (await auth()).userId;
+    if (!userId) return notFound();
 
     // Allow if minister
-    if (await hasRole(auth, "minister")) {
+    if (isMinister(userId)) {
       return NextResponse.next();
     }
     // Hide protected routes
