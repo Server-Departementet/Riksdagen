@@ -75,6 +75,7 @@ export default async function RootLayout({ children }: {
               top-[40%]
               pointer-events-none
               text-gray-500/30
+              z-50
             `}
           >
             DU ÄR PÅ DEV

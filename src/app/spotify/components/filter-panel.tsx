@@ -5,7 +5,9 @@ export default function FilterPanel() {
   const { spotifyContext: { filter } } = useSpotifyContext();
   return (
     <aside className={``}>
-      <pre>{JSON.stringify(filter, null, 2)}</pre>
+      
+
+      <pre className="h-0">{JSON.stringify(filter, null, 2)}</pre>
     </aside>
   );
 }

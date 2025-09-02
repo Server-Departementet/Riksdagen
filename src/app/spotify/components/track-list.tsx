@@ -18,7 +18,16 @@ export default function TrackList({ className = "" }: { className?: string }) {
       ${className}
     `}>
       {/* Stats */}
-      <p className="text-sm opacity-60 font-normal w-full text-center sm:text-start">
+      <p className={`
+          sticky
+          top-0
+          bg-white
+          text-gray-500
+          w-full
+          font-normal
+          text-sm text-center sm:text-start
+          z-10
+        `}>
         {resultCount} resultat
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;
         {lastFetchDuration} ms
