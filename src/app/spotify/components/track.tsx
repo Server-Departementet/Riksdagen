@@ -13,11 +13,13 @@ export default function TrackElement({
   trackStats: stats,
   lineNumber,
   className = "",
+  plays = [],
 }: {
-  trackData: Track
+  trackData: Track & Partial<TrackStats>
   trackStats: TrackStats | null;
   lineNumber: number;
   className?: string;
+  plays?: (Track & Partial<TrackStats>)[];
 }) {
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);

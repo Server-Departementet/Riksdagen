@@ -1,6 +1,6 @@
 "use client";
 
-import type { FilterHash, Track, TrackId, TrackStats } from "@/app/spotify/types";
+import type { FilterHash, Track, TrackId, TrackStats, TrackWithStats } from "@/app/spotify/types";
 import TrackElement, { SkeletonTrackElement } from "@/app/spotify/components/track";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useFetchFilterContext } from "@/app/spotify/context/fetch-filter-context";
@@ -196,7 +196,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
   }, [currentFilterHash, fetchFilter, trackDataCache, trackStatsCache]);
 
   // Apply local filtering and sorting
-  const filteredTracks = useMemo(() => {
+  const filteredTracks: TrackWithStats[] = useMemo(() => {
     let filtered = Object.values(trackData).map(t => ({ ...t, ...trackStats[t.id] }));
 
     // Apply search filter
@@ -220,6 +220,13 @@ export default function TrackList({ className = "" }: { className?: string }) {
 
     return filtered;
   }, [trackData, localFilter, trackStats]);
+
+  // const groupedTracks: TrackWithStats[] = useMemo(() => {
+  //   const withFlattenedKeys: TrackWithStats[] = filteredTracks.map(t => ({ ...t, id: `${t.name}-${t.artists.map(a => a.id).sort().join(",")}-${t.duration}` }));
+  //   // console.log(withFlattenedKeys.sort((a, b) => a.id.localeCompare(b.id)));
+
+  //   return [];
+  // }, [filteredTracks]);
 
   return (
     <ul className={`
@@ -253,9 +260,10 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {!isLoading && filteredTracks.map((track, i) =>
         <TrackElement
           trackData={track}
-          trackStats={trackStats[track.id]}
+          trackStats={track}
           lineNumber={i + 1}
           key={`track-${track.id}`}
+          // plays={track.plays}
         />
       )}
     </ul>
