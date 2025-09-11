@@ -19,13 +19,10 @@ export default function TrackList({ className = "" }: { className?: string }) {
     `}>
       {/* Stats */}
       <p className={`
-          sticky
-          top-0
-          bg-white
-          text-gray-500
+          sticky top-0
+          bg-white text-gray-500
           w-full
-          font-normal
-          text-sm text-center sm:text-start
+          font-normal text-sm text-center sm:text-start
           z-10
         `}>
         {resultCount} resultat

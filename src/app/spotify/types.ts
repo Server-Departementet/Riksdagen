@@ -2,7 +2,6 @@ import {
   Genre as PrismaGenre,
   Album as PrismaAlbum,
   Artist as PrismaArtist,
-  Track as PrismaTrack,
   TrackPlay as PrismaTrackPlay
 } from "@prisma/client";
 
@@ -13,22 +12,26 @@ export type Album = PrismaAlbum & { trackCount: number };
 export type Artist = PrismaArtist;
 
 export type FilterHash = string;
-export type TrackId = string;
-export type AlbumId = string;
 
 export type User = {
   name: string; // User's name
   id: string; // User's ID provided by Clerk
 }
 
-export type Track = PrismaTrack & {
+export type Track = {
+  id: string;
+  name: string;
+  duration: number;
+  url: string;
+  image: string | null;
+  albumId: string;
   album: Album;
   artists: Artist[];
   color: string | null; // Color extracted from the track image, when missing it uses a default fallback
 };
 
 export type TrackStats = {
-  trackId: string;
+  id: string;
   totalPlays: number;
   totalMS: number;
   playsPerUser: Record<string, number>;
@@ -37,6 +40,8 @@ export type TrackStats = {
 export type TrackWithStats = Track & TrackStats;
 
 export type TrackWithPlays = Track & { TrackPlay: TrackPlay[] };
+
+export type TrackPlayMap = Record<string, TrackPlay[]>;
 
 export const SortingMethod = {
   Default: "play_time",

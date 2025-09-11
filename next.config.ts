@@ -13,10 +13,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    config.experiments = { ...config.experiments, topLevelAwait: true };
-    return config;
-  },
   ...env.CI ? { output: "standalone", } : {},
 };
 

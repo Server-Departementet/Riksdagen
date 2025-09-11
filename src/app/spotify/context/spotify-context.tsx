@@ -1,8 +1,8 @@
 "use client";
-
+import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
 import { defaultFilter, Filter, TrackWithStats, User } from "../types";
-import { getTracks } from "../functions/get-tracks";
+import { getFilteredTracks } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
@@ -80,7 +80,7 @@ export default function SpotifyContextProvider({
 
       const startTime = performance.now(); // Stats
 
-      const newTracks = await getTracks(newTrackIds);
+      const newTracks = await getFilteredTracks(spotifyContext.filter);
 
       const endTime = performance.now(); // Stats
       const fetchTime = Math.round(endTime - startTime); // Stats
@@ -92,7 +92,7 @@ export default function SpotifyContextProvider({
         resultCount: trackIds.length, // Stats TODO: This should be the filtered count 
       }));
     })();
-  }, [visibleTracks, trackIds, loadedTracks.length]);
+  }, [visibleTracks, trackIds, loadedTracks.length, spotifyContext.filter]);
 
   return (
     <SpotifyContext.Provider value={spotifyContext}>

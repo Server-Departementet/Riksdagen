@@ -12,12 +12,16 @@ const ministers: User[] = usersRes.data
     name: u.firstName || "Okänt namn",
   }));
 const ministerMap = Object.fromEntries(ministers.map(m => [m.id, m]));
+const userIds = Object.keys(ministerMap);
 
 export function getMinisters(): User[] {
   return ministers;
 }
 export function getMinisterMap(): Record<string, User> {
   return ministerMap;
+}
+export function getMinisterIds(): string[] {
+  return userIds;
 }
 
 export function isMinister(userId: string | null): boolean {

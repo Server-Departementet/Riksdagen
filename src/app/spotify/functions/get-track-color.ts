@@ -37,9 +37,6 @@ process.on("beforeExit", () => {
  * Extracts prominent color from the image in the url and caches it to a file.
  */
 export async function getTrackBGColor(url: string | null): Promise<string | null> {
-  "use cache";
-  // This use cache might be excessive
-
   if (!url) return null;
 
   // Validate URL

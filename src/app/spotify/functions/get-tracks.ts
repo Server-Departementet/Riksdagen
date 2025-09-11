@@ -1,20 +1,18 @@
 "use server";
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { TrackWithStats } from "../types";
+import { Filter, Track, TrackPlay, TrackPlayMap, TrackWithStats } from "../types";
 import { getTrackBGColor } from "./get-track-color";
+import { getMinisterIds } from "@/lib/auth";
 
-export async function getTracks(ids?: string[]) {
+export async function getTracks(ids?: string[]): Promise<Track[]> {
   "use cache";
 
-  const tracks: TrackWithStats[] = (await prisma.track.findMany({
+  const tracks: Track[] = (await prisma.track.findMany({
     // Select specific ids if provided
     ...(ids ? { where: { id: { in: ids } } } : {}),
     orderBy: { TrackPlay: { _count: "desc" } },
     include: {
-      _count: {
-        select: { TrackPlay: true },
-      },
       artists: true,
       album: {
         include: {
@@ -25,7 +23,7 @@ export async function getTracks(ids?: string[]) {
       },
     },
   }))
-    .map((t): TrackWithStats => ({
+    .map((t): Track => ({
       id: t.id,
       name: t.name,
       duration: t.duration,
@@ -33,10 +31,6 @@ export async function getTracks(ids?: string[]) {
       album: { ...t.album, trackCount: t.album._count.tracks },
       albumId: t.albumId,
       artists: t.artists,
-      playsPerUser: {}, // To be filled later 
-      totalMS: t._count.TrackPlay * t.duration,
-      totalPlays: t._count.TrackPlay,
-      trackId: t.id,
       url: t.url,
       color: null, // To be filled later
     }));
@@ -49,44 +43,109 @@ export async function getTracks(ids?: string[]) {
   return tracks;
 }
 
-// TODO deprecated remove
-// export async function getTrack(trackId: string) {
-//   "use cache";
+export async function getTracksWithStats(tracks: Track[], playsMap: TrackPlayMap): Promise<TrackWithStats[]> {
+  "use cache";
 
-//   const track = await prisma.track.findUnique({
-//     where: { id: trackId },
-//     include: {
-//       _count: {
-//         select: { TrackPlay: true },
-//       },
-//       artists: true,
-//       album: {
-//         include: {
-//           _count: {
-//             select: { tracks: true },
-//           },
-//         },
-//       },
-//     },
-//   });
+  const tracksWithStats: TrackWithStats[] = tracks.map(t => {
+    const thesePlays = playsMap[t.id] || [];
 
-//   if (!track) return null;
+    const playsPerUser = Object.fromEntries(
+      userIds.map(id => [
+        id,
+        thesePlays.filter(p => p.userId === id).length,
+      ])
+    );
+    const totalPlays = thesePlays.length;
+    const totalMS = totalPlays * t.duration;
 
-//   const trackWithStats: TrackWithStats = {
-//     id: track.id,
-//     name: track.name,
-//     duration: track.duration,
-//     image: track.image,
-//     album: { ...track.album, trackCount: track.album._count.tracks },
-//     albumId: track.albumId,
-//     artists: track.artists,
-//     playsPerUser: {}, // To be filled later 
-//     totalMS: track._count.TrackPlay * track.duration,
-//     totalPlays: track._count.TrackPlay,
-//     trackId: track.id,
-//     url: track.url,
-//     color: await getTrackBGColor(track.image),
-//   };
+    return {
+      ...t,
+      playsPerUser,
+      totalPlays,
+      totalMS,
+    };
+  });
 
-//   return trackWithStats;
-// }
+  return tracksWithStats;
+}
+
+export async function getTrackPlays(id?: string): Promise<TrackPlay[]> {
+  "use cache";
+
+  const plays: TrackPlay[] = await prisma.trackPlay.findMany({
+    ...(id ? { where: { trackId: id } } : {}),
+    orderBy: { playedAt: "desc" },
+  });
+
+  return plays;
+}
+
+function createTrackPlayMap(plays: TrackPlay[]): TrackPlayMap {
+  const map: TrackPlayMap = {};
+  for (const play of plays) {
+    if (map[play.id]) map[play.id].push(play);
+    else map[play.id] = [play];
+  }
+  return map;
+}
+
+const userIds = getMinisterIds();
+
+export async function getFilteredTracks(filter: Filter): Promise<TrackWithStats[]> {
+  "use cache";
+
+  const tracksNoStats = await getTracks();
+  const outTracks: Track[] = [...tracksNoStats];
+
+  const trackPlays = await getTrackPlays();
+  const trackPlayMap = createTrackPlayMap(trackPlays);
+  const outPlays: TrackPlayMap = { ...trackPlayMap };
+
+  for (const track of tracksNoStats) {
+    const thesePlays = outPlays[track.id] || [];
+
+    // Search
+    if (filter.search) {
+      const searchString = filter.search.trim().toLowerCase();
+
+      const trackName = track.name.toLowerCase();
+      const artistsNames = track.artists.map(a => a.name).join(", ").toLowerCase();
+      const albumName = track.album.name.toLowerCase();
+
+      if (
+        trackName.indexOf(searchString) === -1
+        &&
+        artistsNames.indexOf(searchString) === -1
+        &&
+        albumName.indexOf(searchString) === -1
+      ) {
+        // No match, remove the track
+        const trackIndex = outTracks.indexOf(track);
+        if (trackIndex > -1) outTracks.splice(trackIndex, 1);
+      }
+    }
+
+    // User filter
+    if (filter.selectedUsers.length) { // No users selected means to show all
+      const providedIds = filter.selectedUsers.map(u => u.id);
+      const cleanedUserIds = userIds.filter(id => providedIds.includes(id)); // Take the intersection of minister ids and provided ids
+
+      for (const play of thesePlays) {
+        if (!cleanedUserIds.includes(play.userId)) {
+          // Play by a user not in the filter, remove it
+          const index = outPlays[track.id].indexOf(play);
+          if (index > -1) outPlays[track.id].splice(index, 1);
+        }
+
+        // If no plays remain for this track, remove the track
+        if (outPlays[track.id].length === 0) {
+          const trackIndex = outTracks.indexOf(track);
+          if (trackIndex > -1) outTracks.splice(trackIndex, 1);
+        }
+      }
+    }
+  }
+
+  const tracksWithStats = getTracksWithStats(outTracks, outPlays);
+  return tracksWithStats;
+}
