@@ -29,7 +29,8 @@ export default async function SpotifyPage() {
       <h1 className="text-4xl mt-2">Spotify-statistik</h1>
 
       <section className={`
-        flex flex-col sm:flex-row justify-end lg:justify-center
+        flex flex-col sm:flex-row 
+        justify-end lg:justify-center
         w-full
       `}>
         <SpotifyContextProvider

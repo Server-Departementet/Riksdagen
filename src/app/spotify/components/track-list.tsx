@@ -14,7 +14,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       gap-y-3
       px-6 sm:ps-0
       *:first:mt-3 *:last:mb-10
-      w-1/2
+      w-2/3 sm:w-1/2 
       ${className}
     `}>
       {/* Stats */}
@@ -33,7 +33,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {/* Tracks / Skeletons */}
       {tracks.length ? tracks.map((track, i) =>
         <TrackElement
-          key={`track-${track.id}`}
+          key={`track-${track.id}-${i}-${track.albumId}`}
           trackData={track}
           lineNumber={i + 1}
         />)
