@@ -1,14 +1,15 @@
 "use client";
 import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
-import { defaultFilter, Filter, TrackWithStats, User } from "../types";
+import { defaultFilter, Filter, SortingMethod, TrackWithStats, User } from "../types";
 import { getFilteredTracks } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
   users: User[]; // To make the filter panel and such
   tracks: TrackWithStats[]; // result of the filter
-  trackIds: string[];
+  allTrackIds: string[]; // All possible track ids (for filtering)
+  selectedTrackIds: string[];
   lastFetchDuration: number; // ms it took to fetch the last batch of tracks
   resultCount: number; // Total number of tracks matching the filter
 }
@@ -16,7 +17,8 @@ const defaultSpotifyContextState: SpotifyContextType = {
   filter: defaultFilter,
   users: [],
   tracks: [],
-  trackIds: [],
+  allTrackIds: [],
+  selectedTrackIds: [],
   lastFetchDuration: 0,
   resultCount: 0,
 };
@@ -37,7 +39,7 @@ export function useSpotifyContext() {
 
 export default function SpotifyContextProvider({
   users,
-  trackIds, // Used for children to fetch
+  trackIds,
   children
 }: {
   users: User[];
@@ -47,52 +49,37 @@ export default function SpotifyContextProvider({
   const [spotifyContext, setSpotifyContext] = useState<SpotifyContextType>({
     ...defaultSpotifyContextState,
     users,
-    trackIds,
+    allTrackIds: trackIds,
   });
 
-  const [loadedTracks, setLoadedTracks] = useState<string[]>([]); // To avoid fetching the same tracks again
-  const loadIncrement = 50;
-  const [visibleTracks, setVisibleTracks] = useState<number>(loadIncrement);
-
-  // Allow more fetch on scroll
+  // On load, check if there are any params to set the filter from
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.toString().length) return;
 
-    const handleScroll = () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
-        setVisibleTracks((prev) => prev + loadIncrement);
+    const search = params.get("q") || defaultFilter.search;
+    const reverse = params.get("reverse") === "true" || defaultFilter.reverse;
+    const sort = params.get("sort")
+      ? (Object.values(SortingMethod).includes(params.get("sort") as SortingMethod) ? params.get("sort") : SortingMethod.Default)
+      : defaultFilter.sort;
+    const selectedUsers = params.get("users")
+      ? users.filter(u => params.get("users")?.split(",").includes(u.id))
+      : defaultFilter.selectedUsers;
+
+    setSpotifyContext(prev => ({
+      ...prev,
+      filter: {
+        ...prev.filter,
+        search,
+        reverse,
+        selectedUsers,
+        sort: sort as SortingMethod,
       }
-    };
+    }));
 
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Fetch tracks when visibleTracks changes
-  useEffect(() => {
-    (async () => {
-      const newTrackIds = trackIds.slice(loadedTracks.length, visibleTracks);
-      if (newTrackIds.length === 0) return;
-
-      setLoadedTracks((prev) => [...new Set([...prev, ...newTrackIds])]);
-
-      const startTime = performance.now(); // Stats
-
-      const newTracks = await getFilteredTracks(spotifyContext.filter);
-
-      const endTime = performance.now(); // Stats
-      const fetchTime = Math.round(endTime - startTime); // Stats
-
-      setSpotifyContext((prev) => ({
-        ...prev,
-        tracks: [...prev.tracks, ...newTracks],
-        lastFetchDuration: fetchTime, // Stats
-        resultCount: trackIds.length, // Stats TODO: This should be the filtered count 
-      }));
-    })();
-  }, [visibleTracks, trackIds, loadedTracks.length, spotifyContext.filter]);
+    // Clear params from the URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [users]);
 
   return (
     <SpotifyContext.Provider value={spotifyContext}>
