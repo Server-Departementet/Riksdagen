@@ -2,7 +2,6 @@
 import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
 import { defaultFilter, Filter, SortingMethod, TrackWithStats, User } from "../types";
-import { getFilteredTracks } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
