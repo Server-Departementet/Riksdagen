@@ -10,7 +10,8 @@ const ministers: User[] = usersRes.data
   .map(u => ({
     id: u.id,
     name: u.firstName || "Okänt namn",
-  }));
+  }))
+  .reverse();
 const ministerMap = Object.fromEntries(ministers.map(m => [m.id, m]));
 const userIds = Object.keys(ministerMap);
 

@@ -6,12 +6,13 @@ import { LinkIcon, SortAscIcon, SortDescIcon } from "lucide-react";
 import { defaultFilter, SortingMethodNames } from "../types";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup } from "@radix-ui/react-toggle-group";
+import { ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function FilterPanel() {
-  const { spotifyContext: { filter }, setSpotifyContext } = useSpotifyContext();
-  const { reverse } = filter;
+  const { spotifyContext: { filter, users }, setSpotifyContext } = useSpotifyContext();
   return (
-    <aside className={`flex flex-col py-4`}>
+    <aside className={`flex flex-col py-4 gap-y-2`}>
       {/* Share link (save filters in params) */}
       <div className="mb-4 flex flex-row items-center justify-start">
         <Button
@@ -22,7 +23,7 @@ export default function FilterPanel() {
             if (filter.search.length) params.set("q", filter.search);
             if (filter.reverse !== defaultFilter.reverse) params.set("reverse", String(filter.reverse));
             if (filter.sort !== defaultFilter.sort) params.set("sort", filter.sort);
-            if (filter.selectedUsers.length && filter.selectedUsers.length !== Object.keys(filter.selectedUsers).length) {
+            if (filter.selectedUsers.length && filter.selectedUsers.length !== users.length) {
               params.set("users", filter.selectedUsers.map(u => u.id).join(","));
             }
             const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
@@ -34,6 +35,41 @@ export default function FilterPanel() {
           Dela filter
           <LinkIcon />
         </Button>
+      </div>
+
+      {/* Users */}
+      <div className="w-full flex flex-row items-center justify-center gap-x-1">
+        <ToggleGroup
+          type="multiple"
+          value={filter.selectedUsers.map(u => u.id)}
+          onValueChange={(value) => {
+            setSpotifyContext(prev => ({
+              ...prev,
+              filter: {
+                ...prev.filter,
+                selectedUsers: users.filter(u => value.includes(u.id)),
+              }
+            }));
+          }}
+          className="w-fit flex-col *:w-full"
+        >
+          {users.map(user => (
+            <ToggleGroupItem
+              key={`filter-user-${user.id}`}
+              value={user.id}
+              className={`
+                bg-zinc-100 text-zinc-500 
+                aria-pressed:!bg-gray-600 aria-pressed:!text-white
+                first:rounded-none first:rounded-tl-lg first:rounded-tr-lg 
+                last:rounded-none last:rounded-bl-lg last:rounded-br-lg
+                first:pt-0.5 last:pb-0.5
+                px-1.5 py-0.5
+              `}
+            >
+              {user.name}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Sorting */}
@@ -64,10 +100,10 @@ export default function FilterPanel() {
           variant={"ghost"}
           size={"icon"}
           onClick={() => setSpotifyContext(prev => ({ ...prev, filter: { ...prev.filter, reverse: !filter.reverse } }))}
-          className={`${reverse ? "bg-gray-600 text-white" : ""}`}
-          aria-label={reverse ? "Sortera stigande" : "Sortera fallande"}
+          className={`${filter.reverse ? "bg-gray-600 text-white" : ""}`}
+          aria-label={filter.reverse ? "Sortera stigande" : "Sortera fallande"}
         >
-          {reverse
+          {filter.reverse
             ? <SortAscIcon />
             : <SortDescIcon />
           }
@@ -81,7 +117,7 @@ export default function FilterPanel() {
           placeholder="Sök låt, artist eller album..."
           value={filter.search}
           onChange={(e) => setSpotifyContext(prev => ({ ...prev, filter: { ...prev.filter, search: e.target.value } }))}
-          className="mt-4 w-full"
+          className="w-full"
           spellCheck={false}
           autoComplete="off"
           autoCorrect="off"
@@ -89,9 +125,7 @@ export default function FilterPanel() {
         />
       </div>
 
-      
-
-      <pre className="h-0">{JSON.stringify(filter, null, 2)}</pre>
+      <pre className="h-0 mt-10">{JSON.stringify(filter, null, 2)}</pre>
     </aside>
   );
 }
