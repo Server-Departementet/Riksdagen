@@ -1,14 +1,13 @@
 "use client";
 import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
-import { defaultFilter, Filter, SortingMethod, TrackPlayMap, TrackWithStats, User } from "../types";
+import { defaultFilter, Filter, SortingMethod, TrackWithStats, User } from "../types";
 import { getFilteredTrackIDs, getTracksByIds } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
   users: User[]; // To make the filter panel and such
   allTrackData: TrackWithStats[]; // result of the filter
-  allTrackDataMap: TrackPlayMap; // Map of trackId to TrackPlay[]
   allTrackIds: string[]; // All possible track ids (for filtering)
   resultingTrackIds: string[];
   lastFetchDuration: number; // ms it took to fetch the last batch of tracks
@@ -18,7 +17,6 @@ const defaultSpotifyContextState: SpotifyContextType = {
   filter: defaultFilter,
   users: [],
   allTrackData: [],
-  allTrackDataMap: {},
   allTrackIds: [],
   resultingTrackIds: [],
   lastFetchDuration: 0,
