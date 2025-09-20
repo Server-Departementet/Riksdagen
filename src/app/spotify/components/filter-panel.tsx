@@ -41,7 +41,12 @@ export default function FilterPanel() {
       <div className="w-full flex flex-row items-center justify-center gap-x-1">
         <ToggleGroup
           type="multiple"
-          value={filter.selectedUsers.map(u => u.id)}
+          value={
+            // If no users are selected, select all
+            filter.selectedUsers.length === 0
+              ? users.map(u => u.id)
+              : filter.selectedUsers.map(u => u.id)
+          }
           onValueChange={(value) => {
             setSpotifyContext(prev => ({
               ...prev,
@@ -125,7 +130,7 @@ export default function FilterPanel() {
         />
       </div>
 
-      <pre className="h-0 mt-10">{JSON.stringify(filter, null, 2)}</pre>
+      <pre className="h-0 mt-10 w-40 max-w-40">{JSON.stringify(filter, null, 2)}</pre>
     </aside>
   );
 }

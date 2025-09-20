@@ -89,6 +89,7 @@ function createTrackPlayMap(plays: TrackPlay[]): TrackPlayMap {
   return map;
 }
 
+
 const userIds = getMinisterIds();
 
 export async function getFilteredTracks(filter: Filter): Promise<TrackWithStats[]> {
@@ -147,5 +148,18 @@ export async function getFilteredTracks(filter: Filter): Promise<TrackWithStats[
   }
 
   const tracksWithStats = getTracksWithStats(outTracks, outPlays);
+  return tracksWithStats;
+}
+
+export async function getFilteredTrackIDs(filter: Filter): Promise<string[]> {
+  const tracks = await getFilteredTracks(filter);
+  return tracks.map(t => t.id);
+}
+
+export async function getTracksByIds(ids: string[]): Promise<TrackWithStats[]> {
+  const tracks = await getTracks(ids);
+  const plays = await getTrackPlays();
+  const playMap = createTrackPlayMap(plays);
+  const tracksWithStats = await getTracksWithStats(tracks, playMap);
   return tracksWithStats;
 }

@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: {
               -rotate-30
               top-[40%]
               pointer-events-none
-              text-gray-500/30
+              text-gray-500/20
               z-50
             `}
           >

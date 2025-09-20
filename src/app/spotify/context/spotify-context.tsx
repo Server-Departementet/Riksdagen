@@ -2,6 +2,7 @@
 import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
 import { defaultFilter, Filter, SortingMethod, TrackWithStats, User } from "../types";
+import { getFilteredTrackIDs, getTracksByIds } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
@@ -79,6 +80,32 @@ export default function SpotifyContextProvider({
     // Clear params from the URL
     window.history.replaceState({}, document.title, window.location.pathname);
   }, [users]);
+
+  // Fetch Tracks
+  useEffect(() => {
+    async function fetchTracks() {
+      const startTime = performance.now();
+      const filteredTrackIDs = await getFilteredTrackIDs(spotifyContext.filter);
+      const endTime = performance.now();
+
+      setSpotifyContext(prev => ({
+        ...prev,
+        selectedTrackIds: filteredTrackIDs,
+        lastFetchDuration: Math.round(endTime - startTime),
+        resultCount: filteredTrackIDs.length,
+      }));
+
+      // Fetch the first 50 tracks
+      const filteredTrackData = await getTracksByIds(filteredTrackIDs.slice(0, 20));
+
+      setSpotifyContext(prev => ({
+        ...prev,
+        tracks: filteredTrackData,
+      }));
+    }
+
+    fetchTracks();
+  }, [spotifyContext.filter]);
 
   return (
     <SpotifyContext.Provider value={spotifyContext}>
