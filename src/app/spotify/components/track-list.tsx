@@ -4,7 +4,7 @@ import { TrackElement, SkeletonTrackElement } from "@/app/spotify/components/tra
 import { useSpotifyContext } from "../context/spotify-context";
 
 export default function TrackList({ className = "" }: { className?: string }) {
-  const { spotifyContext: { tracks, resultCount, lastFetchDuration } } = useSpotifyContext();
+  const { spotifyContext: { resultingTrackIds, allTrackData, resultCount, lastFetchDuration } } = useSpotifyContext();
 
   return (
     <ul className={`
@@ -31,7 +31,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       </p>
 
       {/* Tracks / Skeletons */}
-      {tracks.length ? tracks.map((track, i) =>
+      {resultingTrackIds.length ? allTrackData.filter(t => resultingTrackIds.includes(t.id)).map((track, i) =>
         <TrackElement
           key={`track-${track.id}-${i}-${track.albumId}`}
           trackData={track}
@@ -42,7 +42,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       }
 
       {/* No results */}
-      {tracks.length === 0 &&
+      {resultingTrackIds.length === 0 &&
         <div className="py-10 text-center text-gray-500">
           Inget matchar aktiva filtret.
         </div>

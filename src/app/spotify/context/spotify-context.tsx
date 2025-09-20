@@ -1,24 +1,26 @@
 "use client";
 import "client-only";
 import { createContext, useContext, useEffect, useState } from "react";
-import { defaultFilter, Filter, SortingMethod, TrackWithStats, User } from "../types";
+import { defaultFilter, Filter, SortingMethod, TrackPlayMap, TrackWithStats, User } from "../types";
 import { getFilteredTrackIDs, getTracksByIds } from "../functions/get-tracks";
 
 type SpotifyContextType = {
   filter: Filter;
   users: User[]; // To make the filter panel and such
-  tracks: TrackWithStats[]; // result of the filter
+  allTrackData: TrackWithStats[]; // result of the filter
+  allTrackDataMap: TrackPlayMap; // Map of trackId to TrackPlay[]
   allTrackIds: string[]; // All possible track ids (for filtering)
-  selectedTrackIds: string[];
+  resultingTrackIds: string[];
   lastFetchDuration: number; // ms it took to fetch the last batch of tracks
   resultCount: number; // Total number of tracks matching the filter
 }
 const defaultSpotifyContextState: SpotifyContextType = {
   filter: defaultFilter,
   users: [],
-  tracks: [],
+  allTrackData: [],
+  allTrackDataMap: {},
   allTrackIds: [],
-  selectedTrackIds: [],
+  resultingTrackIds: [],
   lastFetchDuration: 0,
   resultCount: 0,
 };
@@ -37,6 +39,7 @@ export function useSpotifyContext() {
   return { spotifyContext, setSpotifyContext };
 }
 
+
 export default function SpotifyContextProvider({
   users,
   trackIds,
@@ -46,14 +49,20 @@ export default function SpotifyContextProvider({
   trackIds: string[];
   children?: React.ReactNode;
 }) {
+  const [hasParsedParams, setHasParsedParams] = useState(false);
   const [spotifyContext, setSpotifyContext] = useState<SpotifyContextType>({
     ...defaultSpotifyContextState,
     users,
     allTrackIds: trackIds,
   });
+  const [visibleTrackCount, setVisibleTrackCount] = useState(20);
 
   // On load, check if there are any params to set the filter from
   useEffect(() => {
+    if (hasParsedParams) return;
+    setHasParsedParams(true);
+    if (typeof window === "undefined") return;
+
     const params = new URLSearchParams(window.location.search);
     if (!params.toString().length) return;
 
@@ -79,33 +88,37 @@ export default function SpotifyContextProvider({
 
     // Clear params from the URL
     window.history.replaceState({}, document.title, window.location.pathname);
-  }, [users]);
+  }, [hasParsedParams, users]);
 
   // Fetch Tracks
   useEffect(() => {
     async function fetchTracks() {
       const startTime = performance.now();
-      const filteredTrackIDs = await getFilteredTrackIDs(spotifyContext.filter);
+      const resultingTrackIds = await getFilteredTrackIDs(spotifyContext.filter);
       const endTime = performance.now();
 
       setSpotifyContext(prev => ({
         ...prev,
-        selectedTrackIds: filteredTrackIDs,
+        resultingTrackIds,
         lastFetchDuration: Math.round(endTime - startTime),
-        resultCount: filteredTrackIDs.length,
+        resultCount: resultingTrackIds.length,
       }));
 
-      // Fetch the first 50 tracks
-      const filteredTrackData = await getTracksByIds(filteredTrackIDs.slice(0, 20));
+      const nonFetchedTrackIds = resultingTrackIds
+        .slice(0, visibleTrackCount)
+        .filter(id => spotifyContext.allTrackData.find(t => t.id === id));
 
-      setSpotifyContext(prev => ({
-        ...prev,
-        tracks: filteredTrackData,
-      }));
+      if (nonFetchedTrackIds.length) {
+        const fetchedTracks = await getTracksByIds(nonFetchedTrackIds);
+        setSpotifyContext(prev => ({
+          ...prev,
+          allTrackData: [...prev.allTrackData, ...fetchedTracks],
+        }));
+      }
     }
 
     fetchTracks();
-  }, [spotifyContext.filter]);
+  }, [spotifyContext.filter, spotifyContext.allTrackData, visibleTrackCount]);
 
   return (
     <SpotifyContext.Provider value={spotifyContext}>
