@@ -123,7 +123,7 @@ export default async function RootLayout({ children }: {
 
         <footer className="p-3 mt-5">
           <p>© 2025 Vena Ström, Axel Thornberg & Emil Winroth</p>
-          <p className="text-sm">Källkod: <a href="https://github.com/Server-Departementet/Riksdagen" target="_blank">github.com</a></p>
+          <p className="text-sm">Källkod <a className="global" href="https://github.com/Server-Departementet/Riksdagen" target="_blank">github.com</a></p>
         </footer>
       </body>
     </html>
