@@ -93,6 +93,7 @@ export default function SpotifyContextProvider({
     async function fetchTracks() {
       const startTime = performance.now();
       const resultingTrackIds = await getFilteredTrackIDs(spotifyContext.filter);
+      console.log(resultingTrackIds.length);
       const endTime = performance.now();
 
       setSpotifyContext(prev => ({
@@ -104,7 +105,7 @@ export default function SpotifyContextProvider({
 
       const nonFetchedTrackIds = resultingTrackIds
         .slice(0, visibleTrackCount)
-        .filter(id => spotifyContext.allTrackData.find(t => t.id === id));
+        .filter(id => !spotifyContext.allTrackData.find(t => t.id === id));
 
       if (nonFetchedTrackIds.length) {
         const fetchedTracks = await getTracksByIds(nonFetchedTrackIds);

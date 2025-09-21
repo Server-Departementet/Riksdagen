@@ -10,7 +10,7 @@ import { ToggleGroup } from "@radix-ui/react-toggle-group";
 import { ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function FilterPanel() {
-  const { spotifyContext: { filter, users }, setSpotifyContext } = useSpotifyContext();
+  const { spotifyContext, spotifyContext: { filter, users }, setSpotifyContext } = useSpotifyContext();
   return (
     <aside className={`flex flex-col py-4 gap-y-2`}>
       {/* Share link (save filters in params) */}
@@ -130,7 +130,11 @@ export default function FilterPanel() {
         />
       </div>
 
-      <pre className="h-0 mt-10 w-40 max-w-40">{JSON.stringify(filter, null, 2)}</pre>
+      <pre className="h-0 mt-10 w-40 max-w-40">
+        {JSON.stringify(spotifyContext.resultingTrackIds.length)}
+        <br />
+        {JSON.stringify(filter, null, 2)}
+      </pre>
     </aside>
   );
 }

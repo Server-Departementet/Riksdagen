@@ -100,10 +100,17 @@ export async function getFilteredTracks(filter: Filter): Promise<TrackWithStats[
 
   const trackPlays = await getTrackPlays();
   const trackPlayMap = createTrackPlayMap(trackPlays);
-  const outPlays: TrackPlayMap = { ...trackPlayMap };
+  const outPlays: TrackPlayMap = {};
 
   for (const track of tracksNoStats) {
-    const thesePlays = outPlays[track.id] || [];
+    const thesePlays = trackPlayMap[track.id] || [];
+
+    if (!thesePlays.length) {
+      // No plays for this track, remove it
+      const trackIndex = outTracks.indexOf(track);
+      if (trackIndex > -1) outTracks.splice(trackIndex, 1);
+      continue;
+    }
 
     // Search
     if (filter.search) {
@@ -132,20 +139,22 @@ export async function getFilteredTracks(filter: Filter): Promise<TrackWithStats[
       const cleanedUserIds = userIds.filter(id => providedIds.includes(id)); // Take the intersection of minister ids and provided ids
 
       for (const play of thesePlays) {
-        if (!cleanedUserIds.includes(play.userId)) {
-          // Play by a user not in the filter, remove it
-          const index = outPlays[track.id].indexOf(play);
-          if (index > -1) outPlays[track.id].splice(index, 1);
+        // If play is by a user in the filter, keep it
+        if (cleanedUserIds.includes(play.userId)) {
+          if (outPlays[track.id]) outPlays[track.id].push(play);
+          else outPlays[track.id] = [play];
         }
+      }
 
-        // If no plays remain for this track, remove the track
-        if (outPlays[track.id].length === 0) {
-          const trackIndex = outTracks.indexOf(track);
-          if (trackIndex > -1) outTracks.splice(trackIndex, 1);
-        }
+      // If no plays remain for this track, remove it
+      if (!outPlays[track.id] || !outPlays[track.id].length) {
+        const trackIndex = outTracks.indexOf(track);
+        if (trackIndex > -1) outTracks.splice(trackIndex, 1);
       }
     }
   }
+  console.log(outTracks);
+  console.log(outPlays);
 
   const tracksWithStats = getTracksWithStats(outTracks, outPlays);
   return tracksWithStats;
