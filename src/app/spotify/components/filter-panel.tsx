@@ -282,15 +282,6 @@ export default function FilterPanel({
             </PopoverContent>
           </Popover>
         </div>
-
-        <pre>
-          Local =&nbsp;
-          {JSON.stringify(localFilter, null, 2)}
-          <br />
-          <br />
-          Fetch =&nbsp;
-          {JSON.stringify(fetchFilter, null, 2)}
-        </pre>
       </div>
     </div >
   );
