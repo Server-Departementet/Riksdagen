@@ -1,4 +1,5 @@
 #!/bin/bash
+cd /root/Riksdagen
 
 git fetch --all
 git checkout origin/main --force
