@@ -10,10 +10,12 @@ export function SidebarLink(
   {
     href,
     children,
+    linkTarget,
     className = "",
   }: {
     href: string,
     children: React.ReactNode
+    linkTarget?: "_blank" | "_self" | "_parent" | "_top"
     className?: string
   }
 ) {
@@ -26,7 +28,7 @@ export function SidebarLink(
   };
 
   return (
-    <Link href={href} className={`w-full ${className}`}
+    <Link href={href} className={`w-full ${className}`} {...linkTarget ? { target: linkTarget } : {}}
       onClick={onClick}
     >
       <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full !flex !flex-row !gap-x-2 !items-center">
@@ -49,7 +51,7 @@ export function ExternalLink(
 ) {
 
   return (
-    <SidebarLink href={href} className={`${className}`}>
+    <SidebarLink href={href} className={`${className}`} linkTarget="_blank">
       {children}
       <Icon.ExternalLink size={22} strokeWidth={1} color="#222" />
     </SidebarLink>

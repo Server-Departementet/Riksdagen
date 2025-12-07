@@ -13,16 +13,45 @@ import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
 const _outfit = Outfit({ subsets: ["latin"] });
 const _openSans = Open_Sans({ subsets: ["latin"] });
 
+const appName = "Riksdagen";
+const description = "Samlingsplatsen för 'Regeringens' alla ärenden. Vi är inte den riktiga regeringen eller riksdagen för den delen. Läs mer om vårt statsskick här.";
+const url = process.env.CANONICAL_URL || "";
 export const metadata: Metadata = {
-  title: "Riksdagen",
+  title: {
+    default: appName,
+    template: `%s | ${appName}`,
+  },
+  description,
   authors: [
     { name: "Vena Ström", url: "https://venastrom.se/" },
     { name: "Axel Thornberg", url: "https://axel.thornberg.se/" },
     { name: "Emil Winroth", url: "https://www.linkedin.com/in/emil-winroth-711750326/" },
   ],
-  description: "Samlingsplatsen för 'Regeringens' alla ärenden.",
+  twitter: {
+    card: "summary_large_image",
+    title: appName,
+    description,
+    images: [`${url}/icons/regeringen/regeringen-favicon.svg`],
+  },
+  openGraph: {
+    title: appName,
+    siteName: appName,
+    url,
+    description,
+    images: [
+      {
+        url: `${url}/icons/regeringen/regeringen-favicon.svg`,
+        width: 512,
+        height: 512,
+      },
+    ],
+    countryName: "Sweden",
+    locale: "sv_SE",
+    type: "website",
+  },
   icons: {
-    icon: "/icons/regeringen/regeringen-favicon.svg",
+    icon: `${url}/icons/regeringen/regeringen-favicon.svg`,
+    apple: `${url}/icons/regeringen/regeringen-favicon.svg`,
   },
 };
 
@@ -54,7 +83,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
-              <ExternalLink href="https://fil-dep.tailad6f63.ts.net/">Fil-Departementet</ExternalLink>
+              <ExternalLink href="https://fil.riksdagen.net/">Fil-Departementet</ExternalLink>
               <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Venas Radio</ExternalLink>
             </Sidebar>
           </div>

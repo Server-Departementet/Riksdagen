@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,12 +23,33 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@root/*": ["./*"],
-      "@types": ["./src/types"],
-      "@prisma/client": ["./src/prisma/client"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@root/*": [
+        "./*"
+      ],
+      "@types": [
+        "./src/types"
+      ],
+      "@prisma/client": [
+        "./src/prisma/client"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/scripts", "src/prisma", "prisma/migrate.ts"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/scripts",
+    "src/prisma",
+    "prisma/migrate.ts",
+    ".next",
+    "out",
+    "build",
+  ]
 }

@@ -28,6 +28,12 @@ const eslintConfig = [
     ignorePatterns: [
       "src/prisma",
       "prisma/migrate.ts",
+      ".next",
+      "node_modules",
+      "out",
+      "build",
+      "coverage",
+      "dist"
     ],
   }),
 ];

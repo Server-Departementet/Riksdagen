@@ -9,7 +9,7 @@
     "dev": "next dev --turbopack",
     "build": "yarn cache:colors && yarn next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "tsc --noEmit && eslint ./src",
     "cache:colors": "tsx src/scripts/pre-fill-spotify-colors.ts"
   },
   "dependencies": {
