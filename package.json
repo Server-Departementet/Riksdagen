@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "yarn cache:colors && yarn next build",
     "start": "next start",
     "lint": "tsc --noEmit && eslint ./src",
