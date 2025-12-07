@@ -1,9 +1,24 @@
+import "dotenv/config";
 import { PrismaClient } from "../prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
 import path from "node:path";
 
-const prisma = new PrismaClient();
+const envDatabaseUrl = process.env.DATABASE_URL;
+if (!envDatabaseUrl) {
+  throw new Error("DATABASE_URL is not defined");
+}
+const dbURL = new URL(envDatabaseUrl);
+const adapter = new PrismaMariaDb({
+  host: dbURL.hostname,
+  port: Number(dbURL.port),
+  user: dbURL.username,
+  password: dbURL.password,
+  database: dbURL.pathname.slice(1),
+});
+
+const prisma = new PrismaClient({ adapter });
 
 const images = (await prisma.track.findMany())
   .map(track => track.image)
@@ -16,7 +31,7 @@ let cachePath = preferredCachePath;
 
 if (fs.existsSync(preferredCachePath)) {
   cachePath = preferredCachePath;
-} 
+}
 else {
   cachePath = colorCachePath;
 }
@@ -35,7 +50,7 @@ const processImage = async (url: string) => {
   const color = (await v.getPalette())?.LightVibrant?.hex;
   if (color) colorCache[url] = color;
   return color;
-}
+};
 
 const maxStreams = 5;
 let streamCount = 0;
@@ -70,3 +85,13 @@ images.forEach(async (url, i) => {
       streamCount--;
     });
 });
+
+await new Promise(resolve => setTimeout(resolve, 1000));
+
+while (streamCount > 0) {
+  // Wait for all streams to finish
+  await new Promise(resolve => setTimeout(resolve, 100));
+}
+
+console.info("Finished processing all images");
+process.exit(0);
