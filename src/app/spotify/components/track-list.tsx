@@ -81,9 +81,9 @@ export default function TrackList({ className = "" }: { className?: string }) {
   // Fetch track index, data and stats from the server or cache
   useEffect(() => {
     const startTime = performance.now();
-    setIsLoading(true);
 
     const fetchTrackIndex = async () => {
+      setIsLoading(true);
       const response = await fetch("/api/spotify/tracks?type=index",
         {
           method: "POST",
@@ -190,8 +190,10 @@ export default function TrackList({ className = "" }: { className?: string }) {
       ]))
       .then(() => {
         const endTime = performance.now();
-        setIsLoading(false);
         setFetchTime(Math.round(endTime - startTime));
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, [currentFilterHash, fetchFilter, trackDataCache, trackStatsCache]);
 
@@ -252,7 +254,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {/* No result */}
       {!isLoading && filteredTracks.length === 0 &&
         <div className="py-10 text-center text-gray-500">
-          Inget matchar aktiva filtret.
+          Nuvarande filter gav ingen resultat.
         </div>
       }
 
