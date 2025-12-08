@@ -236,7 +236,10 @@ export default function FilterPanel({
                       ...prev,
                       album: {
                         ...prev.album,
-                        reverseOrder: !prev.album.sort.reverseOrder,
+                        sort: {
+                          ...prev.album.sort,
+                          reverseOrder: !prev.album.sort.reverseOrder,
+                        },
                       },
                     }))}
                   >
@@ -257,11 +260,21 @@ export default function FilterPanel({
                       <CommandItem
                         key={`album-${album.id}`}
                         onSelect={() => {
+                          // Update local album selection for UI state
                           setLocalFilter(prev => ({
                             ...prev,
                             album: {
                               ...prev.album,
-                              id: album.id,
+                              include: [album.id],
+                            },
+                          }));
+
+                          // Also update fetch filter so backend album filter is applied
+                          setFetchFilter(prev => ({
+                            ...prev,
+                            albums: {
+                              ...prev.albums,
+                              include: [album.id],
                             },
                           }));
                         }}

@@ -201,6 +201,12 @@ export default function TrackList({ className = "" }: { className?: string }) {
   const filteredTracks: TrackWithStats[] = useMemo(() => {
     let filtered = Object.values(trackData).map(t => ({ ...t, ...trackStats[t.id] }));
 
+    // Apply album filter from local filter (if any)
+    if (localFilter.album?.include && localFilter.album.include.length > 0) {
+      const includedAlbumIds = new Set(localFilter.album.include);
+      filtered = filtered.filter(track => includedAlbumIds.has(track.album.id));
+    }
+
     // Apply search filter
     if (localFilter.search) {
       const searchLower = localFilter.search.toLowerCase();
