@@ -36,5 +36,5 @@ cd /root/Riksdagen/.next/standalone
 
 # Start in the standalone directory
 node server.js &
-(cd ../../ && yarn prisma studio &) &
+(cd ../../ && yarn prisma studio --port 5555 --browser none &) &
 wait
