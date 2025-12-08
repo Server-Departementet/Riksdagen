@@ -260,7 +260,7 @@ export default function TrackList({ className = "" }: { className?: string }) {
       {/* No result */}
       {!isLoading && filteredTracks.length === 0 &&
         <div className="py-10 text-center text-gray-500">
-          Nuvarande filter gav ingen resultat.
+          Nuvarande filter gav inget resultat.
         </div>
       }
 
