@@ -3,11 +3,9 @@
  */
 
 import { clerkClient } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-
-const prisma = new PrismaClient();
 
 function generateDeterministicId(userId: string, track: SpotifyApi.TrackObjectFull, playedAt: string): string {
   const uniqueString = `${userId}:${track.id}:${playedAt}`;
