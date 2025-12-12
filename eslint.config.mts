@@ -21,6 +21,7 @@ export default defineConfig(
       ],
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      "react-hooks/set-state-in-effect": "warn",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
