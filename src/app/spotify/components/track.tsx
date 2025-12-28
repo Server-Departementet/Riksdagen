@@ -1,6 +1,5 @@
 "use client";
 
-import type { Track, TrackStats } from "@/app/spotify/types";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
