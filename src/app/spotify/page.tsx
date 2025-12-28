@@ -1,7 +1,9 @@
+"use server";
+import "server-only";
 import type { Album, User } from "@/app/spotify/types";
 import { isMinister } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import FetchFilterContextProvider from "@/app/spotify/context/fetch-filter-context";
 import LocalFilterContextProvider from "@/app/spotify/context/local-filter-context";
 import FilterPanel from "@/app/spotify/components/filter-panel";
@@ -25,8 +27,9 @@ async function readUsers() {
 }
 
 export default async function SpotifyPage() {
-  // Auth check
-  if (!(await isMinister())) return notFound();
+  const userId = (await auth()).userId;
+  if (!userId) return notFound();
+  if (!await isMinister(userId)) return notFound();
 
   const users = await readUsers();
 

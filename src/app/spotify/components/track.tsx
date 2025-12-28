@@ -122,7 +122,7 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
   return (
     <Link href={trackURL} className="col-start-3 col-span-2 row-start-4 justify-self-end self-end" target="_blank" rel="noopener noreferrer">
       <Button tabIndex={-1} className="mb-1.5 sm:mb-2 me-1.5 sm:me-2 px-2.5">
-        <Image width={21} height={21} src={SpotifyIconSVG} alt="Spotify" />
+        <Image width={21} height={21} className="size-5.25" src={SpotifyIconSVG} alt="Spotify" />
 
         {/* Hides on smaller screens for space savings */}
         <span className="hidden lg:block">

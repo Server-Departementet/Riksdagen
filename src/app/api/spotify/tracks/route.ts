@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import filterTracks from "@/app/api/spotify/lib/filter";
 import { encodeTrackData, encodeTrackIndex, encodeTrackStats } from "@/lib/spotify.proto";
 import { sha1 } from "@/lib/hash";
+import { auth } from "@clerk/nextjs/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,9 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 export async function POST(req: NextRequest) {
-  // Auth user 
-  if (!isMinister()) return new NextResponse("Unauthorized", { status: 401 });
+  const userId = (await auth()).userId;
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  if (!await isMinister(userId)) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
   const { filter } = body as { filter: FetchFilterPacket };

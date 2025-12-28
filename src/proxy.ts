@@ -23,10 +23,12 @@ export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextReques
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
+    // Next.js
+    '/((?!api|_next/static|_next/image|.*\\.png$).*)',
+
+    // Spotify route
+    "/spotify",
+    "/api/spotify/(.*)", // Included for clerk coverage
   ],
 };
 

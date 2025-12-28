@@ -66,7 +66,13 @@ export default async function RootLayout({ children }: {
           {/* Logo */}
           <Link href="/" className="flex flex-row items-center gap-x-4 no-global">
             {/* Icon */}
-            <Image width={64} height={64} className={`size-14 rounded-lg`} src="/icons/regeringen/regeringen.svg" alt="Logo" />
+            <Image
+              width={64} height={64}
+              className={`size-14 rounded-lg`}
+              src="/icons/regeringen/regeringen.svg"
+              alt="Logo"
+              loading="eager"
+            />
 
             {/* Title */}
             <p className="text-2xl font-medium title-font">Riksdagen</p>
