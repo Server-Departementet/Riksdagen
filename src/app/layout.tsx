@@ -8,8 +8,6 @@ import { ClerkLogin } from "@/components/login-button";
 import { Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
-import { isMinister } from "@/lib/auth";
-import { auth } from "@clerk/nextjs/server";
 import React from "react";
 
 // Fonts
