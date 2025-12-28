@@ -27,7 +27,7 @@ const imageURLs = [...new Set((await prisma.track.findMany({ select: { image: tr
   .filter(t => typeof t === "string")
   .filter(u => { try { new URL(u); return true; } catch { return false; } });
 
-console.log(`Found ${imageURLs.length} unique image URLs to process.`);
+console.info(`Found ${imageURLs.length} unique image URLs to process.`);
 
 const cachePath = fs.existsSync(path.join("../", ".next", "standalone", "cache", "spotify-color-cache.json"))
   ? path.join("../", ".next", "standalone", "cache", "spotify-color-cache.json")
@@ -48,7 +48,7 @@ const processImage = async (url: string) => {
 };
 
 async function main() {
-  const maxStreams = 5;
+  const maxStreams = 10;
   let streamCount = 0;
 
   const processed = new Array(imageURLs.length).fill(false);
@@ -64,23 +64,25 @@ async function main() {
     }
   }, 500);
 
-  imageURLs.forEach(async (url, i) => {
-    while (streamCount >= maxStreams) {
-      // Wait for a stream to finish
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    streamCount++;
-    processImage(url)
-      .then(_ => {
-        processed[i] = true;
-      })
-      .catch(err => {
-        console.error(`Error processing ${url}:`, err);
-      })
-      .finally(() => {
-        streamCount--;
-      });
-  });
+  await Promise.all(
+    imageURLs.map(async (url, i) => {
+      while (streamCount >= maxStreams) {
+        // Wait for a stream to finish
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      streamCount++;
+      processImage(url)
+        .then(_ => {
+          processed[i] = true;
+        })
+        .catch(err => {
+          console.error(`Error processing ${url}:`, err);
+        })
+        .finally(() => {
+          streamCount--;
+        });
+    }),
+  );
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
