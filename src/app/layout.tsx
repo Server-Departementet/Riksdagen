@@ -103,7 +103,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/">Hem</SidebarLink>
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
-              <ProtectedLink hidden={isMinister((await auth()).userId)} href="/spotify">Spotify-Statistik</ProtectedLink>
+              <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
               {/* 
                 Add a new link with these components:
                 <SidebarLink href="/path">Title</SidebarLink>

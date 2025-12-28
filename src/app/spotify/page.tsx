@@ -14,7 +14,9 @@ export const metadata: Metadata = {
 
 export default async function SpotifyPage() {
   // Auth check
-  if (!isMinister((await auth()).userId)) return notFound();
+  const userId = (await auth()).userId;
+  if (!userId) return notFound();
+  if (!await isMinister(userId)) return notFound();
 
   const [ministers, tracks] = await Promise.all([
     getMinisterMap(),

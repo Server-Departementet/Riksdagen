@@ -25,7 +25,13 @@ export function getMinisterIds(): string[] {
   return userIds;
 }
 
-export function isMinister(userId: string | null): boolean {
+const authedRoles = ["minister"] as const;
+
+export async function isMinister(userId: string): Promise<boolean> {
   if (!userId) return false;
-  return ministers.some(m => m.id === userId);
+
+  const user = await clerk.users.getUser(userId);
+  if (!user) return false;
+  if (!user.publicMetadata.role) return false;
+  return authedRoles.includes(user.publicMetadata.role as typeof authedRoles[number]);
 }

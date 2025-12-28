@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { isMinister } from "./lib/auth";
 
 const isMinisterRoute = createRouteMatcher([
-  "/spotify(.*)",
+  "/spotify",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -22,7 +22,7 @@ export default clerkMiddleware(async (auth, req) => {
     if (!userId) return notFound();
 
     // Allow if minister
-    if (isMinister(userId)) {
+    if (await isMinister(userId)) {
       return NextResponse.next();
     }
     // Hide protected routes
@@ -37,9 +37,11 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
+    // Next.js
+    '/((?!api|_next/static|_next/image|.*\\.png$).*)',
+
+    // Spotify route
+    "/spotify",
+    "/api/spotify/(.*)", // Included for clerk coverage
   ],
 };
