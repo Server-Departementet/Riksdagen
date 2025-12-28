@@ -4,7 +4,7 @@ import type {
   Artist as PrismaArtist,
   Track as PrismaTrack,
   TrackPlay as PrismaTrackPlay
-} from "@prisma/client";
+} from "@/prisma/client";
 
 // Extend Prisma types to include relations
 export type TrackPlay = PrismaTrackPlay;
