@@ -3,7 +3,7 @@ import {
   Album as PrismaAlbum,
   Artist as PrismaArtist,
   TrackPlay as PrismaTrackPlay
-} from "@prisma/client";
+} from "@/prisma/client";
 
 // Extend Prisma types to include relations
 export type TrackPlay = PrismaTrackPlay;

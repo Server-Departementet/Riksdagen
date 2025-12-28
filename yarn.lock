@@ -967,10 +967,10 @@
     "@prisma/driver-adapter-utils" "7.1.0"
     mariadb "3.4.5"
 
-"@prisma/client-runtime-utils@7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@prisma/client-runtime-utils/-/client-runtime-utils-7.1.0.tgz#eb8cbc6641f11de87225c61d12c0cba28e10d3ab"
-  integrity sha512-39xmeBrNTN40FzF34aJMjfX1PowVCqoT3UKUWBBSP3aXV05NRqGBC3x2wCDs96ti6ZgdiVzqnRDHtbzU8X+lPQ==
+"@prisma/client-runtime-utils@7.2.0", "@prisma/client-runtime-utils@^7.2.0":
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/@prisma/client-runtime-utils/-/client-runtime-utils-7.2.0.tgz#b17c9667d0d857988f6dadf3d6fbacf787ee3109"
+  integrity sha512-dn7oB53v0tqkB0wBdMuTNFNPdEbfICEUe82Tn9FoKAhJCUkDH+fmyEp0ClciGh+9Hp2Tuu2K52kth2MTLstvmA==
 
 "@prisma/client@^7.1.0":
   version "7.1.0"
