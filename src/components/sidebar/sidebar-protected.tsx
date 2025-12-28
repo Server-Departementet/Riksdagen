@@ -1,24 +1,28 @@
-import { currentUser } from "@clerk/nextjs/server";
+"use client";
+
+import { useUser } from "@clerk/nextjs";
 import { SidebarLink } from "@/components/sidebar/sidebar";
 import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 
-export async function ProtectedLink(
+export function ProtectedLink(
   {
     href,
     children,
     className = "",
     role = "",
   }: {
-    href: string,
-    children: React.ReactNode
-    className?: string
-    role?: string
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+    role?: string;
   }
 ) {
-  const user = await currentUser();
-  if (!user) return null;
-  if (user.publicMetadata.role !== role) return null;
+  const { isLoaded, isSignedIn, user } = useUser();
+
+  if (!isLoaded) return null;
+  if (!isSignedIn || !user) return null;
+  if (user.publicMetadata?.role !== role) return null;
 
   return (
     <SidebarLink href={href} className={className}>
