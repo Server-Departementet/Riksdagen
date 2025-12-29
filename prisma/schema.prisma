@@ -9,9 +9,9 @@ datasource db {
 
 model User {
   id          String @id // Discord ID
-  name        String
-  clerkDevId  String @unique
-  clerkProdId String @unique
+  name        String?
+  clerkDevId  String? @unique
+  clerkProdId String? @unique
 
   trackPlays TrackPlay[]
 }
