@@ -1,6 +1,10 @@
 
 export type Minister = {
+  holder: string;
   title: string;
-  name: string;
+  role: string;
+  createdAt: string;
+  order: number;
+  color: string;
   description: string;
 };
