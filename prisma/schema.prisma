@@ -7,55 +7,68 @@ datasource db {
   provider = "mysql"
 }
 
+model User {
+  id          String @id // Discord ID
+  name        String
+  clerkDevId  String @unique
+  clerkProdId String @unique
+
+  trackPlays TrackPlay[]
+}
+
 model TrackPlay {
-  id String @id // Custom UID
-
-  trackId  String
   playedAt DateTime
-  userId   String
 
-  track Track @relation(fields: [trackId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  track   Track  @relation(fields: [trackId], references: [id])
+  trackId String
 
+  @@id([trackId, playedAt, userId])
+  /// Creates a non-unique database index on the `playedAt` field.
+  /// Improves performance for queries that filter, sort, or join using `playedAt`.
+  /// Does not enforce uniqueness; use @@unique for unique constraints.
+  /// Index implementation and name depend on the underlying database provider.
   @@index([playedAt])
 }
 
 model Track {
-  id String @id // Spotify's track UID
-
+  id       String  @id // Spotify's track UID
+  url      String
   name     String
   duration Int
-  url      String
   image    String?
-  albumId  String
+  color    String?
 
-  album     Album       @relation(fields: [albumId], references: [id])
-  artists   Artist[]
-  TrackPlay TrackPlay[]
+  album      Album       @relation(fields: [albumId], references: [id])
+  albumId    String
+  artists    Artist[]
+  TrackPlays TrackPlay[]
 }
 
 model Artist {
-  id String @id // Spotify's artist UID
-
+  id    String  @id // Spotify's artist UID
   name  String
   url   String
   image String?
+  color String?
 
   tracks Track[]
   genres Genre[]
 }
 
 model Album {
-  id String @id // Spotify's album UID
-
+  id    String  @id // Spotify's album UID
   name  String
   url   String
   image String?
+  color String?
 
   tracks Track[]
 }
 
 model Genre {
-  name String @id // Spotify's genre name as UID
+  name String @id // Spotify's genre name as ID
 
   artists Artist[]
 }
