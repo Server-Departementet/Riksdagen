@@ -32,9 +32,7 @@ model Track {
   id       String  @id // Spotify's track UID
   url      String
   name     String
-  duration Int
-  image    String?
-  color    String?
+  duration Int // Milliseconds
 
   album      Album       @relation(fields: [albumId], references: [id])
   albumId    String
