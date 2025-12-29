@@ -25,10 +25,6 @@ model TrackPlay {
   trackId String
 
   @@id([trackId, playedAt, userId])
-  /// Creates a non-unique database index on the `playedAt` field.
-  /// Improves performance for queries that filter, sort, or join using `playedAt`.
-  /// Does not enforce uniqueness; use @@unique for unique constraints.
-  /// Index implementation and name depend on the underlying database provider.
   @@index([playedAt])
 }
 
