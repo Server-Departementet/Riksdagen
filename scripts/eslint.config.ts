@@ -38,8 +38,6 @@ export default defineConfig([
     "node_modules/**",
     "src/**",
     "src/prisma/generated/**",
-    "*.config.js",
-    "*.config.ts",
     "**/*.d.ts",
   ]),
 ]);

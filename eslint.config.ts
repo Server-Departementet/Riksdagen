@@ -1,3 +1,5 @@
+// @ts-check
+
 import eslint from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
@@ -51,5 +53,9 @@ export default defineConfig(
     "public/**",
     "scripts/**",
     "**/*.d.ts",
+    "*.config.ts",
+    "*.config.mts",
+    "*.config.js",
+    "*.config.mjs",
   ]),
 );
