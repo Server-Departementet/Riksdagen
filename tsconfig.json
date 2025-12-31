@@ -44,7 +44,7 @@
   "exclude": [
     "prisma/migrate.ts",
     "node_modules/**",
-    "src/scripts/**",
+    "scripts/**",
     "src/prisma/**",
     "build/**",
     ".next/**",

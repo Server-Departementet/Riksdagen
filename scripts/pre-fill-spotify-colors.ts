@@ -1,7 +1,7 @@
 // @ts-check
 
 import "dotenv/config";
-import { PrismaClient } from "../prisma/client";
+import { PrismaClient } from "../src/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";
@@ -19,7 +19,6 @@ const adapter = new PrismaMariaDb({
   password: dbURL.password,
   database: dbURL.pathname.slice(1),
 });
-
 const prisma = new PrismaClient({ adapter });
 
 const imageURLs = [...new Set((await prisma.track.findMany({ select: { image: true } }))

@@ -10,7 +10,7 @@
     "build": "yarn cache:colors && yarn next build",
     "start": "next start",
     "lint": "tsc --noEmit && eslint ./src",
-    "cache:colors": "tsx src/scripts/pre-fill-spotify-colors.ts"
+    "cache:colors": "tsx scripts/pre-fill-spotify-colors.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
