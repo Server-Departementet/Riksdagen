@@ -1,23 +1,7 @@
-"use server";
-
-/** 
- * This API endpoint gets called by the Spotify cron job running on an always-on server external to the Next.js app.
-*/
-
-import { clerkClient } from "@clerk/nextjs/server";
 import { PrismaClient } from "../src/prisma/generated/client.js";
-import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
+import { extractImageColor } from "../src/functions/extract-image-color.ts";
 
-const lastFetch: Date = new Date();
-const fetchInterval = 60 * 1000; // 1 minute
-
-export async function POST() {
-  if (lastFetch && lastFetch > new Date(Date.now() - fetchInterval)) {
-    console.warn("API already fetched recently. Skipping this run.");
-    return NextResponse.json({ message: "Too Many Requests", }, { status: 429 });
-  }
-  lastFetch.setTime(Date.now());
-
+async function addRecentTrackPlays() {
   const client = await clerkClient();
   const users = await client.users.getUserList();
 
@@ -83,7 +67,7 @@ export async function POST() {
     ];
     await Promise.all(allImageUrls.map(async (url) => {
       if (colors[url]) return;
-      const color = await getTrackBGColor(url);
+      const color = await extractImageColor(url);
       if (!color) return;
       colors[url] = color;
     }));
@@ -203,7 +187,7 @@ export async function POST() {
       });
   }
 
-  return NextResponse.json({ message: "200 OK" }, { status: 200 });
+  return;
 }
 
 async function getSpotifyArtists(artistsSimple: SpotifyApi.ArtistObjectSimplified[], token: string): Promise<SpotifyApi.ArtistObjectFull[]> {
