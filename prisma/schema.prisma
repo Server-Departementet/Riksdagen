@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id          String @id // Discord ID
+  id          String  @id // Discord ID
   name        String?
   clerkDevId  String? @unique
   clerkProdId String? @unique
@@ -29,7 +29,7 @@ model TrackPlay {
 }
 
 model Track {
-  id       String  @id // Spotify's track UID
+  id       String @id // Spotify's track UID
   url      String
   name     String
   duration Int // Milliseconds
