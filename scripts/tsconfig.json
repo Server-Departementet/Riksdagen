@@ -16,7 +16,6 @@
     "../*config.{ts,mts,js,mjs}",
   ],
   "exclude": [
-    "**/*.d.ts",
     "**/node_modules/**",
   ],
 }

@@ -1,17 +1,54 @@
-import { PrismaClient } from "../src/prisma/generated/client.js";
+import "dotenv/config";
 import { extractImageColor } from "../src/functions/extract-image-color.ts";
+import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
+import { createClerkClient } from "@clerk/backend";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { env } from "node:process";
+
+if (!env.CLERK_SECRET_KEY) {
+  throw new Error("CLERK_SECRET_KEY is not set in environment variables");
+}
+if (!env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
+}
+if (!env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set in environment variables");
+}
+
+addRecentTrackPlays()
+  .then(() => {
+    console.log("Finished adding recent track plays.");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Error adding recent track plays:", error);
+    process.exit(1);
+  });
 
 async function addRecentTrackPlays() {
-  const client = await clerkClient();
-  const users = await client.users.getUserList();
+  const clerkClient = createClerkClient({
+    publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
+    secretKey: env.CLERK_SECRET_KEY!,
+  });
 
+  const dbURL = new URL(env.DATABASE_URL!);
+  const adapter = new PrismaMariaDb({
+    host: dbURL.hostname,
+    port: Number(dbURL.port),
+    user: dbURL.username,
+    password: dbURL.password,
+    database: dbURL.pathname.slice(1),
+  });
+  const prisma = new PrismaClient({ adapter });
+
+  const users = await clerkClient.users.getUserList();
   const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
 
   for (const clerkUser of ministers) {
     /* 
      * Get spotify OAuth token for the user 
      */
-    const tokenResponse = await client.users.getUserOauthAccessToken(clerkUser.id, "spotify");
+    const tokenResponse = await clerkClient.users.getUserOauthAccessToken(clerkUser.id, "spotify");
     if (!tokenResponse.data.length) {
       console.warn(`No Spotify token found for user: ${clerkUser.firstName}`);
       continue;
@@ -42,7 +79,7 @@ async function addRecentTrackPlays() {
     /* 
      * Get recently played tracks from Spotify API 
      */
-    const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, clerkUser.firstName || "[Unknown user]");
+    const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, clerkUser.firstName ?? "[Unknown user]");
     if (!recentlyPlayedTracks) {
       continue;
     }
@@ -207,7 +244,7 @@ async function getSpotifyArtists(artistsSimple: SpotifyApi.ArtistObjectSimplifie
       continue;
     }
 
-    const data: SpotifyApi.SingleArtistResponse = await response.json();
+    const data = await response.json() as SpotifyApi.SingleArtistResponse;
     artistDetails.push(data);
   }
 
@@ -225,7 +262,7 @@ async function getRecentlyPlayedTracks(token: string, username: string): Promise
     console.error(`Error for user ${username}: Status ${recentlyPlayedTracksResponse.status} Response: ${await recentlyPlayedTracksResponse.text()}`);
     return null;
   }
-  const recentlyPlayedTracks: SpotifyApi.UsersRecentlyPlayedTracksResponse = await recentlyPlayedTracksResponse.json();
+  const recentlyPlayedTracks = await recentlyPlayedTracksResponse.json() as SpotifyApi.UsersRecentlyPlayedTracksResponse;
   if (!recentlyPlayedTracks.items || recentlyPlayedTracks.items.length === 0) {
     console.warn(`No recently played tracks found for user: ${username}`);
     return null;
