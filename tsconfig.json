@@ -35,19 +35,19 @@
     }
   },
   "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "prisma/migrate.ts",
     "node_modules/**",
-    "scripts/**",
-    "src/prisma/**",
-    "build/**",
     ".next/**",
     "out/**",
+    "dist/**",
+    "build/**",
+    "src/prisma/generated/**",
+    "scripts/**",
   ],
 }

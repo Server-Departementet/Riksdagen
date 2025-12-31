@@ -1,4 +1,4 @@
-import { PrismaClient, Track, TrackPlay } from "../src/prisma/client";
+import { PrismaClient, Track, TrackPlay } from "../src/prisma/generated";
 import { createHash } from "node:crypto";
 // This json file is not provided. I made it with a little script that fetches the data from the database directly and serves as http bodies and a large json file
 import albumData from "../dump/albums.json" with { type: "json" };

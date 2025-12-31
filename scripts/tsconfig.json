@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "checkJs": true,
+    "skipLibCheck": true,
+  },
+  "include": [
+    "eslint.config.ts",
+    "**/*.ts",
+  ],
+  "exclude": [
+    "**/*.d.ts",
+    "**/node_modules/**",
+  ],
+}

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "../src/prisma/client";
+import { PrismaClient } from "../src/prisma/generated";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 const dbURL = process.env.DATABASE_URL;

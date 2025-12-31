@@ -46,8 +46,7 @@ next-env.d.ts
 /.clerk/
 
 # Prisma
-/prisma/generated
-src/prisma
+src/prisma/generated/
 
 standalone/
 

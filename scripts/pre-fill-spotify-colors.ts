@@ -1,7 +1,7 @@
 // @ts-check
 
 import "dotenv/config";
-import { PrismaClient } from "../src/prisma/client";
+import { PrismaClient } from "../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Vibrant } from "node-vibrant/node";
 import fs from "node:fs";

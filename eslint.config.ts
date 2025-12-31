@@ -1,5 +1,6 @@
 import eslint from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
+import tseslint from "typescript-eslint";
 
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
@@ -14,6 +15,14 @@ export default defineConfig(
   ...nextTS,
   ...nextVitals,
   {
+    languageOptions: {
+      ecmaVersion: 2021,
+      parser: tseslint.parser,
+      parserOptions: {
+        tsconfigRootDir: __dirname,
+        project: "./tsconfig.json",
+      },
+    },
     rules: {
       "react-refresh/only-export-components": [
         "warn",
@@ -34,17 +43,13 @@ export default defineConfig(
     },
   },
   globalIgnores([
-    ".next/**",
-    "*.config.js",
-    "*.config.ts",
-    "**/*.d.ts",
-    "**/prisma/client/**",
-    "dist/**",
     "node_modules/**",
+    "src/prisma/generated/**",
+    "src/components/ui/**",
+    ".next/**",
     "out/**",
     "public/**",
     "scripts/**",
-    "src/components/ui/**",
-    "tailwind.config.js",
+    "**/*.d.ts",
   ]),
 );

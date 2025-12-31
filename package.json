@@ -1,6 +1,6 @@
 {
   "name": "riksdagen",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "repository": "https://github.com/Server-Departementet/Riksdagen.git",
   "author": "Vena <strom.vena+riks@gmail.com> axelNTI <taxel.test@gmail.com> Winroth13 <emil.winroth@gmail.com>",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "yarn cache:colors && yarn next build",
     "start": "next start",
-    "lint": "tsc --noEmit && eslint ./src",
+    "lint": "tsc --noEmit -p . && tsc --noEmit -p scripts && eslint -c eslint.config.ts && eslint scripts -c scripts/eslint.config.ts",
     "cache:colors": "tsx scripts/pre-fill-spotify-colors.ts"
   },
   "dependencies": {
