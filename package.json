@@ -23,7 +23,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "yarn cache:colors && yarn next build",
+    "build": "yarn next build",
     "start": "next start",
     "lint": "tsc --noEmit -p . && tsc --noEmit -p scripts && eslint -c eslint.config.ts && eslint scripts -c scripts/eslint.config.ts"
   },
