@@ -67,10 +67,15 @@ async function makeUsers() {
     console.info(`Logged in as ${client.user.tag}`);
 
     const guild = await client.guilds.fetch(env.REGERINGEN_GUILD_ID!);
-    console.log(guild);
-    for (const idGroup of idGroups) {
-      console.log(idGroup);
+    const members = await guild.members.fetch();
+
+    for (const discordId of idGroups.map(g => g.discordId)) {
+      const member = members.find(m => m.user.id === discordId);
+      if (member) {
+        serverNicks[discordId] = member.nickname ?? member.user.globalName ?? member.user.username;
+      }
     }
+    console.log(serverNicks);
 
     await client.destroy()
       .catch((error) => {
