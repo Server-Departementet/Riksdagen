@@ -2,15 +2,30 @@
   "name": "riksdagen",
   "version": "0.0.0",
   "repository": "https://github.com/Server-Departementet/Riksdagen.git",
-  "author": "Vena <strom.vena+riks@gmail.com> axelNTI <taxel.test@gmail.com> Winroth13 <emil.winroth@gmail.com>",
+  "contributors": [
+    {
+      "name": "Vena Ström",
+      "url": "https://venastrom.se/",
+      "email": "strom.vena+riks@gmail.com"
+    },
+    {
+      "name": "Axel Thornberg",
+      "url": "https://axel.thornberg.se/",
+      "email": "taxel.test@gmail.com"
+    },
+    {
+      "name": "Emil Winroth",
+      "url": "https://www.linkedin.com/in/emil-winroth-711750326/",
+      "email": "emil.winroth@gmail.com"
+    }
+  ],
   "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "yarn cache:colors && yarn next build",
     "start": "next start",
-    "lint": "tsc --noEmit -p . && tsc --noEmit -p scripts && eslint -c eslint.config.ts && eslint scripts -c scripts/eslint.config.ts",
-    "cache:colors": "tsx scripts/pre-fill-spotify-colors.ts"
+    "lint": "tsc --noEmit -p . && tsc --noEmit -p scripts && eslint -c eslint.config.ts && eslint scripts -c scripts/eslint.config.ts"
   },
   "dependencies": {
     "@clerk/backend": "^2.29.0",
