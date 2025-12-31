@@ -5,9 +5,7 @@
 */
 
 import { clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { Prisma } from "@/prisma/generated";
+import { PrismaClient } from "../src/prisma/generated/client.js";
 import { getTrackBGColor } from "@/app/spotify/functions/get-track-color";
 
 const lastFetch: Date = new Date();
