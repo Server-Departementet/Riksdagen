@@ -159,7 +159,7 @@ const seedTrackPlays = async (prisma: PrismaClient) => {
 async function main() {
   console.info("Making users");
   execSync("yarn tsx scripts/make-users.ts");
-  console.info("Finished making users made");
+  console.info("Finished making users");
 
   await prisma.$transaction(async (prisma) => {
     await seedGenres(prisma as PrismaClient);
