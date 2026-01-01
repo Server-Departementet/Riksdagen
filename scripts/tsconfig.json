@@ -13,9 +13,5 @@
   "include": [
     "eslint.config.ts",
     "**/*.ts",
-    "../*config.{ts,mts,js,mjs}",
-  ],
-  "exclude": [
-    "**/node_modules/**",
   ],
 }

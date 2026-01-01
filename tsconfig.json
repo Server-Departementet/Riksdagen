@@ -37,17 +37,23 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "prisma/*.ts",
+    "eslint.config.ts",
+    "postcss.config.mjs",
+    "prisma.config.ts",
+    "next.config.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
   ],
   "exclude": [
     "node_modules/**",
-    ".next/**",
-    "out/**",
     "dist/**",
-    "build/**",
+    "out/**",
+    ".next/**",
+    "public/**",
     "src/prisma/generated/**",
+    "src/components/ui/**",
     "scripts/**",
   ],
 }

@@ -1,6 +1,9 @@
+// @ts-check
+
 import "dotenv/config";
-import { PrismaClient } from "../src/prisma/generated";
+import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { execSync } from "node:child_process";
 
 const dbURL = process.env.DATABASE_URL;
 if (!dbURL) throw new Error("DATABASE_URL environment variable is not set");
@@ -24,7 +27,7 @@ const remoteAdapter = new PrismaMariaDb({
 });
 const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
 
-const seedAlbums = async () => {
+const seedAlbums = async (prisma: PrismaClient) => {
   console.debug("Seeding albums...");
 
   const remoteAlbums = await remotePrisma.album.findMany({
@@ -44,7 +47,7 @@ const seedAlbums = async () => {
   console.debug("Seeding albums complete.");
 };
 
-const seedArtists = async () => {
+const seedArtists = async (prisma: PrismaClient) => {
   console.debug("Seeding artists...");
 
   const remoteArtists = await remotePrisma.artist.findMany({
@@ -84,7 +87,7 @@ const seedArtists = async () => {
   console.debug("Seeding artists complete.");
 };
 
-const seedGenres = async () => {
+const seedGenres = async (prisma: PrismaClient) => {
   console.debug("Seeding genres...");
 
   const remoteGenres = await remotePrisma.genre.findMany({
@@ -101,14 +104,13 @@ const seedGenres = async () => {
   console.debug("Seeding genres complete.");
 };
 
-const seedTracks = async () => {
+const seedTracks = async (prisma: PrismaClient) => {
   console.debug("Seeding tracks...");
 
   const remoteTracks = await remotePrisma.track.findMany({
     select: {
       id: true,
       name: true,
-      image: true,
       url: true,
       duration: true,
       albumId: true,
@@ -120,44 +122,34 @@ const seedTracks = async () => {
     },
   });
 
-  // Create each track with its artist relationships
-  for (const track of remoteTracks) {
-    const { artists, ...trackData } = track;
-
-    await prisma.track.upsert({
-      where: { id: track.id },
-      update: {
-        ...trackData,
-        artists: {
-          connect: artists.map(artist => ({ id: artist.id })),
-        },
-      },
-      create: {
-        ...trackData,
-        artists: {
-          connect: artists.map(artist => ({ id: artist.id })),
-        },
-      },
-    });
-  }
+  await prisma.track.createMany({
+    data: remoteTracks.map(track => ({
+      id: track.id,
+      name: track.name,
+      url: track.url,
+      duration: track.duration,
+      albumId: track.albumId,
+    }) satisfies Prisma.TrackCreateManyInput),
+    skipDuplicates: true,
+  });
 
   console.debug("Seeding tracks complete.");
 };
 
-const seedTrackPlays = async () => {
+const seedTrackPlays = async (prisma: PrismaClient) => {
   console.debug("Seeding track plays...");
 
-  const remoteTrackPlays = await remotePrisma.trackPlay.findMany({
-    select: {
-      id: true,
-      playedAt: true,
-      trackId: true,
-      userId: true,
-    },
-  });
+  const remoteTrackPlays = await remotePrisma.trackPlay.findMany();
+
+  const users = await prisma.user.findMany();
 
   await prisma.trackPlay.createMany({
-    data: remoteTrackPlays,
+    data: remoteTrackPlays.map(tp => ({
+      playedAt: tp.playedAt,
+      userId: users.find(u => u.clerkDevId === tp.userId || u.clerkProdId === tp.userId)?.id
+        ?? (() => { throw new Error("User not found for track play seeding"); })(),
+      trackId: tp.trackId,
+    }) satisfies Prisma.TrackPlayCreateManyInput),
     skipDuplicates: true,
   });
 
@@ -165,21 +157,27 @@ const seedTrackPlays = async () => {
 };
 
 async function main() {
-  await seedAlbums();
-  await seedGenres();
-  await seedArtists();
-  await seedTracks();
-  await seedTrackPlays();
+  console.info("Making users");
+  execSync("yarn tsx scripts/make-users.ts");
+  console.info("Finished making users made");
+
+  await prisma.$transaction(async (prisma) => {
+    await seedGenres(prisma as PrismaClient);
+    await seedAlbums(prisma as PrismaClient);
+    await seedTracks(prisma as PrismaClient);
+    await seedArtists(prisma as PrismaClient);
+    await seedTrackPlays(prisma as PrismaClient);
+  }, { timeout: 10000 });
 }
 
 main()
   .then(() => {
     console.debug("Seeding completed successfully.");
-    process.exit(0);
+    process.exitCode = 0;
   })
   .catch(error => {
     console.error("Error during seeding:", error);
-    process.exit(1);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();

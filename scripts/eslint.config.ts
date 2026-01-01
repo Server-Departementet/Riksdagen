@@ -1,6 +1,6 @@
 // @ts-check
 
-import { defineConfig, globalIgnores } from "eslint/config";
+import { defineConfig } from "eslint/config";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
@@ -33,11 +33,4 @@ export default defineConfig([
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
     },
   },
-  globalIgnores([
-    "dist/**",
-    "node_modules/**",
-    "src/**",
-    "src/prisma/generated/**",
-    "**/*.d.ts",
-  ]),
 ]);

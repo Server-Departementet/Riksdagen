@@ -46,16 +46,14 @@ export default defineConfig(
   },
   globalIgnores([
     "node_modules/**",
+    "dist/**",
+    "out/**",
+    ".next/**",
+    "public/**",
+
     "src/prisma/generated/**",
     "src/components/ui/**",
-    ".next/**",
-    "out/**",
-    "public/**",
+
     "scripts/**",
-    "**/*.d.ts",
-    "*.config.ts",
-    "*.config.mts",
-    "*.config.js",
-    "*.config.mjs",
   ]),
 );
