@@ -1,19 +1,12 @@
 import { idGroups } from "./complete-usermap.ts";
 import "dotenv/config";
 import { env } from "node:process";
-import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
-import { createClerkClient } from "@clerk/backend";
+import { PrismaClient } from "../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
 
 if (!idGroups || typeof idGroups !== "object") {
   throw new Error("Invalid idGroups data.");
-}
-if (!env.CLERK_SECRET_KEY) {
-  throw new Error("CLERK_SECRET_KEY is not set in environment variables");
-}
-if (!env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-  throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
 }
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -38,11 +31,6 @@ makeUsers()
   .catch(() => process.exit());
 
 async function makeUsers() {
-  const clerkClient = createClerkClient({
-    publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-    secretKey: env.CLERK_SECRET_KEY,
-  });
-
   const dbURL = new URL(env.DATABASE_URL!);
   const adapter = new PrismaMariaDb({
     host: dbURL.hostname,
@@ -52,9 +40,6 @@ async function makeUsers() {
     database: dbURL.pathname.slice(1),
   });
   const prisma = new PrismaClient({ adapter });
-
-  const clerkUsers = await clerkClient.users.getUserList();
-  const ministers = clerkUsers.data.filter((user) => user.publicMetadata?.role === "minister");
 
   const serverNicks: Record<string, string> = {};
 
@@ -75,14 +60,12 @@ async function makeUsers() {
         serverNicks[discordId] = member.nickname ?? member.user.globalName ?? member.user.username;
       }
     }
-    console.log(serverNicks);
 
     await client.destroy()
       .catch((error) => {
         console.error("Error destroying Discord client:", error);
       });
   }
-
   await new Promise<void>((resolve, reject) => {
     discordClient.once("ready", () => {
       onDiscordReady(discordClient).then(resolve).catch((e) => {
@@ -92,4 +75,24 @@ async function makeUsers() {
       });
     });
   });
+
+  for (const idGroup of idGroups) {
+    await prisma.user.upsert({
+      where: {
+        id: idGroup.discordId, // TODO this won't match if the user is still on 
+      },
+      create: {
+        id: idGroup.discordId,
+        name: serverNicks[idGroup.discordId],
+        clerkDevId: idGroup.clerkDev,
+        clerkProdId: idGroup.clerkProd,
+      },
+      update: {
+        id: idGroup.discordId,
+        name: serverNicks[idGroup.discordId],
+        clerkDevId: idGroup.clerkDev,
+        clerkProdId: idGroup.clerkProd,
+      },
+    });
+  }
 }
