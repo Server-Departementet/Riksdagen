@@ -120,7 +120,7 @@ async function merge() {
 
   const users = await prisma.user.findMany();
   const remappedTrackPlays = allTrackPlays.map(tp => {
-    const user = users.find(u => tp.userId === u.clerkDevId || tp.userId === u.clerkProdId);
+    const user = users.find(u => tp.userId === u.clerkDevId || tp.userId === u.clerkProdId || tp.userId === u.id);
     if (!user) throw new Error(`No user found for track play with userId ${tp.userId}`);
     return {
       ...tp,
