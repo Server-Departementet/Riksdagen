@@ -60,3 +60,4 @@ dump.tar.gz
 dump.zip
 
 scripts/complete-usermap.ts
+scripts/server-nicks.ts
