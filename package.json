@@ -25,7 +25,7 @@
     "dev": "next dev",
     "build": "yarn next build",
     "start": "next start",
-    "lint": "echo tsc app... && tsc --noEmit -p . && echo tsc scripts... && tsc --noEmit -p scripts && echo linting app... && eslint -c eslint.config.ts && echo Linting scripts... && eslint scripts -c scripts/eslint.config.ts",
+    "lint": "echo tsc app... && tsc --noEmit -p . && echo tsc scripts... && tsc --noEmit -p scripts && echo linting app... && eslint -c eslint.config.ts && echo linting scripts... && eslint scripts -c scripts/eslint.config.ts",
     "post-recent-plays": "tsx scripts/post-recent-plays.ts"
   },
   "dependencies": {
