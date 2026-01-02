@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "react";
 import { Album, Artist, Track } from "@/prisma/generated";
-import { convertSecondsToTimeUnits, formatTimeUnits, truncateNumber } from "@/functions/number-formatters";
+import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 
 export default function TrackElement({
   track,
