@@ -32,56 +32,19 @@ export default async function SpotifyPage({
   const validUsersInParam = hasUserParam
     ? paramUsers.split(",").filter(uId => users.some(u => u.id === uId))
     : [];
-  const fetchingUsers = hasUserParam
+  const selectedUsers = hasUserParam
     ? users.filter(u => validUsersInParam.includes(u.id))
     : users;
 
-  const tracks = await prisma.track.findMany({
-    where: {
-      TrackPlays: {
-        some: {
-          userId: { in: fetchingUsers.map(u => u.id), },
-        },
-      },
-    },
-    orderBy: { TrackPlays: { _count: "desc" } },
-    include: {
-      artists: { select: { id: true }, },
-      album: { select: { id: true }, },
-    },
-  });
-  const albums = await prisma.album.findMany({
-    where: {
-      tracks: {
-        some: {
-          id: { in: tracks.map(t => t.id), },
-        },
-      },
-    },
-  });
-  const artists = await prisma.artist.findMany({
-    where: {
-      tracks: {
-        some: {
-          id: { in: tracks.map(t => t.id), },
-        },
-      },
-    },
-  });
-
-
-
-  // const [
-  //   users,
-  //   tracks,
-  //   artists,
-  //   albums,
-  // ] = await Promise.all([
-  //   getUsers(),
-  //   getTracks(),
-  //   getArtists(),
-  //   getAlbums(),
-  // ]);
+  // TODO: try getting only track ids first and then parallell fetch tracks, albums and artists
+  const tracks = await getTracks(selectedUsers);
+  const [
+    albums,
+    artists,
+  ] = await Promise.all([
+    getAlbums(tracks),
+    getArtists(tracks),
+  ]);
 
   return <main>
     <h1 className="mt-4">
@@ -113,7 +76,7 @@ export default async function SpotifyPage({
             .map(trackArtist => artists.find(artist => artist.id === trackArtist.id))
             .filter(artist => typeof artist !== "undefined");
 
-          const trackPlays = fetchingUsers.reduce((acc, user) => {
+          const trackPlays = selectedUsers.reduce((acc, user) => {
             const plays = user.trackPlays[track.id] ?? 0;
             return acc + plays;
           }, 0);
@@ -134,11 +97,7 @@ export default async function SpotifyPage({
   </main>;
 }
 
-async function getUsers(): Promise<{
-  id: string,
-  name: string | null,
-  trackPlays: Record<Track["id"], number>
-}[]> {
+async function getUsers(): Promise<{ id: string; name: string | null; trackPlays: Record<Track["id"], number>; }[]> {
   "use cache";
   return (await prisma.user.findMany({
     select: {
@@ -159,29 +118,46 @@ async function getUsers(): Promise<{
     }));
 }
 
-async function getTracks(): Promise<(Track & { album: { id: string }; artists: { id: string }[]; })[]> {
+async function getTracks(users: { id: string }[]): Promise<(Track & { artists: { id: string; }[]; album: { id: string; }; })[]> {
   "use cache";
   return prisma.track.findMany({
-    where: { TrackPlays: { some: {}, }, },
+    where: {
+      TrackPlays: {
+        some: {
+          userId: { in: users.map(u => u.id), },
+        },
+      },
+    },
     orderBy: { TrackPlays: { _count: "desc" } },
     include: {
-      album: { select: { id: true, }, },
-      artists: { select: { id: true, }, },
+      artists: { select: { id: true }, },
+      album: { select: { id: true }, },
     },
-    take: 100,
   });
 }
 
-async function getArtists(): Promise<Artist[]> {
-  "use cache";
-  return prisma.artist.findMany({
-    where: { tracks: { some: {}, }, },
-  });
-}
-
-async function getAlbums(): Promise<Album[]> {
+async function getAlbums(tracks: { id: string }[]): Promise<Album[]> {
   "use cache";
   return prisma.album.findMany({
-    where: { tracks: { some: {}, }, },
+    where: {
+      tracks: {
+        some: {
+          id: { in: tracks.map(t => t.id), },
+        },
+      },
+    },
+  });
+}
+
+async function getArtists(tracks: { id: string }[]): Promise<Artist[]> {
+  "use cache";
+  return prisma.artist.findMany({
+    where: {
+      tracks: {
+        some: {
+          id: { in: tracks.map(t => t.id), },
+        },
+      },
+    },
   });
 }
