@@ -26,7 +26,8 @@
     "build": "yarn next build",
     "start": "next start",
     "lint": "echo tsc app... && tsc --noEmit -p . && echo tsc scripts... && tsc --noEmit -p scripts && echo linting app... && eslint -c eslint.config.ts && echo linting scripts... && eslint scripts -c scripts/eslint.config.ts",
-    "post-recent-plays": "tsx scripts/post-recent-plays.ts"
+    "post-recent-plays": "tsx scripts/post-recent-plays.ts",
+    "seed-colors": "tsx scripts/seed-colors.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
