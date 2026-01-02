@@ -7,21 +7,50 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "react";
 import { Album, Artist, Track } from "@/prisma/generated";
+import { truncateNumber } from "@/functions/number-formatters";
 
 export default function TrackElement({
   track,
   artists,
   album,
+  trackPlays,
   lineNumber,
 }: {
-  track: Track & { album: { id: string }; artists: { id: string }[]; };
+  track: Track;
   artists: Artist[];
   album: Album;
+  trackPlays: number;
   lineNumber: number;
 }) {
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+  const totalPlaytimeSeconds = Math.floor((trackPlays * track.duration) / 1000);
+  const prettyPlayCount = (() => {
+    if (trackPlays === 0) return "Inga lyssningar";
+    if (trackPlays === 1) return "1 lyssning";
+    if (trackPlays < 1000) return `${trackPlays} lyssningar`;
+
+    const truncated = truncateNumber(trackPlays);
+    return `${truncated} lyssningar`;
+  })();
+  const prettyPlaytime = (() => {
+    const years = Math.floor(totalPlaytimeSeconds / 31536000);
+    const weeks = Math.floor(totalPlaytimeSeconds / 604800);
+    const days = Math.floor(totalPlaytimeSeconds / 86400);
+    const hours = Math.floor(totalPlaytimeSeconds / 3600);
+    const minutes = Math.floor((totalPlaytimeSeconds % 3600) / 60);
+    const seconds = totalPlaytimeSeconds % 60;
+    let output = "";
+    if (years > 0) output += `${years} år `;
+    if (weeks > 0) output += `${weeks} v `;
+    if (days > 0) output += `${days} d `;
+    if (hours > 0) output += `${hours} tim `;
+    if (minutes > 0) output += `${minutes} min `;
+    output += `${seconds} sek`;
+    return output.trim();
+  })();
 
   return (
     <li
@@ -85,20 +114,9 @@ export default function TrackElement({
       {/* Stats */}
       <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
         {/* Duration (long) */}
-        <p className="hidden sm:block">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+        <p className="">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
         {/* Listening time (long) */}
-        {/* {stats
-          ? (<p className="hidden sm:block">Har lyssnats på {prettyPlayCount} ({prettyPlaytime})</p>)
-          : <p className="hidden sm:block">&middot;&middot;&middot;</p>
-        } */}
-
-        {/* Duration (short) */}
-        <p className="block sm:hidden">Längd {prettyDuration}</p>
-        {/* Listening time (short) */}
-        {/* {stats
-          ? (<p className="block sm:hidden">{prettyPlayCount} ({prettyPlaytime})</p>)
-          : <p className="block sm:hidden">&middot;&middot;&middot;</p>
-        } */}
+        <p className="">{prettyPlayCount} ({prettyPlaytime})</p>
       </div>
 
       {/* Line number */}

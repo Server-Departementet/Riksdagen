@@ -4,24 +4,83 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import TrackElement from "@/components/spotify/track";
 import { Button } from "@/components/ui/button";
-import { Album, Artist, Track, User } from "@/prisma/generated";
+import { Album, Artist, Track } from "@/prisma/generated";
 
-export default async function SpotifyPage() {
+type FilterParams = {
+  users?: string; // Comma-separated user IDs
+};
+
+export default async function SpotifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<FilterParams>;
+}) {
   const userId = (await auth()).userId;
   if (!userId) return notFound();
   if (!await isMinister(userId)) return notFound();
 
-  const [
-    users,
-    tracks,
-    artists,
-    albums,
-  ] = await Promise.all([
-    getUsers(),
-    getTracks(),
-    getArtists(),
-    getAlbums(),
-  ]);
+  const {
+    users: paramUsers,
+  } = await searchParams;
+
+  const users = await getUsers();
+  const hasUserParam = (
+    typeof paramUsers !== "undefined"
+    && paramUsers.trim() !== ""
+    && paramUsers.split(",").length > 0
+  );
+  const validUsersInParam = hasUserParam
+    ? paramUsers.split(",").filter(uId => users.some(u => u.id === uId))
+    : [];
+  const fetchingUsers = hasUserParam
+    ? users.filter(u => validUsersInParam.includes(u.id))
+    : users;
+
+  const tracks = await prisma.track.findMany({
+    where: {
+      TrackPlays: {
+        some: {
+          userId: { in: fetchingUsers.map(u => u.id), },
+        },
+      },
+    },
+    include: {
+      artists: { select: { id: true }, },
+      album: { select: { id: true }, },
+    },
+  });
+  const albums = await prisma.album.findMany({
+    where: {
+      tracks: {
+        some: {
+          id: { in: tracks.map(t => t.id), },
+        },
+      },
+    },
+  });
+  const artists = await prisma.artist.findMany({
+    where: {
+      tracks: {
+        some: {
+          id: { in: tracks.map(t => t.id), },
+        },
+      },
+    },
+  });
+
+
+
+  // const [
+  //   users,
+  //   tracks,
+  //   artists,
+  //   albums,
+  // ] = await Promise.all([
+  //   getUsers(),
+  //   getTracks(),
+  //   getArtists(),
+  //   getAlbums(),
+  // ]);
 
   return <main>
     <h1 className="mt-4">
@@ -46,11 +105,17 @@ export default async function SpotifyPage() {
 
       <ul className="*:mb-3">
         {tracks.map((track, i) => {
+          const album = albums.find(a => a.id === track.albumId);
+          if (!album) throw new Error(`Album with ID ${track.albumId} not found for track ${track.id}`);
+
           const trackArtists = track.artists
             .map(trackArtist => artists.find(artist => artist.id === trackArtist.id))
             .filter(artist => typeof artist !== "undefined");
-          const album = albums.find(a => a.id === track.albumId);
-          if (!album) throw new Error(`Album with ID ${track.albumId} not found for track ${track.id}`);
+
+          const trackPlays = fetchingUsers.reduce((acc, user) => {
+            const plays = user.trackPlays[track.id] ?? 0;
+            return acc + plays;
+          }, 0);
 
           return (
             <TrackElement
@@ -58,6 +123,7 @@ export default async function SpotifyPage() {
               track={track}
               artists={trackArtists}
               album={album}
+              trackPlays={trackPlays}
               lineNumber={i + 1}
             />
           );
@@ -67,9 +133,29 @@ export default async function SpotifyPage() {
   </main>;
 }
 
-async function getUsers(): Promise<User[]> {
+async function getUsers(): Promise<{
+  id: string,
+  name: string | null,
+  trackPlays: Record<Track["id"], number>
+}[]> {
   "use cache";
-  return prisma.user.findMany();
+  return (await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      trackPlays: { select: { trackId: true }, },
+    },
+  }))
+    .map(user => ({
+      id: user.id,
+      name: user.name,
+      trackPlays: user.trackPlays.reduce((acc, tp) => {
+        {
+          acc[tp.trackId] = (acc[tp.trackId] ?? 0) + 1;
+          return acc;
+        }
+      }, {} as Record<Track["id"], number>),
+    }));
 }
 
 async function getTracks(): Promise<(Track & { album: { id: string }; artists: { id: string }[]; })[]> {
