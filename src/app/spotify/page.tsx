@@ -15,6 +15,9 @@ export default async function SpotifyPage({
 }: {
   searchParams: Promise<FilterParams>;
 }) {
+  // eslint-disable-next-line react-hooks/purity
+  const startTime = performance.now();
+
   const userId = (await auth()).userId;
   if (!userId) return notFound();
   if (!await isMinister(userId)) return notFound();
@@ -47,45 +50,81 @@ export default async function SpotifyPage({
   ]);
 
   return <main
-    className=""
+    className={`
+      flex flex-col items-center justify-center
+      lg:flex-row lg:items-start
+
+      gap-y-6
+      lg:gap-x-6
+
+      px-0
+    `}
   >
-    <h1 className="mt-4">
-      Spotify-statistik
-    </h1>
+    <aside className="px-4 flex flex-col gap-y-5">
+      <h1 className="mt-4">
+        Spotify-statistik
+      </h1>
 
-    <FilterPanel
-      users={users}
-      selectedUsers={selectedUsers}
-    />
+      <FilterPanel
+        users={users}
+        selectedUsers={selectedUsers}
+      />
+    </aside>
 
-    <section className="min-w-1/2">
-      <p className="w-full text-center text-sm">NNNN Resultat XXXX ms</p>
+    <hr className="lg:hidden w-11/12" />
 
-      <ul className="*:mb-3">
-        {tracks.map((track, i) => {
-          const album = albums.find(a => a.id === track.albumId);
-          if (!album) throw new Error(`Album with ID ${track.albumId} not found for track ${track.id}`);
+    <section className="lg:pt-4 pb-16 lg:h-(--screen-height)">
+      <p
+        className={`
+          w-full text-sm 
+          text-gray-600
+          px-4 mb-1
 
-          const trackArtists = track.artists
-            .map(trackArtist => artists.find(artist => artist.id === trackArtist.id))
-            .filter(artist => typeof artist !== "undefined");
+          text-center 
+          lg:text-start
+        `}
+      >
+        {tracks.length} Resultat&nbsp;&nbsp;&middot;&nbsp;&nbsp;{(
+          // eslint-disable-next-line react-hooks/purity
+          performance.now() - startTime).toFixed(0)
+        } ms
+      </p>
 
-          const trackPlays = selectedUsers.reduce((acc, user) => {
-            const plays = user.trackPlays[track.id] ?? 0;
-            return acc + plays;
-          }, 0);
+      <ul className="*:mb-3 px-4 h-full overflow-y-auto">
+        {tracks
+          .map(track => {
+            const album = albums.find(a => a.id === track.albumId);
+            if (!album) throw new Error(`Album with ID ${track.albumId} not found for track ${track.id}`);
 
-          return (
-            <TrackElement
-              key={`track-${track.id}`}
-              track={track}
-              artists={trackArtists}
-              album={album}
-              trackPlays={trackPlays}
-              lineNumber={i + 1}
-            />
-          );
-        })}
+            const trackArtists = track.artists
+              .map(trackArtist => artists.find(artist => artist.id === trackArtist.id))
+              .filter(artist => typeof artist !== "undefined");
+
+            const trackPlays = selectedUsers.reduce((acc, user) => {
+              const plays = user.trackPlays[track.id] ?? 0;
+              return acc + plays;
+            }, 0);
+
+            return {
+              track,
+              album,
+              artists: trackArtists,
+              trackPlays,
+            };
+          })
+          .sort((a, b) => b.trackPlays - a.trackPlays)
+          .map(({ track, album, artists, trackPlays }, i) => {
+            return (
+              <TrackElement
+                key={`track-${track.id}`}
+                track={track}
+                artists={artists}
+                album={album}
+                trackPlays={trackPlays}
+                lineNumber={i + 1}
+              />
+            );
+          })}
       </ul>
     </section>
   </main>;
@@ -116,6 +155,7 @@ async function getUsers(): Promise<{ id: string; name: string | null; trackPlays
 async function getTracks(users: { id: string }[]): Promise<(Track & { artists: { id: string; }[]; album: { id: string; }; })[]> {
   "use cache";
   return prisma.track.findMany({
+    take: 100,
     where: {
       TrackPlays: {
         some: {
