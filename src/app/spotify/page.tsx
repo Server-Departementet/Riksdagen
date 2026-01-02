@@ -66,8 +66,8 @@ export default async function SpotifyPage({
       </h1>
 
       <FilterPanel
-        users={users}
-        selectedUsers={selectedUsers}
+        users={users.map(u => ({ id: u.id, name: u.name }))}
+        selectedUsers={selectedUsers.map(u => ({ id: u.id, name: u.name }))}
       />
     </aside>
 
