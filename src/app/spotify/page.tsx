@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import TrackElement from "@/components/spotify/track";
 import { Button } from "@/components/ui/button";
+import { Album, Artist, Track, User } from "@/prisma/generated";
 
 export default async function SpotifyPage() {
   const userId = (await auth()).userId;
@@ -13,9 +14,13 @@ export default async function SpotifyPage() {
   const [
     users,
     tracks,
+    artists,
+    albums,
   ] = await Promise.all([
     getUsers(),
     getTracks(),
+    getArtists(),
+    getAlbums(),
   ]);
 
   return <main>
@@ -36,35 +41,60 @@ export default async function SpotifyPage() {
       ))}
     </aside>
 
-    <section className="w-1/2">
-      <p>NNNN Resultat XXXX ms</p>
+    <section className="min-w-1/2">
+      <p className="w-full text-center text-sm">NNNN Resultat XXXX ms</p>
 
-      <ul>
-        {tracks.map((track, i) => (
-          <TrackElement
-            key={`track-${track.id}`}
-            trackData={track}
-            lineNumber={i + 1}
-          />
-        ))}
+      <ul className="*:mb-3">
+        {tracks.map((track, i) => {
+          const trackArtists = track.artists
+            .map(trackArtist => artists.find(artist => artist.id === trackArtist.id))
+            .filter(artist => typeof artist !== "undefined");
+          const album = albums.find(a => a.id === track.albumId);
+          if (!album) throw new Error(`Album with ID ${track.albumId} not found for track ${track.id}`);
+
+          return (
+            <TrackElement
+              key={`track-${track.id}`}
+              track={track}
+              artists={trackArtists}
+              album={album}
+              lineNumber={i + 1}
+            />
+          );
+        })}
       </ul>
     </section>
   </main>;
 }
 
-async function getUsers() {
+async function getUsers(): Promise<User[]> {
   "use cache";
   return prisma.user.findMany();
 }
 
-async function getTracks() {
-  // "use cache";
+async function getTracks(): Promise<(Track & { album: { id: string }; artists: { id: string }[]; })[]> {
+  "use cache";
   return prisma.track.findMany({
     where: { TrackPlays: { some: {}, }, },
     orderBy: { TrackPlays: { _count: "desc" } },
     include: {
-      album: true,
-      artists: true,
+      album: { select: { id: true, }, },
+      artists: { select: { id: true, }, },
     },
+    take: 100,
+  });
+}
+
+async function getArtists(): Promise<Artist[]> {
+  "use cache";
+  return prisma.artist.findMany({
+    where: { tracks: { some: {}, }, },
+  });
+}
+
+async function getAlbums(): Promise<Album[]> {
+  "use cache";
+  return prisma.album.findMany({
+    where: { tracks: { some: {}, }, },
   });
 }

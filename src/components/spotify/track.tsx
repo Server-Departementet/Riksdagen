@@ -9,17 +9,19 @@ import { Fragment } from "react";
 import { Album, Artist, Track } from "@/prisma/generated";
 
 export default function TrackElement({
-  trackData: track,
+  track,
+  artists,
+  album,
   lineNumber,
 }: {
-  trackData: Track & { album: Album; artists: Artist[]; };
+  track: Track & { album: { id: string }; artists: { id: string }[]; };
+  artists: Artist[];
+  album: Album;
   lineNumber: number;
 }) {
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-
-  // console.log(track.album, track.artists);
 
   return (
     <li
@@ -35,16 +37,16 @@ export default function TrackElement({
         gap-x-2 gap-y-1
         overflow-hidden 
       `}
-      {...track.album.color
-        ? { style: { backgroundColor: track.album.color } }
+      {...album.color
+        ? { style: { backgroundColor: album.color } }
         : {}
       }
     >
       {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
       <Image
         width={128} height={128}
-        className="col-start-1 row-start-1 row-span-4 rounded-[4px] size-full aspect-square bg-gray-200"
-        src={track.album.image ?? CrownSVG} alt="Låtbild"
+        className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
+        src={album.image ?? CrownSVG} alt="Låtbild"
       />
 
       {/* Track Title */}
@@ -63,7 +65,7 @@ export default function TrackElement({
         opacity-75 
         whitespace-nowrap text-ellipsis overflow-x-hidden
       `}>
-        {track.artists.map((artist, i) =>
+        {artists.map((artist, i) =>
           <Fragment key={`artist-${artist.id}`}>
             <Link href={artist.url}
               className="font-semibold"
@@ -71,12 +73,12 @@ export default function TrackElement({
             >
               {artist.name}
             </Link>
-            {i < track.artists.length - 1 && <span>,&nbsp;</span>}
+            {i < artists.length - 1 && <span>,&nbsp;</span>}
           </Fragment>
         )}
         &nbsp;&nbsp;&middot;&nbsp;&nbsp;
-        <Link href={track.album.url} target="_blank" rel="noopener noreferrer">
-          {track.album.name}
+        <Link href={album.url} target="_blank" rel="noopener noreferrer">
+          {album.name}
         </Link>
       </p>
 
@@ -131,9 +133,9 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
 
 export function SkeletonTrackElement() {
   return (
-    <div className="flex-1 h-[128px] flex flex-row gap-x-6">
+    <div className="flex-1 h-32 flex flex-row gap-x-6">
       {/* "Img" */}
-      <div className="size-[128px] rounded-[4px] bg-gray-600 pulse-animation"></div>
+      <div className="size-32 rounded-lg bg-gray-600 pulse-animation"></div>
 
       <div className="flex-1">
         {/* "Track name" */}
