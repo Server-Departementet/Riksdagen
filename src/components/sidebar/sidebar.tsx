@@ -31,7 +31,10 @@ export function SidebarLink(
     <Link href={href} className={`w-full ${className}`} {...linkTarget ? { target: linkTarget } : {}}
       onClick={onClick}
     >
-      <SheetTrigger tabIndex={-1} className="[all:inherit] !w-full !flex !flex-row !gap-x-2 !items-center">
+      <SheetTrigger
+        tabIndex={-1}
+        className="[all:inherit] w-full! flex! flex-row! gap-x-2! items-center!"
+      >
         {children}
       </SheetTrigger>
     </Link>
@@ -92,12 +95,12 @@ export function Sidebar(
 
       {/* Background */}
       {isOpen && (
-        <div className="absolute top-0 left-0 w-[100dvw] h-[100dvh] bg-black/50 animate-in fade-in duration-200 ease-in"></div>
+        <div className="absolute top-0 left-0 w-dvw h-dvh bg-black/50 animate-in fade-in duration-200 ease-in"></div>
       )}
 
-      <SheetContent className="[&>button]:hidden flex flex-col items-start justify-start gap-0 [&>*]:w-full">
+      <SheetContent className="[&>button]:hidden flex flex-col items-start justify-start gap-0 *:w-full">
         {/* Header */}
-        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 !w-[101%]" style={{ backgroundSize: "cover" }}>
+        <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 w-[101%]!" style={{ backgroundSize: "cover" }}>
           {/* Login */}
           <ClerkLogin nameSide="right" className="text-background" />
 
