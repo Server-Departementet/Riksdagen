@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "react";
 import { Album, Artist, Track } from "@/prisma/generated";
-import { truncateNumber } from "@/functions/number-formatters";
+import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 
 export default function TrackElement({
   track,
@@ -36,20 +36,18 @@ export default function TrackElement({
     return `${truncated} lyssningar`;
   })();
   const prettyPlaytime = (() => {
-    const years = Math.floor(totalPlaytimeSeconds / 31536000);
-    const weeks = Math.floor(totalPlaytimeSeconds / 604800);
-    const days = Math.floor(totalPlaytimeSeconds / 86400);
-    const hours = Math.floor(totalPlaytimeSeconds / 3600);
-    const minutes = Math.floor((totalPlaytimeSeconds % 3600) / 60);
-    const seconds = totalPlaytimeSeconds % 60;
-    let output = "";
-    if (years > 0) output += `${years} år `;
-    if (weeks > 0) output += `${weeks} v `;
-    if (days > 0) output += `${days} d `;
-    if (hours > 0) output += `${hours} tim `;
-    if (minutes > 0) output += `${minutes} min `;
-    output += `${seconds} sek`;
-    return output.trim();
+    const timeUnits = convertSecondsToTimeUnits(totalPlaytimeSeconds);
+
+    const firstPairIndex = timeUnits.findIndex((unit, i) => unit !== null && timeUnits[i + 1] !== null);
+
+    if (firstPairIndex === -1) {
+      return Math.floor(totalPlaytimeSeconds / 60) + " minuter";
+    }
+
+    const unit1 = timeUnits[firstPairIndex];
+    const unit2 = timeUnits[firstPairIndex + 1];
+
+    return `${unit1?.value} ${unit1?.name} ${unit2 ? `${unit2.value} ${unit2.name}` : ""}`.trim();
   })();
 
   return (

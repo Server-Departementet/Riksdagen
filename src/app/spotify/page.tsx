@@ -44,6 +44,7 @@ export default async function SpotifyPage({
         },
       },
     },
+    orderBy: { TrackPlays: { _count: "desc" } },
     include: {
       artists: { select: { id: true }, },
       album: { select: { id: true }, },
