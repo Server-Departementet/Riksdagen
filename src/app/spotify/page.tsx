@@ -36,7 +36,7 @@ export default async function SpotifyPage() {
       ))}
     </aside>
 
-    <section>
+    <section className="w-1/2">
       <p>NNNN Resultat XXXX ms</p>
 
       <ul>

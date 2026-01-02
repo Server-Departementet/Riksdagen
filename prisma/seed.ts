@@ -27,6 +27,23 @@ const remoteAdapter = new PrismaMariaDb({
 });
 const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
 
+const seedGenres = async (prisma: PrismaClient) => {
+  console.debug("Seeding genres...");
+
+  const remoteGenres = await remotePrisma.genre.findMany({
+    select: {
+      name: true,
+    },
+  });
+
+  await prisma.genre.createMany({
+    data: remoteGenres,
+    skipDuplicates: true,
+  });
+
+  console.debug("Seeding genres complete.");
+};
+
 const seedAlbums = async (prisma: PrismaClient) => {
   console.debug("Seeding albums...");
 
@@ -47,63 +64,6 @@ const seedAlbums = async (prisma: PrismaClient) => {
   console.debug("Seeding albums complete.");
 };
 
-const seedArtists = async (prisma: PrismaClient) => {
-  console.debug("Seeding artists...");
-
-  const remoteArtists = await remotePrisma.artist.findMany({
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      url: true,
-      genres: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
-
-  for (const artist of remoteArtists) {
-    const { genres, ...artistData } = artist;
-
-    await prisma.artist.upsert({
-      where: { id: artist.id },
-      update: {
-        ...artistData,
-        genres: {
-          connect: genres.map(genre => ({ name: genre.name })),
-        },
-      },
-      create: {
-        ...artistData,
-        genres: {
-          connect: genres.map(genre => ({ name: genre.name })),
-        },
-      },
-    });
-  }
-
-  console.debug("Seeding artists complete.");
-};
-
-const seedGenres = async (prisma: PrismaClient) => {
-  console.debug("Seeding genres...");
-
-  const remoteGenres = await remotePrisma.genre.findMany({
-    select: {
-      name: true,
-    },
-  });
-
-  await prisma.genre.createMany({
-    data: remoteGenres,
-    skipDuplicates: true,
-  });
-
-  console.debug("Seeding genres complete.");
-};
-
 const seedTracks = async (prisma: PrismaClient) => {
   console.debug("Seeding tracks...");
 
@@ -114,11 +74,6 @@ const seedTracks = async (prisma: PrismaClient) => {
       url: true,
       duration: true,
       albumId: true,
-      artists: {
-        select: {
-          id: true,
-        },
-      },
     },
   });
 
@@ -134,6 +89,57 @@ const seedTracks = async (prisma: PrismaClient) => {
   });
 
   console.debug("Seeding tracks complete.");
+};
+
+const seedArtists = async (prisma: PrismaClient) => {
+  console.debug("Seeding artists...");
+
+  const remoteArtists = await remotePrisma.artist.findMany({
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      url: true,
+      genres: {
+        select: {
+          name: true,
+        },
+      },
+      tracks: {
+        select: {
+          id: true,
+        }
+      }
+    },
+  });
+
+  for (const artist of remoteArtists) {
+    const { genres, ...artistData } = artist;
+
+    await prisma.artist.upsert({
+      where: { id: artist.id },
+      update: {
+        ...artistData,
+        genres: {
+          connect: genres.map(genre => ({ name: genre.name })),
+        },
+        tracks: {
+          connect: artist.tracks.map(track => ({ id: track.id })),
+        },
+      },
+      create: {
+        ...artistData,
+        genres: {
+          connect: genres.map(genre => ({ name: genre.name })),
+        },
+        tracks: {
+          connect: artist.tracks.map(track => ({ id: track.id })),
+        },
+      },
+    });
+  }
+
+  console.debug("Seeding artists complete.");
 };
 
 const seedTrackPlays = async (prisma: PrismaClient) => {
@@ -167,7 +173,7 @@ async function main() {
     await seedTracks(prisma as PrismaClient);
     await seedArtists(prisma as PrismaClient);
     await seedTrackPlays(prisma as PrismaClient);
-  }, { timeout: 10000 });
+  }, { timeout: 20000 });
 }
 
 main()
