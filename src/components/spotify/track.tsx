@@ -22,6 +22,7 @@ export default function TrackElement({
   trackPlays: number;
   lineNumber: number;
 }) {
+  const timeUnits = convertSecondsToTimeUnits(track.duration / 1000);
   const minutes = Math.floor(track.duration / 60000);
   const seconds = Math.floor((track.duration % 60000) / 1000);
   const prettyDuration = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -36,7 +37,7 @@ export default function TrackElement({
     return `${truncated} lyssningar`;
   })();
   const prettyPlaytime = (() => {
-    const timeUnits = convertSecondsToTimeUnits(totalPlaytimeSeconds);
+    const timeUnits = Object.values(convertSecondsToTimeUnits(totalPlaytimeSeconds));
 
     const firstPairIndex = timeUnits.findIndex((unit, i) => unit !== null && timeUnits[i + 1] !== null);
 
@@ -112,7 +113,7 @@ export default function TrackElement({
       {/* Stats */}
       <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
         {/* Duration (long) */}
-        <p className="">Längd {minutes} min {seconds} sek ({prettyDuration})</p>
+        <p className="">Längd {timeUnits.minute} {timeUnits.second} ({prettyDuration})</p>
         {/* Listening time (long) */}
         <p className="">{prettyPlayCount} ({prettyPlaytime})</p>
       </div>
@@ -136,7 +137,11 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
   return (
     <Link href={trackURL} className="col-start-3 col-span-2 row-start-4 justify-self-end self-end" target="_blank" rel="noopener noreferrer">
       <Button tabIndex={-1} className="mb-1.5 sm:mb-2 me-1.5 sm:me-2 px-2.5">
-        <Image width={21} height={21} className="size-5.25" src={SpotifyIconSVG} alt="Spotify" />
+        <Image
+          width={21} height={21}
+          className="size-5.25"
+          src={SpotifyIconSVG} alt="Spotify"
+        />
 
         {/* Hides on smaller screens for space savings */}
         <span className="hidden lg:block">
@@ -144,19 +149,5 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
         </span>
       </Button>
     </Link>
-  );
-}
-
-export function SkeletonTrackElement() {
-  return (
-    <div className="flex-1 h-32 flex flex-row gap-x-6">
-      {/* "Img" */}
-      <div className="size-32 rounded-lg bg-gray-600 pulse-animation"></div>
-
-      <div className="flex-1">
-        {/* "Track name" */}
-        <div className="h-5 w-[16ch] md:w-1/2 bg-gray-300 p-2 mt-5 rounded-sm pulse-animation"></div>
-      </div>
-    </div>
   );
 }
