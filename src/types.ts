@@ -8,3 +8,4 @@ export type Minister = {
   color: string;
   description: string;
 };
+
