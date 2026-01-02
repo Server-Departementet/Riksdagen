@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import TrackElement from "@/components/spotify/track";
-import { Button } from "@/components/ui/button";
 import { Album, Artist, Track } from "@/prisma/generated";
+import { FilterPanel } from "@/components/spotify/filter-panel";
 
 type FilterParams = {
   users?: string; // Comma-separated user IDs
@@ -46,23 +46,17 @@ export default async function SpotifyPage({
     getArtists(tracks),
   ]);
 
-  return <main>
+  return <main
+    className=""
+  >
     <h1 className="mt-4">
       Spotify-statistik
     </h1>
 
-    <aside>
-      <h2>Filter</h2>
-
-      {users.map(u => (
-        <Button
-          key={"filter-" + u.id}
-          variant={"outline"}
-        >
-          {u.name}
-        </Button>
-      ))}
-    </aside>
+    <FilterPanel
+      users={users}
+      selectedUsers={selectedUsers}
+    />
 
     <section className="min-w-1/2">
       <p className="w-full text-center text-sm">NNNN Resultat XXXX ms</p>
@@ -105,6 +99,7 @@ async function getUsers(): Promise<{ id: string; name: string | null; trackPlays
       name: true,
       trackPlays: { select: { trackId: true }, },
     },
+    orderBy: { trackPlays: { _count: "desc" } },
   }))
     .map(user => ({
       id: user.id,
