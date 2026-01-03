@@ -17,14 +17,6 @@ elif [ ! -f ".env" ]; then
     exit 1
 fi
 
-# Build
-bash deploy-code/build.sh
-
-# Enable the the services
-cp deploy-code/next-start.service /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now next-start.service
-
 cd /root/Riksdagen/.next/standalone
 
 # Start in the standalone directory
