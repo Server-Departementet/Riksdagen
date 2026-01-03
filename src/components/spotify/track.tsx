@@ -36,20 +36,12 @@ export default function TrackElement({
     const truncated = truncateNumber(trackPlays);
     return `${truncated} lyssningar`;
   })();
-  const prettyPlaytime = (() => {
-    const timeUnits = Object.values(convertSecondsToTimeUnits(totalPlaytimeSeconds));
-
-    const firstPairIndex = timeUnits.findIndex((unit, i) => unit !== null && timeUnits[i + 1] !== null);
-
-    if (firstPairIndex === -1) {
-      return Math.floor(totalPlaytimeSeconds / 60) + " minuter";
-    }
-
-    const unit1 = timeUnits[firstPairIndex];
-    const unit2 = timeUnits[firstPairIndex + 1];
-
-    return [unit1, unit2].join(" ");
-  })();
+  const prettyPlaytime = (() =>
+    Object.values(convertSecondsToTimeUnits(totalPlaytimeSeconds))
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(" ")
+  )();
 
   return (
     <li
