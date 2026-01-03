@@ -60,7 +60,7 @@ export function convertSecondsToTimeUnits(seconds: number): Record<TimeUnitNames
         new Intl.NumberFormat("sv", {
           style: "unit",
           unit: unit.name,
-          unitDisplay: "short",
+          unitDisplay: "narrow",
         }).format(unit.value),
     ]
   )) as Record<TimeUnitNames, string | null>;
