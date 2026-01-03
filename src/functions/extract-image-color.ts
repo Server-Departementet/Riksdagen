@@ -3,7 +3,10 @@ import fs from "node:fs";
 
 // Color cache
 const colorCachePath = "./cache/spotify-color-cache.json";
-if (!fs.existsSync(colorCachePath)) fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
+if (!fs.existsSync(colorCachePath)) {
+  fs.mkdirSync("./cache", { recursive: true });
+  fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
+}
 const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
