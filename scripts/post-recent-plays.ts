@@ -121,6 +121,7 @@ async function addRecentTrackPlays() {
         ] satisfies Prisma.GenreCreateManyInput[],
       });
 
+
       // Upsert Albums
       for (const album of albums) {
         const imageUrl = album.images[0]?.url || null;
@@ -131,11 +132,6 @@ async function addRecentTrackPlays() {
             url: album.external_urls.spotify,
             image: imageUrl,
             color: imageUrl ? colors[imageUrl] : undefined,
-            tracks: {
-              connect: tracks
-                .filter((track) => track.album.id === album.id)
-                .map((track) => ({ id: track.id })),
-            },
           },
           create: {
             id: album.id,
@@ -143,11 +139,6 @@ async function addRecentTrackPlays() {
             url: album.external_urls.spotify,
             image: imageUrl,
             color: imageUrl ? colors[imageUrl] : undefined,
-            tracks: {
-              connect: tracks
-                .filter((track) => track.album.id === album.id)
-                .map((track) => ({ id: track.id })),
-            },
           },
         });
       }
