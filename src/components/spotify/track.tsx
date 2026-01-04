@@ -69,7 +69,7 @@ export function TrackList({
   return (<>
     <p
       className={`
-        w-full min-w-lg
+        w-full lg:min-w-lg
         text-sm text-gray-600
         px-4 mb-1
   
@@ -149,7 +149,6 @@ function TrackElement({
         h-(--spotify-track-height) min-h-(--spotify-track-height) max-h-(--spotify-track-height) 
 
         w-full max-w-prose 
-        lg:min-w-75
         
         bg-zinc-100
         flex-1 
