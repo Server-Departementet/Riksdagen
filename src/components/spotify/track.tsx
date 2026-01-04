@@ -77,7 +77,7 @@ export function TrackList({
         lg:text-start
       `}
     >
-      {allTrackIds.length} Resultat&nbsp;&nbsp;&middot;&nbsp;&nbsp;NNNN ms
+      {allTrackIds.length} Resultat
     </p>
 
     <ul className="*:mb-3 px-4 h-full w-full overflow-y-auto">
