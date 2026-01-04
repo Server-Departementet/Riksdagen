@@ -2,14 +2,17 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
 export function FilterPanel({
   users,
   selectedUsers: initialSelectedUsers,
+  query: initialQuery,
 }: {
   users: { id: string; name: string | null; }[];
   selectedUsers: { id: string; name: string | null; }[];
+  query?: string;
 }) {
   for (const user of users) {
     if (user.name === null) {
@@ -18,13 +21,33 @@ export function FilterPanel({
   }
 
   const [selectedUsers, setSelectedUsers] = useState(initialSelectedUsers);
+  const [searchQuery, setSearchQuery] = useState(initialQuery ?? "");
 
   return (
-    <section
+    <form
       className={`
         flex flex-col justify-center
         gap-y-4
       `}
+      action={() => {
+        // Reload with selected users as query params
+        const params = new URLSearchParams();
+        if (selectedUsers.length > 0) {
+          params.append(
+            "users",
+            selectedUsers.map(u => u.id).join(","),
+          );
+        }
+
+        if (searchQuery.trim() !== "") {
+          params.append(
+            "q",
+            searchQuery.trim(),
+          );
+        }
+
+        window.location.search = params.toString();
+      }}
     >
       {/* User filter */}
       <div className="w-fit">
@@ -59,24 +82,26 @@ export function FilterPanel({
         </div>
       </div>
 
+      <div>
+        <label>
+          <h4>Search</h4>
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            type="text"
+            placeholder="Sök låt, album eller artist"
+          />
+        </label>
+      </div>
+
       {/* Refresh button */}
       <Button
+        type="submit"
         variant={"outline"}
         className="hover:bg-gray-800 hover:text-white"
-        onClick={()=>{
-          // Reload with selected users as query params
-          const params = new URLSearchParams();
-          if (selectedUsers.length > 0) {
-            params.append(
-              "users",
-              selectedUsers.map(u => u.id).join(","),
-            );
-          }
-          window.location.search = params.toString();
-        }}
       >
         Uppdatera
       </Button>
-    </section>
+    </form>
   );
 }

@@ -8,6 +8,7 @@ import { Track } from "@/prisma/generated";
 
 type FilterParams = {
   users?: string; // Comma-separated user IDs
+  q?: string; // Search query
 };
 
 export default async function SpotifyPage({
@@ -21,9 +22,10 @@ export default async function SpotifyPage({
 
   const {
     users: paramUsers,
+    q: paramQuery,
   } = await searchParams;
 
-  const users = await getUsers();
+  const users = await getUsers(paramQuery);
   const hasUserParam = (
     typeof paramUsers !== "undefined"
     && paramUsers.trim() !== ""
@@ -55,6 +57,7 @@ export default async function SpotifyPage({
       <FilterPanel
         users={users.map(u => ({ id: u.id, name: u.name }))}
         selectedUsers={selectedUsers.map(u => ({ id: u.id, name: u.name }))}
+        query={paramQuery}
       />
     </aside>
 
@@ -72,13 +75,22 @@ export default async function SpotifyPage({
   </main>;
 }
 
-async function getUsers(): Promise<{ id: string; name: string | null; trackPlays: Record<Track["id"], number>; }[]> {
+async function getUsers(searchQuery?: string): Promise<{ id: string; name: string | null; trackPlays: Record<Track["id"], number>; }[]> {
   "use cache";
   return (await prisma.user.findMany({
     select: {
       id: true,
       name: true,
-      trackPlays: { select: { trackId: true }, },
+      trackPlays: {
+        select: { trackId: true },
+        where: {
+          track: {
+            name: {
+              contains: searchQuery ?? "",
+            }
+          },
+        },
+      },
     },
     orderBy: { trackPlays: { _count: "desc" } },
   }))
