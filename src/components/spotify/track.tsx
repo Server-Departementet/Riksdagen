@@ -7,8 +7,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fragment, ReactNode, useEffect, useMemo, useState } from "react";
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
-import { getTrackData, getTrackDataBatch } from "@/functions/spotify/get-track-data";
+import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { Album, Artist, Track } from "@/prisma/generated";
+import { TrackWithData } from "@/types";
 
 
 export function TrackList({
@@ -17,44 +18,47 @@ export function TrackList({
   trackIds: string[];
 }) {
   const batchSize = 50;
-  const [trackBatchCount, setTrackBatchCount] = useState<number>(1);
+  const [loadedBatchCount, setLoadedBatchCount] = useState<number>(1);
   const trackIdBatches = useMemo<string[][]>(() =>
-    new Array(Math.min(trackBatchCount, Math.ceil(allTrackIds.length / batchSize)))
+    new Array(Math.min(loadedBatchCount, Math.ceil(allTrackIds.length / batchSize)))
       .fill(0).map((_, i) => allTrackIds.slice(i * batchSize, i * batchSize + batchSize))
-    , [allTrackIds, trackBatchCount]);
-  const [trackBatches, setTrackBatches] = useState<ReactNode[][]>([]);
+    , [allTrackIds, loadedBatchCount]);
+  const [trackDataBatches, setTrackDataBatches] = useState<Record<string, TrackWithData>>({});
+  const trackElements = useMemo<ReactNode[]>(() =>
+    allTrackIds.map((trackId, index) =>
+      <TrackElement
+        key={`track-${trackId}`}
+        trackId={trackId}
+        trackData={trackDataBatches[trackId] ?? null}
+        lineNumber={index + 1}
+      />
+    ), [allTrackIds, trackDataBatches]);
 
-  // Fetch track batches when trackIdBatches changes
+  // Fetch track data when loadedBatchCount changes
   useEffect(() => {
-    async function fetchBatches() {
-      trackIdBatches.forEach(async (batch, batchIndex) => {
-        // Skip if already fetched
-        if (trackBatches[batchIndex]) return;
-        const trackDataBatch = await getTrackDataBatch(batch);
-        const trackElements = batch.map((trackId, i) => {
-          const trackData = trackDataBatch.find(t => t.id === trackId);
-          return <TrackElement
-            key={`track-${trackId}`}
-            trackId={trackData ? undefined : trackId}
-            trackData={trackData ?? undefined}
-            lineNumber={batchIndex * batchSize + i + 1}
-          />;
+    async function fetchTrackData() {
+      const trackIdsToFetch = trackIdBatches
+        .flat()
+        .filter(trackId => !(trackDataBatches && trackDataBatches[trackId]));
+      if (trackIdsToFetch.length === 0) return;
+      const trackDataArray = await getTrackDataBatch(trackIdsToFetch);
+      setTrackDataBatches(prev => {
+        const newData = { ...prev };
+        trackDataArray.forEach(trackData => {
+          newData[trackData.id] = trackData;
         });
-        setTrackBatches(prev => {
-          const newBatches = [...prev];
-          newBatches[batchIndex] = trackElements;
-          return newBatches;
-        });
+        // console.log(Object.keys(newData));
+        return newData;
       });
     }
-    fetchBatches();
-  }, [trackBatches, trackIdBatches]);
+    fetchTrackData();
+  }, [loadedBatchCount, trackIdBatches, trackDataBatches]);
 
   // On scroll, load more tracks
   useEffect(() => {
     function onScroll() {
       if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-        setTrackBatchCount(p => Math.min(p + 1, Math.ceil(allTrackIds.length / batchSize)));
+        setLoadedBatchCount(p => Math.min(p + 1, Math.ceil(allTrackIds.length / batchSize)));
       }
       window.addEventListener("scroll", onScroll);
       return () => window.removeEventListener("scroll", onScroll);
@@ -65,8 +69,8 @@ export function TrackList({
   return (<>
     <p
       className={`
-        w-full text-sm 
-        text-gray-600
+        w-full min-w-lg
+        text-sm text-gray-600
         px-4 mb-1
   
         text-center 
@@ -77,8 +81,7 @@ export function TrackList({
     </p>
 
     <ul className="*:mb-3 px-4 h-full w-full overflow-y-auto">
-      {trackBatches.flat().flat()}
-      {trackBatchCount}
+      {trackElements}
     </ul>
   </>);
 }
@@ -88,60 +91,22 @@ function TrackElement({
   trackData,
   lineNumber,
 }: {
-  trackId?: string;
-  trackData?: Track & {
-    album: {
-      name: string;
-      id: string;
-      url: string;
-      image: string | null;
-      color: string | null;
-    };
-    artists: {
-      name: string;
-      id: string;
-      url: string;
-      image: string | null;
-      color: string | null;
-    }[];
-    _count: {
-      TrackPlays: number;
-    };
-  } & {
-    name: string;
-    id: string;
-    url: string;
-    duration: number;
-    albumId: string;
-  };
+  trackId: string;
+  trackData: TrackWithData | null;
   lineNumber: number;
 }) {
-  const [track, setTrack] = useState<Track | null>(trackData ?? null);
-  const [album, setAlbum] = useState<Album | null>(trackData ? trackData.album : null);
-  const [artists, setArtists] = useState<Artist[] | null>(trackData ? trackData.artists : null);
-  const [trackPlays, setTrackPlays] = useState<number | null>(trackData ? trackData._count.TrackPlays : null);
-
-  // Fetch track data on mount
-  useEffect(() => {
-    if (!trackId) return;
-    getTrackData(trackId)
-      .then(data => {
-        if (!data) throw new Error("Track data not found");
-        setTrack({
-          id: data.id,
-          name: data.name,
-          url: data.url,
-          duration: data.duration,
-          albumId: data.albumId,
-        });
-        setAlbum(data.album);
-        setArtists(data.artists);
-        setTrackPlays(data._count.TrackPlays);
-      })
-      .catch(err => {
-        console.error("Error fetching track data:", err);
-      });
-  }, [trackId]);
+  const [track] = useState<Track | null>(!trackData
+    ? null
+    : {
+      id: trackData.id,
+      albumId: trackData.albumId,
+      name: trackData.name,
+      url: trackData.url,
+      duration: trackData.duration,
+    });
+  const [album] = useState<Album | null>(trackData ? trackData.album : null);
+  const [artists] = useState<Artist[] | null>(trackData ? trackData.artists : null);
+  const [trackPlays] = useState<number | null>(trackData ? trackData._count.TrackPlays : null);
 
   const timeUnits = useMemo(() => {
     if (!track) return { minute: " ", second: " " };
@@ -196,6 +161,7 @@ function TrackElement({
       }
     >{!track
       ? <>
+        {trackId}
         {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
         <Image
           width={128} height={128}
