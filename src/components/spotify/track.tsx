@@ -87,26 +87,28 @@ export function TrackList({
 }
 
 function TrackElement({
-  trackId,
   trackData,
   lineNumber,
 }: {
-  trackId: string;
   trackData: TrackWithData | null;
   lineNumber: number;
 }) {
-  const [track] = useState<Track | null>(!trackData
-    ? null
-    : {
+  const track = useMemo<Track | null>(() => trackData
+    ? {
       id: trackData.id,
       albumId: trackData.albumId,
       name: trackData.name,
       url: trackData.url,
       duration: trackData.duration,
-    });
-  const [album] = useState<Album | null>(trackData ? trackData.album : null);
-  const [artists] = useState<Artist[] | null>(trackData ? trackData.artists : null);
-  const [trackPlays] = useState<number | null>(trackData ? trackData._count.TrackPlays : null);
+    }
+    : null
+    , [trackData]);
+  const album = useMemo<Album | null>(() => trackData
+    ? trackData.album : null, [trackData]);
+  const artists = useMemo<Artist[] | null>(() => trackData
+    ? trackData.artists : null, [trackData]);
+  const trackPlays = useMemo<number | null>(() => trackData
+    ? trackData._count.TrackPlays : null, [trackData]);
 
   const timeUnits = useMemo(() => {
     if (!track) return { minute: " ", second: " " };
@@ -161,7 +163,6 @@ function TrackElement({
       }
     >{!track
       ? <>
-        {trackId}
         {/* 4px rounding as per spotifys guidelines https://developer.spotify.com/documentation/design */}
         <Image
           width={128} height={128}
