@@ -60,7 +60,7 @@ export default async function SpotifyPage({
 
     <hr className="lg:hidden w-11/12" />
 
-    <section className="lg:pt-4 pb-16 lg:h-(--screen-height) w-full">
+    <section className="lg:pt-4 pb-16 lg:h-(--screen-height) w-fit">
       <TrackList
         trackIds={[...new Set(selectedUsers.flatMap(u =>
           Object.entries(u.trackPlays)
