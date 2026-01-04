@@ -50,7 +50,8 @@ export function TrackList({
         return newData;
       });
     }
-    fetchTrackData();
+    fetchTrackData()
+      .catch(console.error);
   }, [loadedBatchCount, trackIdBatches, trackDataBatches]);
 
   // On scroll, load more tracks
