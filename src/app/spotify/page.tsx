@@ -75,7 +75,7 @@ export default async function SpotifyPage({
   </main>;
 }
 
-async function getUsers(searchQuery?: string): Promise<{ id: string; name: string | null; trackPlays: Record<Track["id"], number>; }[]> {
+async function getUsers(trackSearchQuery?: string): Promise<{ id: string; name: string | null; trackPlays: Record<Track["id"], number>; }[]> {
   "use cache";
   return (await prisma.user.findMany({
     select: {
@@ -84,11 +84,17 @@ async function getUsers(searchQuery?: string): Promise<{ id: string; name: strin
       trackPlays: {
         select: { trackId: true },
         where: {
-          track: {
-            name: {
-              contains: searchQuery ?? "",
-            }
-          },
+          OR: [
+            {
+              track: { name: { contains: trackSearchQuery ?? "", }, },
+            },
+            {
+              track: { album: { name: { contains: trackSearchQuery ?? "", }, }, },
+            },
+            {
+              track: { artists: { some: { name: { contains: trackSearchQuery ?? "", }, }, }, },
+            },
+          ],
         },
       },
     },
