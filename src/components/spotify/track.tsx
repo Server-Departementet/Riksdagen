@@ -11,13 +11,12 @@ import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { Album, Artist, Track } from "@/prisma/generated";
 import { TrackWithData } from "@/types";
 
-
 export function TrackList({
   trackIds: allTrackIds,
 }: {
   trackIds: string[];
 }) {
-  const batchSize = 50;
+  const batchSize = 100;
   const [loadedBatchCount, setLoadedBatchCount] = useState<number>(1);
   const trackIdBatches = useMemo<string[][]>(() =>
     new Array(Math.min(loadedBatchCount, Math.ceil(allTrackIds.length / batchSize)))
@@ -54,18 +53,6 @@ export function TrackList({
       .catch(console.error);
   }, [loadedBatchCount, trackIdBatches, trackDataBatches]);
 
-  // On scroll, load more tracks
-  useEffect(() => {
-    function onScroll() {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-        setLoadedBatchCount(p => Math.min(p + 1, Math.ceil(allTrackIds.length / batchSize)));
-      }
-      window.addEventListener("scroll", onScroll);
-      return () => window.removeEventListener("scroll", onScroll);
-    }
-    onScroll();
-  }, [allTrackIds.length]);
-
   return (<>
     <p
       className={`
@@ -80,7 +67,23 @@ export function TrackList({
       {allTrackIds.length} Resultat
     </p>
 
-    <ul className="*:mb-3 px-4 h-full w-full overflow-y-auto">
+    <ul
+      onScroll={(e) => {
+        // Derive what to load off of scroll position / total scroll height vs loadedBatchCount and batchSize
+        const target = e.target as HTMLUListElement;
+
+        const scrolled = target.scrollTop / target.scrollHeight;
+        const totalBatches = Math.ceil(allTrackIds.length / batchSize);
+        const batchesToLoad = Math.min(
+          totalBatches,
+          Math.ceil(scrolled * totalBatches) + 1,
+        );
+        if (batchesToLoad > loadedBatchCount) {
+          setLoadedBatchCount(batchesToLoad);
+        }
+      }}
+      className="*:mb-3 px-4 h-full w-full overflow-y-auto"
+    >
       {trackElements}
     </ul>
   </>);
@@ -149,6 +152,7 @@ function TrackElement({
         h-(--spotify-track-height) min-h-(--spotify-track-height) max-h-(--spotify-track-height) 
 
         w-full max-w-prose 
+        lg:w-[65ch]
         
         bg-zinc-100
         flex-1 
