@@ -45,7 +45,6 @@ export function TrackList({
         trackDataArray.forEach(trackData => {
           newData[trackData.id] = trackData;
         });
-        // console.log(Object.keys(newData));
         return newData;
       });
     }
@@ -69,7 +68,7 @@ export function TrackList({
 
     <ul
       onScroll={(e) => {
-        // Derive what to load off of scroll position / total scroll height vs loadedBatchCount and batchSize
+        // Derive what to load off of scroll position / total scroll height vs loadedBatchCount*batchSize / total track count
         const target = e.target as HTMLUListElement;
 
         const scrolled = target.scrollTop / target.scrollHeight;
