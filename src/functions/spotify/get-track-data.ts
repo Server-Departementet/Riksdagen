@@ -13,3 +13,15 @@ export async function getTrackData(trackId: string) {
     },
   });
 }
+
+export async function getTrackDataBatch(trackIds: string[]) {
+  "use cache";
+  return prisma.track.findMany({
+    where: { id: { in: trackIds, }, },
+    include: {
+      album: true,
+      artists: true,
+      _count: { select: { TrackPlays: true, }, },
+    },
+  });
+}
