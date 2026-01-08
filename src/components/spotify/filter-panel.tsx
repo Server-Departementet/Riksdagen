@@ -57,7 +57,7 @@ export function FilterPanel({
           {users.map(user =>
             <label
               key={"filter-" + user.id}
-              className="flex justify-end items-center gap-x-2 w-full"
+              className="flex justify-between items-center gap-x-2 w-full"
             >
               {user.name?.replace(/\s/g, "\u00a0") ?? "!!FEL!!"}
 
