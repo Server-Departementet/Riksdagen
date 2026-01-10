@@ -42,67 +42,59 @@ async function makeUsers() {
   const prisma = new PrismaClient({ adapter });
 
   /* 
-   * Get users nicknames on Discord via bot (or local file if available).
+   * Get users nicknames on Discord via bot
    */
   const serverNicks: Record<string, string> = {};
-  try {
-    const loadedFromFile = (await import("./server-nicks.ts")).serverNicks;
 
-    Object.entries(loadedFromFile).forEach(([discordId, nick]) => {
-      serverNicks[discordId] = nick;
-    });
-  }
-  catch {
-    const discordClient = new DiscordClient({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
-    await discordClient.login(env.DISCORD_BOT_TOKEN);
-    async function onDiscordReady(client: DiscordClient) {
-      if (!client.user) {
-        throw new Error("Discord client user is not defined after ready");
-      }
-      console.info(`Logged in as ${client.user.tag}`);
-
-      const guild = await client.guilds.fetch(env.REGERINGEN_GUILD_ID!);
-      const members = await guild.members.fetch();
-
-      for (const discordId of idGroups.map(g => g.discordId)) {
-        const member = members.find(m => m.user.id === discordId);
-        if (member) {
-          serverNicks[discordId] = member.nickname ?? member.user.globalName ?? member.user.username;
-        }
-      }
-
-      await client.destroy()
-        .catch((error) => {
-          console.error("Error destroying Discord client:", error);
-        });
+  const discordClient = new DiscordClient({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+  await discordClient.login(env.DISCORD_BOT_TOKEN);
+  async function onDiscordReady(client: DiscordClient) {
+    if (!client.user) {
+      throw new Error("Discord client user is not defined after ready");
     }
-    await new Promise<void>((resolve, reject) => {
-      discordClient.once("clientReady", () => {
-        onDiscordReady(discordClient).then(resolve).catch((e) => {
-          const error = e instanceof Error ? e : new Error(String(e));
-          console.error("Error in onDiscordReady:", error);
-          reject(error);
-        });
+    console.info(`Logged in as ${client.user.tag}`);
+
+    const guild = await client.guilds.fetch(env.REGERINGEN_GUILD_ID!);
+    const members = await guild.members.fetch();
+    const ministers = members.filter(m => m.roles.cache.has("1167471191133528175")); // Minister role id
+    console.info(`Fetched ${members.size} members, of which ${ministers.size} are ministers.`);
+
+    for (const [memberId, member] of ministers) {
+      serverNicks[memberId] = member.nickname ?? member.user.globalName ?? member.user.username;
+    }
+
+    await client.destroy()
+      .catch((error) => {
+        console.error("Error destroying Discord client:", error);
+      });
+  }
+  await new Promise<void>((resolve, reject) => {
+    discordClient.once("clientReady", () => {
+      onDiscordReady(discordClient).then(resolve).catch((e) => {
+        const error = e instanceof Error ? e : new Error(String(e));
+        console.error("Error in onDiscordReady:", error);
+        reject(error);
       });
     });
-  }
+  });
 
-  for (const idGroup of idGroups) {
+  for (const discordId in serverNicks) {
+    const savedIds = idGroups.find(g => g.discordId === discordId);
     await prisma.user.upsert({
       where: {
-        id: idGroup.discordId, // TODO this won't match if the user is still on 
+        id: discordId,
       },
       create: {
-        id: idGroup.discordId,
-        name: serverNicks[idGroup.discordId],
-        clerkDevId: idGroup.clerkDev,
-        clerkProdId: idGroup.clerkProd,
+        id: discordId,
+        name: serverNicks[discordId],
+        clerkDevId: savedIds?.clerkDev,
+        clerkProdId: savedIds?.clerkProd,
       },
       update: {
-        id: idGroup.discordId,
-        name: serverNicks[idGroup.discordId],
-        clerkDevId: idGroup.clerkDev,
-        clerkProdId: idGroup.clerkProd,
+        id: discordId,
+        name: serverNicks[discordId],
+        clerkDevId: savedIds?.clerkDev,
+        clerkProdId: savedIds?.clerkProd,
       },
     });
   }
