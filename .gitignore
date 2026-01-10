@@ -61,5 +61,5 @@ dump.zip
 
 scripts/complete-usermap.ts
 scripts/server-nicks.ts
-
+scripts/discord/quotes*.json
 scripts/*.sql
