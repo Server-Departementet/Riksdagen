@@ -10,7 +10,8 @@ type SlimMessage = {
   createdTimestamp: number;
   content: string;
   authorId: string;
-  editedTimestamp: number | null;
+  editedTimestamp?: number;
+  attachmentUrls?: string[];
 };
 
 if (!env.DATABASE_URL) {
@@ -71,9 +72,13 @@ async function main() {
     quotes.push(...fetchedQuotes);
   }
 
+  const mediaLink = (attachmentId: string) =>
+    `https://cdn.discordapp.com/attachments/${env.QUOTE_CHANNEL_ID}/${attachmentId}`;
+
   // Trim quotes
   const trimmed: SlimMessage[] = [];
   for (const quote of quotes) {
+    const attachments = Array.from(quote.attachments.values()) as unknown as string[];
     try {
       trimmed.push({
         id: quote.id,
@@ -81,7 +86,8 @@ async function main() {
         authorId: (quote as unknown as { authorId: string; }).authorId || quote.author.id,
         content: quote.content,
         createdTimestamp: quote.createdTimestamp,
-        editedTimestamp: quote.editedTimestamp,
+        ...quote.editedTimestamp ? { editedTimestamp: quote.editedTimestamp } : {},
+        ...attachments.length > 0 ? { attachmentUrls: attachments.map(mediaLink), } : {},
       });
     }
     catch (e) {
@@ -142,12 +148,12 @@ async function main() {
   }
 
   // Add link to normalized
-  const link = (quoteId: string) =>
+  const messageLink = (quoteId: string) =>
     `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quoteId}`;
 
   const withLinks = normalizedQuotes.map(q => ({
     ...q,
-    link: link(q.id),
+    link: messageLink(q.id),
   }));
 
   const withContext = withLinks.map(extractContext);
@@ -162,9 +168,20 @@ function extractContext(quote: SlimMessage) {
   if (!sender) {
     throw new Error("Could not find user with ID " + quote.authorId);
   }
+
+  const isMultiLine = quote.content.includes("\n");
+  if (isMultiLine) return quote;
+
+  const [body, context] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+
+  if (!body.endsWith("\"")) {
+    throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + quote.content + ")");
+  }
+
   return {
     ...quote,
-    sender: sender.name,
+    sender: sender.name, // Should be removed and gotten from DB when needed
+    body: body.slice(1, -1).trim(),
   };
 }
 
@@ -181,9 +198,9 @@ async function getAndSaveQuotes(): Promise<Message[]> {
 
   const quotes: Message[] = [];
 
-  const maxQuotes = 10000;
+  const maxPages = 100;
   let lastId: string | undefined = undefined;
-  for (let i = 0; i < maxQuotes; i++) {
+  for (let i = 0; i < maxPages; i++) {
     const messages: Collection<string, Message<true>> = await quoteChannel.messages.fetch({
       limit: 100,
       before: lastId,
@@ -203,7 +220,13 @@ async function getAndSaveQuotes(): Promise<Message[]> {
 
   console.info(`Fetched a total of ${filteredQuotes.length} messages.`);
 
-  fs.writeFileSync("scripts/discord/quotes.json", JSON.stringify(filteredQuotes, null, 2));
+  const semiSerialized = filteredQuotes.map(q => ({
+    ...q,
+    attachments: q.attachments.map(a => ({ ...a })),
+    author: { ...q.author },
+  }));
 
-  return filteredQuotes;
+  fs.writeFileSync("scripts/discord/quotes.json", JSON.stringify(semiSerialized, null, 2));
+
+  return semiSerialized as unknown as Message[];
 }
