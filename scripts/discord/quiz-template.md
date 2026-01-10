@@ -1,4 +1,4 @@
-## Citat quiz #{{quizNumber}}
+## Citat Quiz #{{quizNumber}}
 Vem sa?
 > "{{quoteBody}}"
 

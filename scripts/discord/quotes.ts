@@ -244,6 +244,7 @@ function extractContext(quote: SlimMessage) {
   // Trim surrounding quotes
   body = body.slice(1, -1).trim();
 
+  // TODO move , here for consistency?
   const contextDividers = [
     " i ",
     " om ",
