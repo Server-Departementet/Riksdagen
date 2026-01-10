@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { env } from "node:process";
+import { argv, env } from "node:process";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Collection, Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
@@ -62,8 +62,10 @@ main()
 async function main() {
   const quotes: Message[] = [];
 
+  const fetchOverrideArg = argv.find(arg => arg.startsWith("--fetch"));
+
   // Get quotes
-  if (fs.existsSync("scripts/discord/quotes.json")) {
+  if (!fetchOverrideArg && fs.existsSync("scripts/discord/quotes.json")) {
     const data = fs.readFileSync("scripts/discord/quotes.json", "utf-8");
     const parsedQuotes = JSON.parse(data) as Message[];
     quotes.push(...parsedQuotes);
