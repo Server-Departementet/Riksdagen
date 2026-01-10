@@ -98,6 +98,9 @@ async function getUsers(trackSearchQuery?: string): Promise<{ id: string; name: 
         },
       },
     },
+    where: {
+      trackPlays: { some: {} },
+    },
     orderBy: { trackPlays: { _count: "desc" } },
   }))
     .map(user => ({
