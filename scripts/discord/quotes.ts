@@ -172,7 +172,7 @@ function extractContext(quote: SlimMessage) {
   const isMultiLine = quote.content.includes("\n");
   if (isMultiLine) return quote;
 
-  let [body, context] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+  let [body, meta] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
 
   if (!body.endsWith("\"")) {
     throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + quote.content + ")");
@@ -189,15 +189,36 @@ function extractContext(quote: SlimMessage) {
   body = body.slice(1, -1).trim();
 
   const contextDividers = [
-    ", ",
     " i ",
     " om ",
     " när ",
-    " till ",
     " som ",
+    " till ",
     " efter ",
     " medan ",
   ];
+
+  let [quotee, context] = meta.split(", ").map(s => s.trim());
+
+  const wordDivided = contextDividers.find(div => meta.includes(div));
+  if (!context && wordDivided) {
+    [quotee, context] = meta.split(wordDivided).map((s, i) => i === 0
+      ? s.trim()
+      : (wordDivided + s).trim()
+    );
+  }
+
+  // The trans clause
+  if ([
+    "1243112634371412060",
+    "1334524370693128243",
+    "1319605765614338118",
+  ].includes(quote.id)) {
+    context = context.replace(" han ", " hon ");
+  }
+
+  if (context)
+    console.log([quotee, context]);
 
   return {
     ...quote,
