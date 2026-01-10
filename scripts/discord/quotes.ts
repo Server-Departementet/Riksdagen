@@ -305,7 +305,7 @@ function extractContext(quote: SlimMessage) {
   }
   body = body.replace(new RegExp(`\\b(${Object.keys(aliases).join("|")})\\b`, "g"), (match) => aliases[match]);
 
-  const quoteeId = Object.entries(nameVariants).find(([id, variants]) =>
+  const quoteeId = Object.entries(nameVariants).find(([, variants]) =>
     variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
   )?.[0];
 

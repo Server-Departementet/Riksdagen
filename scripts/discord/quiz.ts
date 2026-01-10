@@ -68,8 +68,10 @@ async function main() {
     quotee: string;
     quoteeId?: string;
     context?: string;
+    attachmentUrls?: string[];
   }[])
-    .filter(q => q.quoteeId);
+    .filter(q => q.quoteeId)
+    .filter(q => !q.attachmentUrls);
 
   // Determine the next quiz number based off of the last quiz message
   let quizNumber = 0;
