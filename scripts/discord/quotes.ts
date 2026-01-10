@@ -4,6 +4,7 @@ import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Collection, Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import fs from "node:fs";
+import path from "node:path";
 
 type SlimMessage = {
   id: string;
@@ -164,6 +165,42 @@ async function main() {
   // Save normalized quotes
   fs.writeFileSync("scripts/discord/quotes_normalized.json", JSON.stringify(withContext, null, 2));
   console.info(`Saved ${withContext.length} normalized quotes to file.`);
+
+  // Download attachments
+  const attachmentDir = "scripts/discord/quote-attachments";
+  if (!fs.existsSync(attachmentDir)) {
+    fs.mkdirSync(attachmentDir);
+  }
+  for (const quote of withContext) {
+    if (!quote.attachmentUrls || quote.attachmentUrls.length === 0) continue;
+    for (const attachmentUrl of quote.attachmentUrls) {
+      const downloadURL = new URL(attachmentUrl);
+      const filename = downloadURL.pathname.split("/").at(-1);
+      const attachmentId = downloadURL.pathname.split("/").at(-2);
+      if (!filename || !attachmentId) {
+        console.error(`Could not parse filename or attachment ID from URL: ${attachmentUrl}`);
+        continue;
+      }
+
+      const fileDest = path.join(
+        attachmentDir,
+        `${quote.id}.${attachmentId}.${filename}`,
+      );
+      if (fs.existsSync(fileDest)) {
+        console.info(`Attachment already exists, skipping download: ${fileDest}`);
+        continue;
+      }
+
+      console.info(`Downloading attachment from ${attachmentUrl} to ${fileDest}...`);
+      const response = await fetch(attachmentUrl);
+      if (!response.ok) {
+        console.error(`Failed to download attachment from ${attachmentUrl}: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      fs.writeFileSync(fileDest, Buffer.from(await response.arrayBuffer()));
+    }
+  }
 }
 
 function extractContext(quote: SlimMessage) {
