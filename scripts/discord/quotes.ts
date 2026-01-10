@@ -72,13 +72,10 @@ async function main() {
     quotes.push(...fetchedQuotes);
   }
 
-  const mediaLink = (attachmentId: string) =>
-    `https://cdn.discordapp.com/attachments/${env.QUOTE_CHANNEL_ID}/${attachmentId}`;
-
   // Trim quotes
   const trimmed: SlimMessage[] = [];
   for (const quote of quotes) {
-    const attachments = Array.from(quote.attachments.values()) as unknown as string[];
+    const attachments = quote.attachments as unknown as { url: string }[];
     try {
       trimmed.push({
         id: quote.id,
@@ -87,7 +84,7 @@ async function main() {
         content: quote.content,
         createdTimestamp: quote.createdTimestamp,
         ...quote.editedTimestamp ? { editedTimestamp: quote.editedTimestamp } : {},
-        ...attachments.length > 0 ? { attachmentUrls: attachments.map(mediaLink), } : {},
+        ...attachments?.length ? { attachmentUrls: attachments.map(a => a.url), } : {},
       });
     }
     catch (e) {
