@@ -158,20 +158,15 @@ async function main() {
 
   const withContext = withLinks.map(extractContext);
 
+  // Remove unparsed content for bloat and inconsistencies due to censoring
+  for (const quote of withContext) {
+    // @ts-expect-error - I'm a badass B)
+    delete quote.content;
+  }
+
   // Save normalized quotes
   fs.writeFileSync("scripts/discord/quotes_normalized.json", JSON.stringify(withContext, null, 2));
   console.info(`Saved ${withContext.length} normalized quotes to file.`);
-
-  const quoteeMap: Record<string, number> = {};
-  for (const quote of withContext) {
-    const quotee = quote.quotee;
-    if (!quotee) continue;
-    quoteeMap[quotee] ??= 0;
-    quoteeMap[quotee]++;
-  }
-  // console.dir(
-  //   Object.entries(quoteeMap).sort((a, b) => b[1] - a[1])
-  //   , { depth: null });
 }
 
 function extractContext(quote: SlimMessage) {
@@ -317,6 +312,8 @@ async function getAndSaveQuotes(): Promise<Message[]> {
       "1194736973265506425", // Trans guard :3
       "1310699198794039358", // Trans guard :3
       "1243110807135588443", // Trans guard :3
+      "1327605624447438900", // Trans guard :3
+      "1317076088484007979", // Trans guard :3
     ].includes(q.id)
     && !q.system // Pins and such
   );
