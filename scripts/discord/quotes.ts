@@ -172,16 +172,37 @@ function extractContext(quote: SlimMessage) {
   const isMultiLine = quote.content.includes("\n");
   if (isMultiLine) return quote;
 
-  const [body, context] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+  let [body, context] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
 
   if (!body.endsWith("\"")) {
     throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + quote.content + ")");
   }
+  // Normalize whitespace
+  body = body.replace(/\s+/g, " ");
+  // Special case: Add quotes around body 
+  if ([
+    "1187409400349069432",
+  ].includes(quote.id)) {
+    body = `"${body.trim()}"`;
+  }
+  // Trim surrounding quotes
+  body = body.slice(1, -1).trim();
+
+  const contextDividers = [
+    ", ",
+    " i ",
+    " om ",
+    " när ",
+    " till ",
+    " som ",
+    " efter ",
+    " medan ",
+  ];
 
   return {
     ...quote,
-    sender: sender.name, // Should be removed and gotten from DB when needed
-    body: body.slice(1, -1).trim(),
+    sender: sender.name,
+    body,
   };
 }
 
