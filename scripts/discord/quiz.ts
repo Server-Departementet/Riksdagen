@@ -19,7 +19,7 @@ if (!env.QUIZ_CHANNEL_ID) {
 }
 
 const discordClient = new DiscordClient({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
 const dbURL = new URL(env.DATABASE_URL);
 const adapter = new PrismaMariaDb({
@@ -58,7 +58,7 @@ async function main() {
     throw new Error("Quiz channel is not a text-based channel");
   }
 
-  const quotes = JSON.parse(fs.readFileSync("scripts/discord/quotes_normalized.json", "utf-8")) as {
+  const quotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes_normalized.json", "utf-8")) as {
     id: string;
     authorId: string;
     createdTimestamp: number;
@@ -66,8 +66,10 @@ async function main() {
     sender: string;
     body: string;
     quotee: string;
+    quoteeId?: string;
     context?: string;
-  }[];
+  }[])
+    .filter(q => q.quoteeId);
 
   // Determine the next quiz number based off of the last quiz message
   let quizNumber = 0;
@@ -81,7 +83,7 @@ async function main() {
   if (lastQuizMessage) {
     // Get the quiz number
     const match = /## Citat quiz #(\d+)/.exec(lastQuizMessage.content);
-    if (match) quizNumber = Number(match[1]) - 1;
+    if (match) quizNumber = Number(match[1]);
 
     const previousQuoteId = /id: (\d+)/.exec(lastQuizMessage.content)?.[1];
     const previousQuote = quotes.find(q => q.id === previousQuoteId);
@@ -93,7 +95,8 @@ async function main() {
     // Reveal the answer to the last quiz
     const lastPoll = latestMessages.find((msg) =>
       msg.author.id === discordClient.user?.id
-      && msg.type === MessageType.PollResult
+      && msg.poll
+      // TODO make better checks
     );
 
     if (!lastPoll?.poll) {
@@ -104,19 +107,32 @@ async function main() {
     // End previous poll
     await lastPoll.poll.end();
 
+    // Poll ending is really slow
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Delete poll results message
+    const pollResultsMessage = (await channel.messages.fetch({ limit: 10, }))
+      .find(msg =>
+        msg.author.id === discordClient.user?.id
+        && msg.type === MessageType.PollResult
+      );
+    if (pollResultsMessage) {
+      await pollResultsMessage.delete();
+    }
+
     const answers = lastPoll.poll.answers;
-    const winningUsers = await Promise.all(answers
-      .filter(answer => answer.text === previousQuote.quotee) // TODO handle aliases
-      .map(a => a.voters.fetch().then(voters => Array.from(voters)[0][1]))
-    );
+    const correctString = Object.values(users).find(u => u.id === previousQuote.quoteeId)?.name;
+    const correctAnswer = answers.find(answer => answer.text === correctString);
+    const correctVotes = await correctAnswer?.voters.fetch();
+    const winningUsers = correctVotes ? Array.from(correctVotes.values()) : [];
 
     let resultContent = fs.readFileSync("scripts/discord/quiz-result-template.md", "utf-8");
     const lastQuizData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
       "quoteBody": previousQuote.body,
-      "link": /https:\/\/discord\.com\/channels\/\d+\/\d+\/(\d+)/.exec(lastQuizMessage.content)?.[1] ?? "",
-      "winners": winningUsers.map(u => `@${u.id}`).join(" "),
+      "link": previousQuote.link,
+      "winners": winningUsers.map(u => `<@${u.id}>`).join(" "),
     };
     for (const [key, value] of Object.entries(lastQuizData)) {
       const regex = new RegExp(`{{${key}}}`, "g");
@@ -149,21 +165,19 @@ async function main() {
   }
 
   await channel.send(quizContent);
+  const poll: PollData = {
+    duration: 24, // Hours
+    layoutType: PollLayoutType.Default,
+    question: { text: `Citat Quiz #${quizNumber}`, },
+    allowMultiselect: false,
+    answers: Object.values(users)
+      .map(u => u.name)
+      .sort()
+      .map(name => ({
+        text: name ?? "FEL",
+      })),
+  }
   await channel.send({
-    body: {
-      type: MessageType.Poll,
-      poll: {
-        duration: 24 * 60 * 60,
-        question: { text: `Citat Quiz #${quizNumber}`, },
-        answers: Object.values(users)
-          .map(u => u.name)
-          .sort()
-          .map(name => ({
-            poll_media: {
-              text: name ?? "FEL"
-            },
-          })),
-      },
-    },
+    poll: poll,
   });
 }

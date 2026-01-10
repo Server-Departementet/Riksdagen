@@ -3,6 +3,6 @@
 ## {{quotee}}
 > "{{quoteBody}}"
 
-{{link}}
+Originalet {{link}}
 
 Grattis till {{winners}}!

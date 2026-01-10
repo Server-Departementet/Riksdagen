@@ -5,6 +5,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Collection, Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
+import { nameVariants } from "./name-variants.ts"
 
 type SlimMessage = {
   id: string;
@@ -220,6 +221,7 @@ function extractContext(quote: SlimMessage) {
     sender: string;
     body: string;
     quotee: string;
+    quoteeId?: string;
     context?: string;
   };
 
@@ -303,11 +305,16 @@ function extractContext(quote: SlimMessage) {
   }
   body = body.replace(new RegExp(`\\b(${Object.keys(aliases).join("|")})\\b`, "g"), (match) => aliases[match]);
 
+  const quoteeId = Object.entries(nameVariants).find(([id, variants]) =>
+    variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
+  )?.[0];
+
   return {
     ...quote,
     sender: sender.name,
     body,
     quotee: quotee.trim(),
+    ...(quoteeId ? { quoteeId } : {}),
     ...(context ? { context: context.trim() } : {}),
   };
 }
