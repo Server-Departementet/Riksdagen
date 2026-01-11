@@ -168,7 +168,7 @@ async function main() {
 
   await channel.send(quizContent);
   const poll: PollData = {
-    duration: 24, // Hours
+    duration: 25, // Hours
     layoutType: PollLayoutType.Default,
     question: { text: `Citat Quiz #${quizNumber}`, },
     allowMultiselect: false,
