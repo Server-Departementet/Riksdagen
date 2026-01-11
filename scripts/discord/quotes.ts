@@ -2,19 +2,11 @@ import "dotenv/config";
 import { argv, env } from "node:process";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { Collection, Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
 import { nameVariants } from "./name-variants.ts"
-
-type SlimMessage = {
-  id: string;
-  createdTimestamp: number;
-  content: string;
-  authorId: string;
-  editedTimestamp?: number;
-  attachmentUrls?: string[];
-};
+import { Quote, TrimmedMessage } from "./types.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -29,6 +21,7 @@ if (!env.QUOTE_CHANNEL_ID) {
   throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
 }
 
+const attachmentDir = "scripts/discord/quote-attachments";
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
@@ -60,192 +53,67 @@ main()
   });
 
 async function main() {
-  const quotes: Message[] = [];
+  const quotes: TrimmedMessage[] = await crawlQuotes();
 
-  const fetchOverrideArg = argv.find(arg => arg.startsWith("--fetch"));
+  openingQuoteCharAnalysis(quotes);
 
-  // Get quotes
-  if (!fetchOverrideArg && fs.existsSync("scripts/discord/quotes.json")) {
-    const data = fs.readFileSync("scripts/discord/quotes.json", "utf-8");
-    const parsedQuotes = JSON.parse(data) as Message[];
-    quotes.push(...parsedQuotes);
-    console.info(`Loaded ${quotes.length} quotes from existing file.`);
-  }
-  else {
-    const fetchedQuotes = await getAndSaveQuotes();
-    quotes.push(...fetchedQuotes);
-  }
-
-  // Trim quotes
-  const trimmed: SlimMessage[] = [];
+  // Normalize content
   for (const quote of quotes) {
-    const attachments = quote.attachments as unknown as { url: string }[];
-    try {
-      trimmed.push({
-        id: quote.id,
-        // This is horrible, the discord.js types are slightly broken so it is what it is :woman_shrugging:
-        authorId: (quote as unknown as { authorId: string; }).authorId || quote.author.id,
-        content: quote.content,
-        createdTimestamp: quote.createdTimestamp,
-        ...quote.editedTimestamp ? { editedTimestamp: quote.editedTimestamp } : {},
-        ...attachments?.length ? { attachmentUrls: attachments.map(a => a.url), } : {},
-      });
-    }
-    catch (e) {
-      console.warn("Error converting message", quote);
-      console.error(e);
-    }
+    quote.content = quote.content
+      .replace(/\s+/g, " ")
+      .replace(/”|“/g, "\"")
+      .trim();
   }
 
-  // Save trimmed quotes
-  fs.writeFileSync("scripts/discord/quotes_trimmed.json", JSON.stringify(trimmed, null, 2));
-  console.info(`Saved ${trimmed.length} trimmed quotes to file.`);
+  duplicateAnalysis(quotes);
 
-  // Starting character analysis
-  const everyStartCharacter = trimmed.map(q => q.content.charAt(0));
-  const startCharacterCounts: Record<string, number> = {};
-  for (const char of everyStartCharacter) {
-    startCharacterCounts[char] ??= 0;
-    startCharacterCounts[char]++;
-  }
-  console.info("These are all the starting characters used in quotes:");
-  console.dir(startCharacterCounts, { depth: null });
+  downloadAttachments(quotes)
+    .catch((error) => {
+      console.error("An error occurred while downloading attachments:", error);
+    });
 
-  // Normalize
-  const quoteChars = ["\"", "”", "“"];
-  const nonQuoted = trimmed.filter(q =>
-    !quoteChars.includes(q.content.charAt(0))
-  );
-
-  if (nonQuoted.length > 0) {
-    console.warn(`Quotes not starting with a quote character ${nonQuoted.length}, [${nonQuoted.map(q => q.id).join(", ")}]`);
-    fs.writeFileSync("scripts/discord/non_quoted_quotes.json", JSON.stringify(nonQuoted, null, 2));
-    console.info("Wrote non-quoted quotes to scripts/discord/non_quoted_quotes.json");
-  }
-
-  const normalizedQuotes: SlimMessage[] = trimmed.map(q => ({
-    ...q,
-    content: q.content.replace(/“|”/g, "\"").trim(),
-  }));
-  const duplicateMap: Record<string, SlimMessage[]> = {};
-  for (const quote of normalizedQuotes) {
-    const key = quote.content.toLowerCase();
-    duplicateMap[key] ??= [];
-    duplicateMap[key].push(quote);
-  }
-
-  const duplicates = Object.values(duplicateMap).filter(dupeList => dupeList.length > 1);
-  if (duplicates.length > 0) {
-    console.warn(`Found ${duplicates.length} sets of duplicate quotes:`);
-    for (const dupeSet of duplicates) {
-      console.group("Duplicate set:");
-      for (const dupe of dupeSet) {
-        console.log(`- [${dupe.id}] ${dupe.content}`);
-      }
-      console.groupEnd();
-    }
-    fs.writeFileSync("scripts/discord/duplicate_quotes.json", JSON.stringify(duplicates, null, 2));
-    console.info("Wrote duplicate quotes to scripts/discord/duplicate_quotes.json");
-  }
-
-  // Add link to normalized
-  const messageLink = (quoteId: string) =>
-    `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quoteId}`;
-
-  const withLinks = normalizedQuotes.map(q => ({
-    ...q,
-    link: messageLink(q.id),
-  }));
-
-  const withContext = withLinks.map(extractContext);
-
-  // Remove unparsed content for bloat and inconsistencies due to censoring
-  for (const quote of withContext) {
-    // @ts-expect-error - I'm a badass B)
-    delete quote.content;
-  }
+  const quotesWithContext: Quote[] = quotes.map(extractContext).filter(q => q !== null);
 
   // Save normalized quotes
-  fs.writeFileSync("scripts/discord/quotes_normalized.json", JSON.stringify(withContext, null, 2));
-  console.info(`Saved ${withContext.length} normalized quotes to file.`);
-
-  // Download attachments
-  const attachmentDir = "scripts/discord/quote-attachments";
-  if (!fs.existsSync(attachmentDir)) {
-    fs.mkdirSync(attachmentDir);
-  }
-  for (const quote of withContext) {
-    if (!quote.attachmentUrls || quote.attachmentUrls.length === 0) continue;
-    for (const attachmentUrl of quote.attachmentUrls) {
-      const downloadURL = new URL(attachmentUrl);
-      const filename = downloadURL.pathname.split("/").at(-1);
-      const attachmentId = downloadURL.pathname.split("/").at(-2);
-      if (!filename || !attachmentId) {
-        console.error(`Could not parse filename or attachment ID from URL: ${attachmentUrl}`);
-        continue;
-      }
-
-      const fileDest = path.join(
-        attachmentDir,
-        `${quote.id}.${attachmentId}.${filename}`,
-      );
-      if (fs.existsSync(fileDest)) {
-        console.info(`Attachment already exists, skipping download: ${fileDest}`);
-        continue;
-      }
-
-      console.info(`Downloading attachment from ${attachmentUrl} to ${fileDest}...`);
-      const response = await fetch(attachmentUrl);
-      if (!response.ok) {
-        console.error(`Failed to download attachment from ${attachmentUrl}: ${response.status} ${response.statusText}`);
-        continue;
-      }
-
-      fs.writeFileSync(fileDest, Buffer.from(await response.arrayBuffer()));
-    }
-  }
+  fs.writeFileSync("scripts/discord/quotes.json", JSON.stringify(quotesWithContext, null, 2));
+  console.info(`Saved ${quotesWithContext.length} normalized quotes to file.`);
 }
 
-function extractContext(quote: SlimMessage) {
+function extractContext(quote: TrimmedMessage): Quote | null {
+  // TODO: Handle multi-line quotes
+  const isMultiLine = quote.content.includes("\n");
+  if (isMultiLine) return null;
+
   const sender = users[quote.authorId];
-  if (!sender) {
+  if (!sender?.name) {
     throw new Error("Could not find user with ID " + quote.authorId);
   }
 
-  const isMultiLine = quote.content.includes("\n");
-  if (isMultiLine) return quote as {
-    id: string;
-    createdTimestamp: number;
-    content: string;
-    authorId: string;
-    editedTimestamp?: number;
-    attachmentUrls?: string[];
-    sender: string;
-    body: string;
-    quotee: string;
-    quoteeId?: string;
-    context?: string;
-  };
-
-  // eslint-disable-next-line prefer-const
-  let [body, meta] = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+  // Regex finds the "-" between the quote body and the quotee to split on
+  const brokenQuote = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+  if (brokenQuote.length !== 2) {
+    console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + quote.content);
+    throw new Error("Failed to split quote into body and meta: " + quote.content);
+  }
+  let body = brokenQuote[0];
+  const meta = brokenQuote[1];
 
   if (!body.endsWith("\"")) {
     throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + quote.content + ")");
   }
-  // Normalize whitespace
-  body = body.replace(/\s+/g, " ");
+
   // Special case: Add quotes around body 
   if ([
     "1187409400349069432",
   ].includes(quote.id)) {
     body = `"${body.trim()}"`;
   }
+
   // Trim surrounding quotes
   body = body.slice(1, -1).trim();
 
-  // TODO move , here for consistency?
   const contextDividers = [
+    ", ",
     " i ",
     " om ",
     " när ",
@@ -255,31 +123,35 @@ function extractContext(quote: SlimMessage) {
     " medan ",
   ];
 
-  let [quotee, context] = meta.split(", ").map(s => s.trim());
+  // Note: quotee is set as the entire meta at first and only overridden if a divider is found
+  let [quotee, context]: [string, string?] = [meta.trim(), undefined];
 
-  const wordDivided = contextDividers.find(div => {
+  const dividableBy = contextDividers.find(div => {
     // Find the first instance of every divider
-    const firstDividers: Record<string, number> = {};
+    const firstDividersByType: Record<string, number> = {};
     for (const divider of contextDividers) {
       const index = meta.indexOf(divider);
       if (index !== -1) {
-        firstDividers[divider] = index;
+        firstDividersByType[divider] = index;
       }
     }
 
-    // Of the found dividers, get the one that comes first in the string
-    const sortedDividers = Object.entries(firstDividers).sort((a, b) => a[1] - b[1]);
+    // Sort by index to find the earliest occurrence
+    const sortedDividers = Object.entries(firstDividersByType).sort((a, b) => a[1] - b[1]);
     return sortedDividers[0]?.[0] === div;
   });
-  if (!context && wordDivided) {
-    [quotee, context] = meta.split(wordDivided).map((s, i) => i === 0
+
+  // Define quotee and context via divider
+  if (!context && dividableBy) {
+    [quotee, context] = meta.split(dividableBy).map((s, i) => i === 0
       ? s.trim()
-      : (wordDivided + s).trim()
+      // Kind ugly way to exempt , from being re-added to the context
+      : (dividableBy === ", " ? "" : dividableBy + s).trim()
     );
   }
 
   // The trans clause
-  if ([
+  if (context && [
     "1243112634371412060",
     "1334524370693128243",
     "1319605765614338118",
@@ -287,7 +159,7 @@ function extractContext(quote: SlimMessage) {
     context = context.replace(" han ", " hon ");
   }
 
-  // Name normalization
+  // Quotee normalization
   const aliases: Record<string, string> = {
     "Viggo": "Vena",
     "Viggos": "Venas",
@@ -308,21 +180,84 @@ function extractContext(quote: SlimMessage) {
   }
   body = body.replace(new RegExp(`\\b(${Object.keys(aliases).join("|")})\\b`, "g"), (match) => aliases[match]);
 
+  // For our purposes we want to link quotees to user IDs where possible for easier use later
   const quoteeId = Object.entries(nameVariants).find(([, variants]) =>
     variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
   )?.[0];
 
   return {
-    ...quote,
+    id: quote.id,
+    authorId: quote.authorId,
+    createdTimestamp: quote.createdTimestamp,
+    link: `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quote.id}`,
     sender: sender.name,
     body,
-    quotee: quotee.trim(),
+    quotee,
     ...(quoteeId ? { quoteeId } : {}),
     ...(context ? { context: context.trim() } : {}),
+    ...(quote.attachmentUrls ? {
+      attachments: quote.attachmentUrls.map(a => generateAttachmentFilePath(quote, a))
+    } : {}),
   };
 }
 
-async function getAndSaveQuotes(): Promise<Message[]> {
+function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
+  const openingChars = quotes.map(q => q.content.charAt(0));
+  const openingCharCounts: Record<string, number> = {};
+  for (const char of openingChars) {
+    openingCharCounts[char] ??= 0;
+    openingCharCounts[char]++;
+  }
+  console.info("Opening quote character analysis:");
+  console.dir(openingCharCounts, { depth: null });
+
+  const validQuoteChars = ["\"", "”", "“"];
+  const invalidStartQuotes = quotes.filter(q =>
+    !validQuoteChars.includes(q.content.charAt(0))
+  );
+
+  if (invalidStartQuotes.length > 0) {
+    console.warn(`Quotes not starting with a quote character ${invalidStartQuotes.length}, [${invalidStartQuotes.map(q => q.id).join(", ")}]`);
+    fs.writeFileSync("scripts/discord/quotes_invalid_quote_char.json", JSON.stringify(invalidStartQuotes, null, 2));
+    console.info("Wrote non-quoted quotes to scripts/discord/non_quoted_quotes.json");
+  }
+}
+
+function duplicateAnalysis(quotes: TrimmedMessage[]): void {
+  const duplicateMap: Record<string, TrimmedMessage[]> = {};
+  for (const quote of quotes) {
+    const key = quote.content.toLowerCase();
+    duplicateMap[key] ??= [];
+    duplicateMap[key].push(quote);
+  }
+  const duplicates = Object.values(duplicateMap).filter(dupeList => dupeList.length > 1);
+  if (duplicates.length > 0) {
+    console.warn(`Found ${duplicates.length} sets of duplicate quotes:`);
+    for (const dupeSet of duplicates) {
+      console.group("Duplicate set:");
+      for (const dupe of dupeSet) {
+        console.log(`- [${dupe.id}] ${dupe.content}`);
+      }
+      console.groupEnd();
+    }
+    fs.writeFileSync("scripts/discord/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
+    console.info("Wrote duplicate quotes to scripts/discord/quotes_duplicates.json");
+  }
+}
+
+/** 
+ * Crawls discord for quotes in the quote channel, returns and saves them to a file.
+ */
+async function crawlQuotes(): Promise<TrimmedMessage[]> {
+  // If cache exists, load from it
+  const forceFetch = argv.includes("--fetch");
+  if (!forceFetch && fs.existsSync("scripts/discord/quotes_cache.json")) {
+    const data = fs.readFileSync("scripts/discord/quotes_cache.json", "utf-8");
+    const parsedQuotes = JSON.parse(data) as TrimmedMessage[];
+    console.info(`Loaded ${parsedQuotes.length} quotes from cache file.`);
+    return parsedQuotes;
+  }
+
   await discordClient.login(env.DISCORD_BOT_TOKEN);
   const guild = await discordClient.guilds.fetch(env.REGERINGEN_GUILD_ID!);
   if (!guild) {
@@ -335,18 +270,19 @@ async function getAndSaveQuotes(): Promise<Message[]> {
 
   const quotes: Message[] = [];
 
+  /* 
+   * Walk and get every message in the quote channel
+   */
   const maxPages = 100;
   let lastId: string | undefined = undefined;
   for (let i = 0; i < maxPages; i++) {
-    const messages: Collection<string, Message<true>> = await quoteChannel.messages.fetch({
+    const messages: Message[] = Array.from((await quoteChannel.messages.fetch({
       limit: 100,
       before: lastId,
-    });
-    if (messages.size === 0) {
-      break;
-    }
-    lastId = messages.last()?.id;
-    quotes.push(...(messages.values() as IterableIterator<Message>));
+    })).values());
+    if (messages.length === 0) break;
+    lastId = messages.at(-1)!.id;
+    quotes.push(...messages);
     console.info(`Fetched ${quotes.length} messages so far...`);
   }
 
@@ -364,13 +300,58 @@ async function getAndSaveQuotes(): Promise<Message[]> {
 
   console.info(`Fetched a total of ${filteredQuotes.length} messages.`);
 
-  const semiSerialized = filteredQuotes.map(q => ({
-    ...q,
-    attachments: q.attachments.map(a => ({ ...a })),
-    author: { ...q.author },
+  const trimmed: TrimmedMessage[] = filteredQuotes.map(q => ({
+    id: q.id,
+    authorId: q.author.id,
+    content: q.content,
+    createdTimestamp: q.createdTimestamp,
+    ...q.attachments?.size ? { attachmentUrls: Array.from(q.attachments.values()).map(a => a.url), } : {},
   }));
 
-  fs.writeFileSync("scripts/discord/quotes.json", JSON.stringify(semiSerialized, null, 2));
+  fs.writeFileSync("scripts/discord/quotes_cache.json", JSON.stringify(trimmed, null, 2));
 
-  return semiSerialized as unknown as Message[];
+  return trimmed;
+}
+
+function generateAttachmentFilePath(quote: TrimmedMessage, attachmentUrl: string): string {
+  const downloadURL = new URL(attachmentUrl);
+  const filename = downloadURL.pathname.split("/").at(-1);
+  const attachmentId = downloadURL.pathname.split("/").at(-2);
+  if (!filename || !attachmentId) {
+    console.error(`Could not parse filename or attachment ID from URL: ${attachmentUrl}`);
+    throw new Error("Failed to parse attachment URL");
+  }
+
+  const fileDest = path.join(
+    attachmentDir,
+    `${quote.id}.${attachmentId}.${filename}`,
+  );
+
+  return fileDest;
+}
+async function downloadAttachments(quotes: TrimmedMessage[]): Promise<void> {
+  // Download attachments
+  if (!fs.existsSync(attachmentDir)) {
+    fs.mkdirSync(attachmentDir);
+  }
+  for (const quote of quotes) {
+    if (!quote.attachmentUrls || quote.attachmentUrls.length === 0) continue;
+    for (const attachmentUrl of quote.attachmentUrls) {
+      const fileDest = generateAttachmentFilePath(quote, attachmentUrl);
+
+      if (fs.existsSync(fileDest)) {
+        console.info(`Attachment already exists, skipping download: ${fileDest}`);
+        continue;
+      }
+
+      console.info(`Downloading attachment from ${attachmentUrl} to ${fileDest}...`);
+      const response = await fetch(attachmentUrl);
+      if (!response.ok) {
+        console.error(`Failed to download attachment from ${attachmentUrl}: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      fs.writeFileSync(fileDest, Buffer.from(await response.arrayBuffer()));
+    }
+  }
 }
