@@ -4,6 +4,8 @@ import { Client as DiscordClient, GatewayIntentBits, MessageType, PollLayoutType
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
+import path from "node:path";
+// attachments will be referenced via external CDN URLs (CANONICAL_URL)
 import { Quote } from "./types.ts";
 
 if (!env.DATABASE_URL) {
@@ -16,7 +18,10 @@ if (!env.REGERINGEN_GUILD_ID) {
   throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
 }
 if (!env.QUIZ_CHANNEL_ID) {
-  throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
+  throw new Error("QUIZ_CHANNEL_ID is not set in environment variables");
+}
+if (!env.CANONICAL_URL) {
+  throw new Error("CANONICAL_URL is not set in environment variables");
 }
 
 const discordClient = new DiscordClient({
@@ -66,7 +71,8 @@ async function main() {
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId)
-    .filter(q => q.attachments);
+    .filter(q => q.attachments)
+  // .filter(q => q.id === "1408836254862409948");
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   let quizNumber = 0;
@@ -80,7 +86,7 @@ async function main() {
     );
   if (lastQuiz) {
     // Get the quiz number
-    const quizTitleNumber = /## citat quiz #(\d+)/.exec(lastQuiz.content.toLowerCase());
+    const quizTitleNumber = /# citat quiz #(\d+)/.exec(lastQuiz.content.toLowerCase());
     if (quizTitleNumber) quizNumber = Number(quizTitleNumber[1]);
 
     // Quote Id is embedded in the quiz question content
@@ -94,16 +100,17 @@ async function main() {
     /* 
      * Reveal the answer to the last quiz
      */
-    if (!lastQuiz.poll) {
+    if (!lastQuiz.poll?.expiresAt) {
       console.info("No previous poll found to reveal answers for");
       return;
     }
 
     // End previous poll
-    await lastQuiz.poll.end();
-
-    // Poll ending is really slow
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    if (lastQuiz.poll.expiresAt > new Date()) {
+      await lastQuiz.poll.end();
+      // Poll ending is really slow
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
 
     // Delete poll results message cause it's ugly and not helpful in a quiz with correct answers
     const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
@@ -161,23 +168,27 @@ async function main() {
     quizContent = quizContent.replace(regex, value.toString());
   }
 
-  // await channel.send(quizContent);
+  // Build embed image URLs from externally hosted attachments (CANONICAL_URL)
+  let embeds: { image: { url: string } }[] | undefined = undefined;
+  if (quote.attachments?.length) {
+    embeds = quote.attachments.map((p: string) => ({ image: { url: new URL(p.replace("public/", ""), env.CANONICAL_URL).href } }));
+    console.dir(embeds, { depth: null });
+  }
+
+  const pollPayload = {
+    duration: 25, // Hours
+    layoutType: PollLayoutType.Default,
+    question: { text: `Citat Quiz #${quizNumber}` },
+    allowMultiselect: false,
+    answers: Object.values(users)
+      .map(u => u.name ?? "FEL")
+      .sort()
+      .map(name => ({ text: name })),
+  };
+
   await channel.send({
-    ...quote.attachments?.length
-      ? { files: quote.attachments, }
-      : {},
     content: quizContent,
-    poll: {
-      duration: 25, // Hours
-      layoutType: PollLayoutType.Default,
-      question: { text: `Citat Quiz #${quizNumber}`, },
-      allowMultiselect: false,
-      answers: Object.values(users)
-        .map(u => u.name)
-        .sort()
-        .map(name => ({
-          text: name ?? "FEL",
-        })),
-    }
+    ...(embeds ? { embeds } : {}),
+    poll: pollPayload,
   });
 }

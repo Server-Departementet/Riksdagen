@@ -23,7 +23,7 @@ export type Quote = {
   attachments?: string[];
 };
 
-export const attachmentDir = "scripts/discord/quote-attachments";
+export const attachmentDir = "public/quote-attachments";
 export function getAttachmentPath(quote: TrimmedMessage, attachmentUrl: string): string {
   const downloadURL = new URL(attachmentUrl);
   const filename = downloadURL.pathname.split("/").at(-1);
