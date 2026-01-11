@@ -11,4 +11,4 @@ chmod +x deploy-code/*
 bash deploy-code/build.sh
 
 # Restart
-reboot
+systemctl restart next-start.service
