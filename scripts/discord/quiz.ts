@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { env } from "node:process";
-import { Client as DiscordClient, GatewayIntentBits, MessageType, PollData, PollLayoutType, } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits, MessageType, PollLayoutType, } from "discord.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
@@ -64,72 +64,72 @@ async function main() {
     throw new Error("Quiz channel is not a text-based channel");
   }
 
-  const quotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
-    .filter(q => q.quoteeId);
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+    .filter(q => q.quoteeId)
+    .filter(q => q.attachments);
+  console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
-  // Determine the next quiz number based off of the last quiz message
   let quizNumber = 0;
   const latestMessages = await channel.messages.fetch({ limit: 100, });
-  const lastQuizMessage = latestMessages
+  const lastQuiz = latestMessages
     .find((msg) =>
       msg.author.id === discordClient.user?.id
       && msg.type === MessageType.Default
-      && msg.content.startsWith("## Citat quiz")
+      && msg.poll
+      && msg.content.toLowerCase().startsWith("## citat quiz #")
     );
-  if (lastQuizMessage) {
+  if (lastQuiz) {
     // Get the quiz number
-    const match = /## Citat quiz #(\d+)/.exec(lastQuizMessage.content);
-    if (match) quizNumber = Number(match[1]);
+    const quizTitleNumber = /## citat quiz #(\d+)/.exec(lastQuiz.content.toLowerCase());
+    if (quizTitleNumber) quizNumber = Number(quizTitleNumber[1]);
 
-    const previousQuoteId = /id: (\d+)/.exec(lastQuizMessage.content)?.[1];
-    const previousQuote = quotes.find(q => q.id === previousQuoteId);
+    // Quote Id is embedded in the quiz question content
+    const previousQuoteId = /id: (\d+)/.exec(lastQuiz.content)?.[1];
+    const previousQuote = availableQuotes.find(q => q.id === previousQuoteId);
     if (!previousQuote) {
       console.info("No previous quote found to reveal answers for");
       return;
     }
 
-    // Reveal the answer to the last quiz
-    const lastPoll = latestMessages.find((msg) =>
-      msg.author.id === discordClient.user?.id
-      && msg.poll
-    );
-
-    if (!lastPoll?.poll) {
+    /* 
+     * Reveal the answer to the last quiz
+     */
+    if (!lastQuiz.poll) {
       console.info("No previous poll found to reveal answers for");
       return;
     }
 
     // End previous poll
-    await lastPoll.poll.end();
+    await lastQuiz.poll.end();
 
     // Poll ending is really slow
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     // Delete poll results message cause it's ugly and not helpful in a quiz with correct answers
-    const pollResultsMessage = (await channel.messages.fetch({ limit: 10, }))
-      .find(msg =>
+    const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
+      .filter(msg =>
         msg.author.id === discordClient.user?.id
         && msg.type === MessageType.PollResult
       );
-    if (pollResultsMessage) {
-      await pollResultsMessage.delete();
-    }
+    await Promise.all(pollResultMessages.map(msg => msg.delete()));
 
-    const answers = lastPoll.poll.answers;
-    const correctString = Object.values(users).find(u => u.id === previousQuote.quoteeId)?.name;
-    const correctAnswer = answers.find(answer => answer.text === correctString);
-    const correctVotes = await correctAnswer?.voters.fetch();
-    const winningUsers = correctVotes ? Array.from(correctVotes.values()) : [];
+    /*
+     * Compile and send quiz results
+     */
+    const answers = lastQuiz.poll.answers;
+    const correctAnswer = answers.find(answer => answer.text === users[previousQuote.quoteeId!].name);
+    const correctVoters = await correctAnswer?.voters.fetch();
+    const winningUsers = correctVoters ? Array.from(correctVoters.values()) : [];
 
     let resultContent = fs.readFileSync("scripts/discord/quiz-result-template.md", "utf-8");
-    const lastQuizData = {
+    const quizResultData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
       "quoteBody": previousQuote.body,
       "link": previousQuote.link,
-      "winners": winningUsers.map(u => `<@${u.id}>`).join(" "),
+      "winners": winningUsers.map(u => `<@${u.id}>`).join(" ") || "*ingen...*",
     };
-    for (const [key, value] of Object.entries(lastQuizData)) {
+    for (const [key, value] of Object.entries(quizResultData)) {
       const regex = new RegExp(`{{${key}}}`, "g");
       resultContent = resultContent.replace(regex, value.toString());
     }
@@ -138,7 +138,7 @@ async function main() {
     quizNumber += 1;
   }
 
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+  const quote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
 
   /*
    * Make new quiz
@@ -167,20 +167,17 @@ async function main() {
       ? { files: quote.attachments, }
       : {},
     content: quizContent,
-  });
-  const poll: PollData = {
-    duration: 25, // Hours
-    layoutType: PollLayoutType.Default,
-    question: { text: `Citat Quiz #${quizNumber}`, },
-    allowMultiselect: false,
-    answers: Object.values(users)
-      .map(u => u.name)
-      .sort()
-      .map(name => ({
-        text: name ?? "FEL",
-      })),
-  }
-  await channel.send({
-    poll: poll,
+    poll: {
+      duration: 25, // Hours
+      layoutType: PollLayoutType.Default,
+      question: { text: `Citat Quiz #${quizNumber}`, },
+      allowMultiselect: false,
+      answers: Object.values(users)
+        .map(u => u.name)
+        .sort()
+        .map(name => ({
+          text: name ?? "FEL",
+        })),
+    }
   });
 }
