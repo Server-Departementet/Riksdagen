@@ -4,8 +4,6 @@ import { Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollL
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
-import path from "node:path";
-// attachments will be referenced via external CDN URLs (CANONICAL_URL)
 import { Quote } from "./types.ts";
 
 if (!env.DATABASE_URL) {
@@ -119,7 +117,9 @@ async function main() {
       "quotee": previousQuote.quotee,
       "quoteBody": previousQuote.body,
       "link": previousQuote.link,
-      "winners": winningUsers.map(u => `<@${u.id}>`).join(" ") || "*ingen...*",
+      "winners": winningUsers.length
+        ? winningUsers.map(u => `<@${u.id}>`).join(" ") + " som gissade rätt"
+        : "*ingen...*",
     };
     for (const [key, value] of Object.entries(quizResultData)) {
       const regex = new RegExp(`{{${key}}}`, "g");
@@ -186,7 +186,7 @@ async function endPreviousPoll(message: Message) {
   // End previous poll
   if (message.poll.expiresAt > new Date()) {
     await message.poll.end();
-    // Poll ending is really slow
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Poll ending can be really slow
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 }
