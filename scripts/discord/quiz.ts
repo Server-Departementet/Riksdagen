@@ -22,6 +22,7 @@ if (!env.CANONICAL_URL) {
   throw new Error("CANONICAL_URL is not set in environment variables");
 }
 
+const isDryRun = process.argv.includes("--dry-run");
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
@@ -66,6 +67,10 @@ async function main() {
   if (!channel?.isTextBased()) {
     throw new Error("Quiz channel is not a text-based channel");
   }
+
+  const usedQuotesPath = "scripts/discord/quotes_used.json";
+  if (!fs.existsSync(usedQuotesPath)) fs.writeFileSync(usedQuotesPath, "[]", "utf-8");
+  const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId);
@@ -126,11 +131,34 @@ async function main() {
       resultContent = resultContent.replace(regex, value.toString());
     }
 
-    await channel.send(resultContent);
+    if (!isDryRun)
+      await channel.send(resultContent);
     quizNumber += 1;
   }
 
-  const quote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+  // Remove used quotes from available quotes after having selected previous quote
+  for (const usedQuoteId of usedQuotes) {
+    const index = availableQuotes.findIndex(q => q.id === usedQuoteId);
+    if (index !== -1) {
+      availableQuotes.splice(index, 1);
+    }
+  }
+  console.info(`There are ${availableQuotes.length} quotes left to select from`);
+
+  /* 
+   * Select quote for new quiz 
+   */
+  const allQuotees = [...new Set(availableQuotes.map(q => q.quoteeId))];
+  const randomQuotee = allQuotees[Math.floor(Math.random() * allQuotees.length)];
+  const quotesSelection = availableQuotes.filter(q => q.quoteeId === randomQuotee);
+  const quote = quotesSelection[Math.floor(Math.random() * quotesSelection.length)];
+
+  // Save quote id to file to avoid repeating quotes
+  usedQuotes.push(quote.id);
+  fs.writeFileSync(usedQuotesPath, JSON.stringify(usedQuotes, null, 2), "utf-8");
+
+  console.info(`Selected quote ID ${quote.id} for Quiz #${quizNumber}`);
+  console.info(quote);
 
   /*
    * Make new quiz
@@ -138,12 +166,13 @@ async function main() {
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
-    "sender": quote.sender,
     "date": new Date(quote.createdTimestamp).toLocaleDateString("sv-SE", {
       year: "numeric",
       month: "long",
       day: "numeric",
     }),
+    "sender": quote.sender,
+    ...quote.context ? { "context": quote.context } : {},
     "quoteId": quote.id,
   };
 
@@ -153,11 +182,15 @@ async function main() {
     quizContent = quizContent.replace(regex, value.toString());
   }
 
-  // Build embed image URLs from externally hosted attachments (CANONICAL_URL)
+  // Remove line with {{context}} if no context is provided
+  if (!quote.context) {
+    quizContent = quizContent.replace(/^-# {2}sammanhang \|\|.*\|\|\n/m, "");
+  }
+
+  // Build embed image URLs from externally hosted attachments
   let embeds: { image: { url: string } }[] | undefined = undefined;
   if (quote.attachments?.length) {
     embeds = quote.attachments.map((p: string) => ({ image: { url: new URL(p.replace("public/", ""), env.CANONICAL_URL).href } }));
-    console.dir(embeds, { depth: null });
   }
 
   const pollPayload = {
@@ -171,11 +204,12 @@ async function main() {
       .map(name => ({ text: name })),
   };
 
-  await channel.send({
-    content: quizContent,
-    ...(embeds ? { embeds } : {}),
-    poll: pollPayload,
-  });
+  if (!isDryRun)
+    await channel.send({
+      content: quizContent,
+      ...(embeds ? { embeds } : {}),
+      poll: pollPayload,
+    });
 }
 
 async function endPreviousPoll(message: Message) {
