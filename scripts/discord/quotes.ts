@@ -1,12 +1,11 @@
 import "dotenv/config";
 import { argv, env } from "node:process";
+import fs from "node:fs";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
-import fs from "node:fs";
-import path from "node:path";
+import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
 import { nameVariants } from "./name-variants.ts"
-import { Quote, TrimmedMessage } from "./types.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -21,7 +20,6 @@ if (!env.QUOTE_CHANNEL_ID) {
   throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
 }
 
-const attachmentDir = "scripts/discord/quote-attachments";
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
@@ -60,7 +58,6 @@ async function main() {
   // Normalize content
   for (const quote of quotes) {
     quote.content = quote.content
-      .replace(/\s+/g, " ")
       .replace(/”|“/g, "\"")
       .trim();
   }
@@ -196,7 +193,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     ...(quoteeId ? { quoteeId } : {}),
     ...(context ? { context: context.trim() } : {}),
     ...(quote.attachmentUrls ? {
-      attachments: quote.attachmentUrls.map(a => generateAttachmentFilePath(quote, a))
+      attachments: quote.attachmentUrls.map(a => getAttachmentPath(quote, a))
     } : {}),
   };
 }
@@ -313,22 +310,6 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
   return trimmed;
 }
 
-function generateAttachmentFilePath(quote: TrimmedMessage, attachmentUrl: string): string {
-  const downloadURL = new URL(attachmentUrl);
-  const filename = downloadURL.pathname.split("/").at(-1);
-  const attachmentId = downloadURL.pathname.split("/").at(-2);
-  if (!filename || !attachmentId) {
-    console.error(`Could not parse filename or attachment ID from URL: ${attachmentUrl}`);
-    throw new Error("Failed to parse attachment URL");
-  }
-
-  const fileDest = path.join(
-    attachmentDir,
-    `${quote.id}.${attachmentId}.${filename}`,
-  );
-
-  return fileDest;
-}
 async function downloadAttachments(quotes: TrimmedMessage[]): Promise<void> {
   // Download attachments
   if (!fs.existsSync(attachmentDir)) {
@@ -337,7 +318,7 @@ async function downloadAttachments(quotes: TrimmedMessage[]): Promise<void> {
   for (const quote of quotes) {
     if (!quote.attachmentUrls || quote.attachmentUrls.length === 0) continue;
     for (const attachmentUrl of quote.attachmentUrls) {
-      const fileDest = generateAttachmentFilePath(quote, attachmentUrl);
+      const fileDest = getAttachmentPath(quote, attachmentUrl);
 
       if (fs.existsSync(fileDest)) {
         console.info(`Attachment already exists, skipping download: ${fileDest}`);
