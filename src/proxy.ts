@@ -29,6 +29,9 @@ export const config = {
     // Spotify route
     "/spotify",
     "/api/spotify/(.*)", // Included for clerk coverage
+
+    // Quote Quiz attachments
+    "quote-attachments/(.*)"
   ],
 };
 
