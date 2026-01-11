@@ -31,7 +31,7 @@ export const config = {
     "/api/spotify/(.*)", // Included for clerk coverage
 
     // Quote Quiz attachments
-    "quote-attachments/(.*)"
+    "/quote-attachments/(.*)"
   ],
 };
 
