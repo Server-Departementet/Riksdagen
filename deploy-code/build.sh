@@ -18,3 +18,5 @@ cp -r cache .next/standalone/
 cp -r .next/static .next/standalone/.next/
 
 cd /root/Riksdagen
+
+chmod +x /root/Riksdagen/deploy-code/*
