@@ -4,6 +4,7 @@ import { Client as DiscordClient, GatewayIntentBits, MessageType, PollData, Poll
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
+import { Quote } from "./types.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -52,26 +53,19 @@ async function main() {
   await discordClient.login(env.DISCORD_BOT_TOKEN);
 
   const guild = await discordClient.guilds.fetch(env.REGERINGEN_GUILD_ID!);
+  if (!guild) {
+    throw new Error("Could not fetch guild");
+  }
   const channel = await guild.channels.fetch(env.QUIZ_CHANNEL_ID!);
-
+  if (!channel) {
+    throw new Error("Could not fetch quiz channel");
+  }
   if (!channel?.isTextBased()) {
     throw new Error("Quiz channel is not a text-based channel");
   }
 
-  const quotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes_normalized.json", "utf-8")) as {
-    id: string;
-    authorId: string;
-    createdTimestamp: number;
-    link: string;
-    sender: string;
-    body: string;
-    quotee: string;
-    quoteeId?: string;
-    context?: string;
-    attachmentUrls?: string[];
-  }[])
-    .filter(q => q.quoteeId)
-    .filter(q => !q.attachmentUrls);
+  const quotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+    .filter(q => q.quoteeId);
 
   // Determine the next quiz number based off of the last quiz message
   let quizNumber = 0;
@@ -98,7 +92,6 @@ async function main() {
     const lastPoll = latestMessages.find((msg) =>
       msg.author.id === discordClient.user?.id
       && msg.poll
-      // TODO make better checks
     );
 
     if (!lastPoll?.poll) {
@@ -112,7 +105,7 @@ async function main() {
     // Poll ending is really slow
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Delete poll results message
+    // Delete poll results message cause it's ugly and not helpful in a quiz with correct answers
     const pollResultsMessage = (await channel.messages.fetch({ limit: 10, }))
       .find(msg =>
         msg.author.id === discordClient.user?.id
@@ -147,7 +140,9 @@ async function main() {
 
   const quote = quotes[Math.floor(Math.random() * quotes.length)];
 
-  // {{variableName}}
+  /*
+   * Make new quiz
+   */
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
@@ -166,7 +161,13 @@ async function main() {
     quizContent = quizContent.replace(regex, value.toString());
   }
 
-  await channel.send(quizContent);
+  // await channel.send(quizContent);
+  await channel.send({
+    ...quote.attachments?.length
+      ? { files: quote.attachments, }
+      : {},
+    content: quizContent,
+  });
   const poll: PollData = {
     duration: 25, // Hours
     layoutType: PollLayoutType.Default,
