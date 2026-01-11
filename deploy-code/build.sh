@@ -12,6 +12,7 @@ CI=true yarn build
 yarn cache clean
 
 # Copy necessary files to the standalone directory
+mkdir -p .next/standalone/
 cp .env .next/standalone/
 cp -r public .next/standalone/
 cp -r cache .next/standalone/
