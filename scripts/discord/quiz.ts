@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { env } from "node:process";
-import { Client as DiscordClient, GatewayIntentBits, MessageType, PollLayoutType, } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
@@ -80,7 +80,7 @@ async function main() {
       msg.author.id === discordClient.user?.id
       && msg.type === MessageType.Default
       && msg.poll
-      && msg.content.toLowerCase().startsWith("## citat quiz #")
+      && msg.content.toLowerCase().startsWith("# citat quiz #")
     );
   if (lastQuiz) {
     // Get the quiz number
@@ -91,24 +91,11 @@ async function main() {
     const previousQuoteId = /id: (\d+)/.exec(lastQuiz.content)?.[1];
     const previousQuote = availableQuotes.find(q => q.id === previousQuoteId);
     if (!previousQuote) {
-      console.info("No previous quote found to reveal answers for");
-      return;
+      throw new Error("Could not find previous quote for quiz results");
     }
 
-    /* 
-     * Reveal the answer to the last quiz
-     */
-    if (!lastQuiz.poll?.expiresAt) {
-      console.info("No previous poll found to reveal answers for");
-      return;
-    }
-
-    // End previous poll
-    if (lastQuiz.poll.expiresAt > new Date()) {
-      await lastQuiz.poll.end();
-      // Poll ending is really slow
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
+    // End previous poll early if still running
+    await endPreviousPoll(lastQuiz);
 
     // Delete poll results message cause it's ugly and not helpful in a quiz with correct answers
     const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
@@ -121,7 +108,7 @@ async function main() {
     /*
      * Compile and send quiz results
      */
-    const answers = lastQuiz.poll.answers;
+    const answers = lastQuiz.poll!.answers;
     const correctAnswer = answers.find(answer => answer.text === users[previousQuote.quoteeId!].name);
     const correctVoters = await correctAnswer?.voters.fetch();
     const winningUsers = correctVoters ? Array.from(correctVoters.values()) : [];
@@ -189,4 +176,17 @@ async function main() {
     ...(embeds ? { embeds } : {}),
     poll: pollPayload,
   });
+}
+
+async function endPreviousPoll(message: Message) {
+  if (!message.poll?.expiresAt) {
+    console.info("No previous poll found to reveal answers for");
+    return;
+  }
+  // End previous poll
+  if (message.poll.expiresAt > new Date()) {
+    await message.poll.end();
+    // Poll ending is really slow
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
 }
