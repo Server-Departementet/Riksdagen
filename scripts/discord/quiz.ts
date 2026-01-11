@@ -187,6 +187,6 @@ async function endPreviousPoll(message: Message) {
   if (message.poll.expiresAt > new Date()) {
     await message.poll.end();
     // Poll ending can be really slow
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 }
