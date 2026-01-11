@@ -70,9 +70,7 @@ async function main() {
   }
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
-    .filter(q => q.quoteeId)
-    .filter(q => q.attachments)
-  // .filter(q => q.id === "1408836254862409948");
+    .filter(q => q.quoteeId);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   let quizNumber = 0;
