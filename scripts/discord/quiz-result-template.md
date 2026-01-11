@@ -6,3 +6,5 @@
 Originalet {{link}}
 
 Grattis till {{winners}}!
+
+> Återkom imorgon för nästa quiz!
