@@ -184,7 +184,10 @@ async function main() {
 
   // Remove line with {{context}} if no context is provided
   if (!quote.context) {
-    quizContent = quizContent.replace(/^-# {2}sammanhang \|\|.*\|\|\n/m, "");
+    quizContent = quizContent
+      .split("\n")
+      .filter(line => !line.includes("{{context}}"))
+      .join("\n");
   }
 
   // Build embed image URLs from externally hosted attachments
