@@ -23,15 +23,14 @@ export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextReques
 
 export const config = {
   matcher: [
-    // Next.js
-    '/((?!api|_next/static|_next/image|.*\\.png$).*)',
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
 
-    // Spotify route
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+
+    // Spotify page
     "/spotify",
-    "/api/spotify/(.*)", // Included for clerk coverage
-
-    // Quote Quiz attachments
-    "/quote-attachments/(.*)"
   ],
 };
 
