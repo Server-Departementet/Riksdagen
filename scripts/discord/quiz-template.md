@@ -3,8 +3,8 @@ Vem sa?
 > "{{quoteBody}}"
 
 Ledtrådar
--#  datum ||*{{date}}*||
--#  skrevs av ||*{{sender}}*||
--#  sammanhang ||*{{context}}*||
+-#  datum               || {{date}}||
+-#  skrevs av          || {{sender}}||
+-#  sammanhang  || {{context}}||
 
 -# *id: {{quoteId}}*

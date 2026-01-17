@@ -166,13 +166,13 @@ async function main() {
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
-    "date": new Date(quote.createdTimestamp).toLocaleDateString("sv-SE", {
+    "date": `*${new Date(quote.createdTimestamp).toLocaleDateString("sv-SE", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    }),
-    "sender": quote.sender,
-    ...quote.context ? { "context": quote.context } : {},
+    })}*`.padEnd(32, " "),
+    "sender": `*${quote.sender}*`.padEnd(32, " "),
+    ...quote.context ? { "context": `*${quote.context}*`.padEnd(32, " "), } : {},
     "quoteId": quote.id,
   };
 
