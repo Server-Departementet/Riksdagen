@@ -4,6 +4,8 @@ import "dotenv/config";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { execSync } from "node:child_process";
+import { createClerkClient } from "@clerk/backend";
+import { env } from "node:process";
 
 const dbURL = process.env.DATABASE_URL;
 if (!dbURL) throw new Error("DATABASE_URL environment variable is not set");
@@ -26,6 +28,23 @@ const remoteAdapter = new PrismaMariaDb({
   database: new URL(remoteDB).pathname.slice(1),
 });
 const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
+
+const clerkClient = createClerkClient({
+  publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
+  secretKey: env.CLERK_SECRET_KEY!,
+});
+const users = await clerkClient.users.getUserList();
+const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
+
+const tokenResponse = await clerkClient.users.getUserOauthAccessToken(ministers[0].id, "spotify");
+if (!tokenResponse.data.length) {
+  throw new Error(`No Spotify token found for user: ${ministers[0].firstName}`);
+}
+if (tokenResponse.data.length > 1) {
+  throw new Error(`Multiple Spotify tokens found for user: ${ministers[0].firstName}`);
+}
+const spotifyToken = tokenResponse.data[0].token;
+
 
 const seedGenres = async (prisma: PrismaClient) => {
   console.debug("Seeding genres...");
@@ -61,6 +80,36 @@ const seedAlbums = async (prisma: PrismaClient) => {
     skipDuplicates: true,
   });
 
+  const paginatedAlbums: string[] = [];
+  for (let i = 0; i < remoteAlbums.length; i += 20) {
+    const batch = remoteAlbums.slice(i, i + 20).map(album => album.id);
+    paginatedAlbums.push(encodeURIComponent(batch.join(",")));
+  }
+
+  for (const batch of paginatedAlbums) {
+    const response = await fetch(`https://api.spotify.com/v1/albums?ids=${batch}`, {
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+      },
+    });
+    if (!response.ok) {
+      console.warn(`Failed to fetch album data for album ID: ${batch}`);
+      console.log(response);
+      continue;
+    }
+    const data = await response.json() as SpotifyApi.MultipleAlbumsResponse;
+
+    for (const album of data.albums) {
+      const releaseDate = album.release_date;
+      await prisma.album.update({
+        where: { id: album.id },
+        data: {
+          releaseDate: new Date(releaseDate),
+        },
+      });
+    }
+  }
+
   console.debug("Seeding albums complete.");
 };
 
@@ -87,6 +136,38 @@ const seedTracks = async (prisma: PrismaClient) => {
     }) satisfies Prisma.TrackCreateManyInput),
     skipDuplicates: true,
   });
+
+  // Get ISRCs separately from spotify API
+  const paginatedTracks: string[] = [];
+  for (let i = 0; i < remoteTracks.length; i += 50) {
+    const batch = remoteTracks.slice(i, i + 50).map(track => track.id);
+    paginatedTracks.push(encodeURIComponent(batch.join(",")));
+  }
+
+  for (const batch of paginatedTracks) {
+    const response = await fetch(`https://api.spotify.com/v1/tracks?ids=${batch}`, {
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+      },
+    });
+    if (!response.ok) {
+      console.warn(`Failed to fetch track data for track IDs: ${batch}`);
+      continue;
+    }
+    const data = await response.json() as SpotifyApi.MultipleTracksResponse;
+
+    for (const track of data.tracks) {
+      const isrc = track.external_ids?.isrc;
+      if (isrc) {
+        await prisma.track.update({
+          where: { id: track.id },
+          data: {
+            ISRC: isrc,
+          },
+        });
+      }
+    }
+  }
 
   console.debug("Seeding tracks complete.");
 };
@@ -173,7 +254,7 @@ async function main() {
     await seedTracks(prisma as PrismaClient);
     await seedArtists(prisma as PrismaClient);
     await seedTrackPlays(prisma as PrismaClient);
-  }, { timeout: 20000 });
+  }, { timeout: 240_000 });
 }
 
 main()

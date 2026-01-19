@@ -38,6 +38,8 @@ model Track {
   albumId    String
   artists    Artist[]
   TrackPlays TrackPlay[]
+
+  ISRC String?
 }
 
 model Artist {
@@ -52,11 +54,12 @@ model Artist {
 }
 
 model Album {
-  id    String  @id // Spotify's album UID
-  name  String
-  url   String
-  image String?
-  color String?
+  id          String    @id // Spotify's album UID
+  name        String
+  url         String
+  image       String?
+  color       String?
+  releaseDate DateTime? @db.Date
 
   tracks Track[]
 }

@@ -18,11 +18,11 @@ if (!env.DATABASE_URL) {
 addRecentTrackPlays()
   .then(() => {
     console.log("Finished adding recent track plays.");
-    process.exit(0);
+    process.exitCode = 0;
   })
   .catch((error) => {
     console.error("Error adding recent track plays:", error);
-    process.exit(1);
+    process.exitCode = 1;
   });
 
 async function addRecentTrackPlays() {
@@ -132,6 +132,7 @@ async function addRecentTrackPlays() {
             url: album.external_urls.spotify,
             image: imageUrl,
             color: imageUrl ? colors[imageUrl] : undefined,
+            releaseDate: new Date(album.release_date),
           },
           create: {
             id: album.id,
@@ -139,6 +140,7 @@ async function addRecentTrackPlays() {
             url: album.external_urls.spotify,
             image: imageUrl,
             color: imageUrl ? colors[imageUrl] : undefined,
+            releaseDate: new Date(album.release_date),
           },
         });
       }
@@ -152,6 +154,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
+            ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
           },
           create: {
             id: track.id,
@@ -159,6 +162,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
+            ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
           },
         });
       }
