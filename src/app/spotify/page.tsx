@@ -94,6 +94,9 @@ async function getUsers(trackSearchQuery?: string): Promise<{ id: string; name: 
             {
               track: { artists: { some: { name: { contains: trackSearchQuery ?? "", }, }, }, },
             },
+            {
+              trackId: trackSearchQuery,
+            }
           ],
         },
       },
