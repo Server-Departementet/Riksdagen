@@ -200,6 +200,16 @@ async function addRecentTrackPlays() {
         });
       }
 
+      // Really ensure Track-Artist relations
+      for (const track of tracks) {
+        for (const artist of track.artists) {
+          await prisma.track.update({
+            where: { id: track.id },
+            data: { artists: { connect: { id: artist.id } } },
+          });
+        }
+      }
+
       // Insert TrackPlays, skip dupes
       await prisma.trackPlay.createMany({
         skipDuplicates: true,
