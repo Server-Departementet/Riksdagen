@@ -10,7 +10,7 @@ export type Minister = {
   description: string;
 };
 
-export type TrackWithData = Track & {
+export type TrackWithCompany = Track & {
   album: {
     name: string;
     id: string;

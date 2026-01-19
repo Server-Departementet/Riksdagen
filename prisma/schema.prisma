@@ -30,6 +30,7 @@ model TrackPlay {
 
 model Track {
   id       String @id // Spotify's track UID
+  ISRC     String
   url      String
   name     String
   duration Int // Milliseconds
@@ -38,8 +39,6 @@ model Track {
   albumId    String
   artists    Artist[]
   TrackPlays TrackPlay[]
-
-  ISRC String?
 }
 
 model Artist {

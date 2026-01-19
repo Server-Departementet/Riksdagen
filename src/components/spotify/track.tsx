@@ -9,7 +9,7 @@ import { Fragment, ReactNode, useEffect, useMemo, useState } from "react";
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { Album, Artist, Track } from "@/prisma/generated";
-import { TrackWithData } from "@/types";
+import { TrackWithCompany } from "@/types";
 
 export function TrackList({
   trackIds: allTrackIds,
@@ -18,11 +18,12 @@ export function TrackList({
 }) {
   const batchSize = 100;
   const [loadedBatchCount, setLoadedBatchCount] = useState<number>(1);
-  const trackIdBatches = useMemo<string[][]>(() =>
+  const trackISRCBatches = useMemo<string[][]>(() =>
     new Array(Math.min(loadedBatchCount, Math.ceil(allTrackIds.length / batchSize)))
       .fill(0).map((_, i) => allTrackIds.slice(i * batchSize, i * batchSize + batchSize))
     , [allTrackIds, loadedBatchCount]);
-  const [trackDataBatches, setTrackDataBatches] = useState<Record<string, TrackWithData>>({});
+
+  const [trackDataBatches, setTrackDataBatches] = useState<Record<string, TrackWithCompany>>({});
   const trackElements = useMemo<ReactNode[]>(() =>
     allTrackIds.map((trackId, index) =>
       <TrackElement
@@ -35,22 +36,23 @@ export function TrackList({
   // Fetch track data when loadedBatchCount changes
   useEffect(() => {
     async function fetchTrackData() {
-      const trackIdsToFetch = trackIdBatches
+      const trackISRCToFetch = trackISRCBatches
         .flat()
         .filter(trackId => !(trackDataBatches && trackDataBatches[trackId]));
-      if (trackIdsToFetch.length === 0) return;
-      const trackDataArray = await getTrackDataBatch(trackIdsToFetch);
+
+      if (trackISRCToFetch.length === 0) return;
+      const trackDataArray = await getTrackDataBatch(trackISRCToFetch);
       setTrackDataBatches(prev => {
         const newData = { ...prev };
         trackDataArray.forEach(trackData => {
-          newData[trackData.id] = trackData;
+          newData[trackData.ISRC] = trackData;
         });
         return newData;
       });
     }
     fetchTrackData()
       .catch(console.error);
-  }, [loadedBatchCount, trackIdBatches, trackDataBatches]);
+  }, [loadedBatchCount, trackISRCBatches, trackDataBatches]);
 
   return (<>
     <p
@@ -92,7 +94,7 @@ function TrackElement({
   trackData,
   lineNumber,
 }: {
-  trackData: TrackWithData | null;
+  trackData: TrackWithCompany | null;
   lineNumber: number;
 }) {
   const track = useMemo<Track | null>(() => trackData
