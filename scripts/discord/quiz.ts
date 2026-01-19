@@ -163,15 +163,26 @@ async function main() {
   /*
    * Make new quiz
    */
+  const sentDate = new Date(quote.createdTimestamp);
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
-    "date": `*${new Date(quote.createdTimestamp).toLocaleDateString("sv-SE", {
+    "date": `*${sentDate.toLocaleDateString("sv-SE", {
       year: "numeric",
       month: "long",
       day: "numeric",
     })}*`.padEnd(32, " "),
-    "sender": `*${quote.sender}*`.padEnd(32, " "),
+    "sender": `*${
+      // The great importaning...
+      (
+        quote.sender.toLowerCase().includes("winroth")
+        && sentDate.getUTCFullYear() === 2024
+        && sentDate.getUTCMonth() === 4
+        && sentDate.getUTCDate() === 23
+      )
+        ? "Okänd"
+        : quote.sender
+      }*`.padEnd(32, " "),
     ...quote.context ? { "context": `*${quote.context}*`.padEnd(32, " "), } : {},
     "quoteId": quote.id,
   };
