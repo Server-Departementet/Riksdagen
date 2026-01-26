@@ -2,32 +2,18 @@
 
 import "dotenv/config";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { execSync } from "node:child_process";
 import { createClerkClient } from "@clerk/backend";
 import { env } from "node:process";
+import { createMariaDbAdapter } from "../src/lib/mariadb-url";
 
 const dbURL = process.env.DATABASE_URL;
 if (!dbURL) throw new Error("DATABASE_URL environment variable is not set");
-const adapter = new PrismaMariaDb({
-  host: new URL(dbURL).hostname,
-  port: Number(new URL(dbURL).port),
-  user: new URL(dbURL).username,
-  password: new URL(dbURL).password,
-  database: new URL(dbURL).pathname.slice(1),
-});
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({ adapter: createMariaDbAdapter(dbURL) });
 
 const remoteDB = process.env.REMOTE_DB_URL;
 if (!remoteDB) throw new Error("REMOTE_DB_URL environment variable is not set");
-const remoteAdapter = new PrismaMariaDb({
-  host: new URL(remoteDB).hostname,
-  port: Number(new URL(remoteDB).port),
-  user: new URL(remoteDB).username,
-  password: new URL(remoteDB).password,
-  database: new URL(remoteDB).pathname.slice(1),
-});
-const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
+const remotePrisma = new PrismaClient({ adapter: createMariaDbAdapter(remoteDB) });
 
 const clerkClient = createClerkClient({
   publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,

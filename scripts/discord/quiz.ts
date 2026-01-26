@@ -1,11 +1,11 @@
 import "dotenv/config";
 import { env } from "node:process";
 import { Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
 import { ggSansWidths } from "./gg-sans-widths.ts";
+import { createMariaDbAdapter } from "../../src/lib/mariadb-url.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -27,15 +27,7 @@ const isDryRun = process.argv.includes("--dry-run");
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
-const dbURL = new URL(env.DATABASE_URL);
-const adapter = new PrismaMariaDb({
-  host: dbURL.hostname,
-  port: Number(dbURL.port),
-  user: dbURL.username,
-  password: dbURL.password,
-  database: dbURL.pathname.slice(1),
-});
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({ adapter: createMariaDbAdapter(env.DATABASE_URL) });
 const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));

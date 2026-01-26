@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient, TrackPlay } from "../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { createMariaDbAdapter } from "../src/lib/mariadb-url.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -25,35 +25,11 @@ merge()
   .finally(() => process.exit());
 
 async function merge() {
-  const dbURL = new URL(env.DATABASE_URL!);
-  const adapter = new PrismaMariaDb({
-    host: dbURL.hostname,
-    port: Number(dbURL.port),
-    user: dbURL.username,
-    password: dbURL.password,
-    database: dbURL.pathname.slice(1),
-  });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient({ adapter: createMariaDbAdapter(env.DATABASE_URL!) });
 
-  const dbAUrl = new URL(env.MERGE_DB_A!);
-  const adapterA = new PrismaMariaDb({
-    host: dbAUrl.hostname,
-    port: Number(dbAUrl.port),
-    user: dbAUrl.username,
-    password: dbAUrl.password,
-    database: dbAUrl.pathname.slice(1),
-  });
-  const prismaA = new PrismaClient({ adapter: adapterA });
+  const prismaA = new PrismaClient({ adapter: createMariaDbAdapter(env.MERGE_DB_A!) });
 
-  const dbBUrl = new URL(env.MERGE_DB_B!);
-  const adapterB = new PrismaMariaDb({
-    host: dbBUrl.hostname,
-    port: Number(dbBUrl.port),
-    user: dbBUrl.username,
-    password: dbBUrl.password,
-    database: dbBUrl.pathname.slice(1),
-  });
-  const prismaB = new PrismaClient({ adapter: adapterB });
+  const prismaB = new PrismaClient({ adapter: createMariaDbAdapter(env.MERGE_DB_B!) });
 
   /* 
    * Genres
