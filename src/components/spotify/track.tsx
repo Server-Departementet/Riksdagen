@@ -12,33 +12,33 @@ import { Album, Artist, Track } from "@/prisma/generated";
 import { TrackWithCompany } from "@/types";
 
 export function TrackList({
-  trackIds: allTrackIds,
+  trackISRCs: allTrackISRCs,
 }: {
-  trackIds: string[];
+  trackISRCs: string[];
 }) {
   const batchSize = 100;
   const [loadedBatchCount, setLoadedBatchCount] = useState<number>(1);
   const trackISRCBatches = useMemo<string[][]>(() =>
-    new Array(Math.min(loadedBatchCount, Math.ceil(allTrackIds.length / batchSize)))
-      .fill(0).map((_, i) => allTrackIds.slice(i * batchSize, i * batchSize + batchSize))
-    , [allTrackIds, loadedBatchCount]);
+    new Array(Math.min(loadedBatchCount, Math.ceil(allTrackISRCs.length / batchSize)))
+      .fill(0).map((_, i) => allTrackISRCs.slice(i * batchSize, i * batchSize + batchSize))
+    , [allTrackISRCs, loadedBatchCount]);
 
   const [trackDataBatches, setTrackDataBatches] = useState<Record<string, TrackWithCompany>>({});
   const trackElements = useMemo<ReactNode[]>(() =>
-    allTrackIds.map((trackId, index) =>
+    allTrackISRCs.map((trackISRC, index) =>
       <TrackElement
-        key={`track-${trackId}`}
-        trackData={trackDataBatches[trackId] ?? null}
+        key={`track-${trackISRC}`}
+        trackData={trackDataBatches[trackISRC] ?? null}
         lineNumber={index + 1}
       />
-    ), [allTrackIds, trackDataBatches]);
+    ), [allTrackISRCs, trackDataBatches]);
 
   // Fetch track data when loadedBatchCount changes
   useEffect(() => {
     async function fetchTrackData() {
       const trackISRCToFetch = trackISRCBatches
         .flat()
-        .filter(trackId => !(trackDataBatches && trackDataBatches[trackId]));
+        .filter(trackISRC => !(trackDataBatches && trackDataBatches[trackISRC]));
 
       if (trackISRCToFetch.length === 0) return;
       const trackDataArray = await getTrackDataBatch(trackISRCToFetch);
@@ -65,7 +65,7 @@ export function TrackList({
         lg:text-start
       `}
     >
-      {allTrackIds.length} Resultat
+      {allTrackISRCs.length} Resultat
     </p>
 
     <ul
@@ -74,7 +74,7 @@ export function TrackList({
         const target = e.target as HTMLUListElement;
 
         const scrolled = target.scrollTop / target.scrollHeight;
-        const totalBatches = Math.ceil(allTrackIds.length / batchSize);
+        const totalBatches = Math.ceil(allTrackISRCs.length / batchSize);
         const batchesToLoad = Math.min(
           totalBatches,
           Math.ceil(scrolled * totalBatches) + 1,

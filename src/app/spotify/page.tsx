@@ -65,10 +65,10 @@ export default async function SpotifyPage({
 
     <section className="lg:pt-4 pb-16 lg:h-(--screen-height) w-fit">
       <TrackList
-        trackIds={[...new Set(selectedUsers.flatMap(u =>
+        trackISRCs={[...new Set(selectedUsers.flatMap(u =>
           Object.entries(u.trackPlays)
             .sort((a, b) => b[1] - a[1])
-            .map(([trackId]) => trackId)
+            .map(([trackISRC]) => trackISRC)
         ))]}
       />
     </section>
@@ -78,7 +78,7 @@ export default async function SpotifyPage({
 async function getUsers(trackSearchQuery?: string): Promise<{
   id: string;
   name: string | null;
-  trackPlays: Record<string, number>;
+  trackPlays: Record<Track["ISRC"], number>;
 }[]> {
   "use cache";
   return (await prisma.user.findMany({
@@ -100,7 +100,10 @@ async function getUsers(trackSearchQuery?: string): Promise<{
             },
             {
               trackId: trackSearchQuery,
-            }
+            },
+            {
+              track: { ISRC: trackSearchQuery },
+            },
           ],
         },
       },
@@ -114,10 +117,10 @@ async function getUsers(trackSearchQuery?: string): Promise<{
       id: user.id,
       name: user.name,
       trackPlays: user.trackPlays.reduce((acc, tp) => {
-        {
-          acc[tp.trackId] = (acc[tp.trackId] ?? 0) + 1;
-          return acc;
-        }
-      }, {} as Record<Track["id"], number>),
+        const isrc = tp.track?.ISRC;
+        if (!isrc) return acc;
+        acc[isrc] = (acc[isrc] ?? 0) + 1;
+        return acc;
+      }, {} as Record<Track["ISRC"], number>),
     }));
 }

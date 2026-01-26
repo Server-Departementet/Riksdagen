@@ -3,14 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { TrackWithCompany } from "@/types";
 
-export async function getTrackDataBatch(trackIds: string[]): Promise<TrackWithCompany[]> {
+export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompany[]> {
   "use cache";
 
-  const uniqueTrackIds = Array.from(new Set(trackIds.filter(Boolean)));
-  if (uniqueTrackIds.length === 0) return [];
+  const uniqueISRCs = Array.from(new Set(ISRCs.filter(Boolean)));
+  if (uniqueISRCs.length === 0) return [];
 
   const tracks = await prisma.track.findMany({
-    where: { id: { in: uniqueTrackIds } },
+    where: { ISRC: { in: uniqueISRCs } },
     include: {
       album: {
         select: {
@@ -19,6 +19,7 @@ export async function getTrackDataBatch(trackIds: string[]): Promise<TrackWithCo
           url: true,
           image: true,
           color: true,
+          releaseDate: true,
         },
       },
       artists: {
@@ -36,12 +37,41 @@ export async function getTrackDataBatch(trackIds: string[]): Promise<TrackWithCo
     },
   });
 
-  const trackWithRelations = tracks as TrackWithCompany[];
-  const trackById = new Map<string, TrackWithCompany>(
-    trackWithRelations.map(track => [track.id, track]),
-  );
+  const tracksWithRelations = tracks as TrackWithCompany[];
+  const tracksByISRC = new Map<string, TrackWithCompany[]>();
 
-  return uniqueTrackIds
-    .map(trackId => trackById.get(trackId))
+  for (const track of tracksWithRelations) {
+    const current = tracksByISRC.get(track.ISRC) ?? [];
+    current.push(track);
+    tracksByISRC.set(track.ISRC, current);
+  }
+
+  const mergedTracks = new Map<string, TrackWithCompany>();
+
+  for (const [isrc, candidates] of tracksByISRC.entries()) {
+    if (candidates.length === 0) continue;
+
+    const totalTrackPlays = candidates.reduce((sum, candidate) => sum + candidate._count.TrackPlays, 0);
+
+    const canonicalTrack = candidates
+      .slice()
+      .sort((a, b) => {
+        const releaseDiff = (b.album.releaseDate?.getTime() ?? 0) - (a.album.releaseDate?.getTime() ?? 0);
+        if (releaseDiff !== 0) return releaseDiff;
+
+        const playDiff = b._count.TrackPlays - a._count.TrackPlays;
+        if (playDiff !== 0) return playDiff;
+
+        return a.id.localeCompare(b.id);
+      })[0];
+
+    mergedTracks.set(isrc, {
+      ...canonicalTrack,
+      _count: { TrackPlays: totalTrackPlays },
+    });
+  }
+
+  return uniqueISRCs
+    .map(isrc => mergedTracks.get(isrc))
     .filter((track): track is TrackWithCompany => Boolean(track));
 }
