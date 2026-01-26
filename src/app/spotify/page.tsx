@@ -5,10 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
 import { TrackList } from "@/components/spotify/track";
 import { Track } from "@/prisma/generated";
+import { getSortedTrackISRCs } from "@/functions/spotify/get-sorted-track-isrcs";
+import {
+  DEFAULT_SPOTIFY_SORT_DIRECTION,
+  DEFAULT_SPOTIFY_SORT_VALUE,
+  isSpotifySortValue,
+  SpotifySortDirection,
+  SpotifySortValue,
+} from "@/lib/spotify-sort";
 
 type FilterParams = {
   users?: string; // Comma-separated user IDs
   q?: string; // Search query
+  sort?: string;
+  dir?: string;
 };
 
 export default async function SpotifyPage({
@@ -23,7 +33,16 @@ export default async function SpotifyPage({
   const {
     users: paramUsers,
     q: paramQuery,
+    sort: paramSort,
+    dir: paramDirection,
   } = await searchParams;
+
+  const sortValue: SpotifySortValue = isSpotifySortValue(paramSort)
+    ? paramSort
+    : DEFAULT_SPOTIFY_SORT_VALUE;
+  const sortDirection: SpotifySortDirection = typeof paramDirection === "string" && paramDirection.toLowerCase() === "asc"
+    ? "asc"
+    : DEFAULT_SPOTIFY_SORT_DIRECTION;
 
   const users = await getUsers(paramQuery);
   const hasUserParam = (
@@ -37,6 +56,12 @@ export default async function SpotifyPage({
   const selectedUsers = hasUserParam
     ? users.filter(u => validUsersInParam.includes(u.id))
     : users;
+  const sortedTrackISRCs = await getSortedTrackISRCs({
+    userIds: selectedUsers.map(u => u.id),
+    trackSearchQuery: paramQuery,
+    sortOption: sortValue,
+    sortDirection,
+  });
 
   return <main
     className={`
@@ -58,6 +83,8 @@ export default async function SpotifyPage({
         users={users.map(u => ({ id: u.id, name: u.name }))}
         selectedUsers={selectedUsers.map(u => ({ id: u.id, name: u.name }))}
         query={paramQuery}
+        sortValue={sortValue}
+        sortDirection={sortDirection}
       />
     </aside>
 
@@ -65,11 +92,7 @@ export default async function SpotifyPage({
 
     <section className="lg:pt-4 pb-16 lg:h-(--screen-height) w-fit">
       <TrackList
-        trackISRCs={[...new Set(selectedUsers.flatMap(u =>
-          Object.entries(u.trackPlays)
-            .sort((a, b) => b[1] - a[1])
-            .map(([trackISRC]) => trackISRC)
-        ))]}
+        trackISRCs={sortedTrackISRCs}
         filterUserIds={selectedUsers.map(u => u.id)}
       />
     </section>
