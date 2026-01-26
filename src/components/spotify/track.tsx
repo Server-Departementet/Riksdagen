@@ -10,6 +10,8 @@ import { Fragment, ReactNode, useCallback, useEffect, useMemo, useState } from "
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { getMergedTrackVariants } from "@/functions/spotify/get-merged-track-variants";
+import { getTrackListenerStats } from "@/functions/spotify/get-track-listener-stats";
+import type { TrackListenerStat } from "@/functions/spotify/get-track-listener-stats";
 import { Album, Artist, Track } from "@/prisma/generated";
 import { TrackWithCompany } from "@/types";
 import { Layers3Icon } from "lucide-react";
@@ -213,6 +215,36 @@ function TrackElement({
   const [mergedVariants, setMergedVariants] = useState<TrackWithCompany[] | null>(null);
   const [isMergedVariantsLoading, setIsMergedVariantsLoading] = useState(false);
   const [mergedVariantsError, setMergedVariantsError] = useState<string | null>(null);
+  const [isListenersPopoverOpen, setIsListenersPopoverOpen] = useState(false);
+  const [listenerStats, setListenerStats] = useState<TrackListenerStat[] | null>(null);
+  const [isListenerStatsLoading, setIsListenerStatsLoading] = useState(false);
+  const [listenerStatsError, setListenerStatsError] = useState<string | null>(null);
+  const totalListenerTimeMs = useMemo(() =>
+    listenerStats?.reduce((sum, stat) => sum + stat.listenTimeMs, 0) ?? 0
+    , [listenerStats]);
+
+  const describeListenTime = useCallback((listenTimeMs: number) => {
+    if (!Number.isFinite(listenTimeMs) || listenTimeMs <= 0) return "0 s";
+    const segments = Object.values(convertSecondsToTimeUnits(Math.floor(listenTimeMs / 1000)))
+      .filter(Boolean)
+      .slice(0, 2);
+    return segments.length > 0 ? segments.join(" ") : "0 s";
+  }, []);
+
+  const formatListenCountCompact = useCallback((count: number) => {
+    const localized = count.toLocaleString("sv-SE");
+    return count === 1
+      ? `${localized} lyssning`
+      : `${localized} lyssningar`;
+  }, []);
+
+  const formatPercentage = useCallback((listenTimeMs: number) => {
+    if (!Number.isFinite(listenTimeMs) || listenTimeMs <= 0 || totalListenerTimeMs <= 0) {
+      return "0.000%";
+    }
+    const percent = (listenTimeMs / totalListenerTimeMs) * 100;
+    return `${percent.toFixed(3)}%`;
+  }, [totalListenerTimeMs]);
 
   const loadMergedVariants = useCallback(async () => {
     if (!trackISRC || mergedVariants || isMergedVariantsLoading) return;
@@ -231,11 +263,32 @@ function TrackElement({
     }
   }, [trackISRC, mergedVariants, isMergedVariantsLoading, filterUserIds]);
 
+  const loadListenerStats = useCallback(async () => {
+    if (!trackISRC || listenerStats || isListenerStatsLoading) return;
+    setIsListenerStatsLoading(true);
+    setListenerStatsError(null);
+    try {
+      const stats = await getTrackListenerStats(trackISRC, {
+        userIds: filterUserIds,
+      });
+      setListenerStats(stats);
+    } catch (error) {
+      console.error(error);
+      setListenerStatsError("Kunde inte hämta lyssningsinfo.");
+    } finally {
+      setIsListenerStatsLoading(false);
+    }
+  }, [trackISRC, listenerStats, isListenerStatsLoading, filterUserIds]);
+
   useEffect(() => {
     setMergedVariants(null);
     setMergedVariantsError(null);
     setIsMergedVariantsLoading(false);
     setIsMergedPopoverOpen(false);
+    setListenerStats(null);
+    setListenerStatsError(null);
+    setIsListenerStatsLoading(false);
+    setIsListenersPopoverOpen(false);
   }, [filterSignature, trackISRC]);
 
   useEffect(() => {
@@ -243,6 +296,12 @@ function TrackElement({
       void loadMergedVariants();
     }
   }, [isMergedPopoverOpen, hasMergedVariants, loadMergedVariants]);
+
+  useEffect(() => {
+    if (isListenersPopoverOpen && trackISRC) {
+      void loadListenerStats();
+    }
+  }, [isListenersPopoverOpen, trackISRC, loadListenerStats]);
 
   return (
     <li
@@ -318,10 +377,56 @@ function TrackElement({
 
         {/* Stats */}
         <div className="row-span-2 col-start-2 text-sm overflow-y-hidden whitespace-nowrap overflow-x-auto">
-          {/* Duration (long) */}
           <p className="">Längd {timeUnits.minute} {timeUnits.second} ({prettyDuration})</p>
-          {/* Listening time (long) */}
-          <p className="">{prettyPlayCount} ({prettyPlaytime})</p>
+          <div className="mt-0.5">
+            {trackISRC ? (
+              <Popover open={isListenersPopoverOpen} onOpenChange={setIsListenersPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Visa lyssningsdetaljer"
+                    className="w-full cursor-pointer select-none truncate text-left underline decoration-dotted underline-offset-2 transition hover:decoration-solid focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black"
+                  >
+                    {prettyPlayCount} ({prettyPlaytime})
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" side="top" className="w-80 text-sm">
+                  <p className="mb-1 font-semibold">Lyssningsdetaljer</p>
+                  <p className="mb-3 text-xs text-muted-foreground">ISRC {trackISRC}</p>
+                  {isListenerStatsLoading && <p>Hämtar lyssningar...</p>}
+                  {!isListenerStatsLoading && listenerStatsError && (
+                    <p className="text-sm text-destructive">{listenerStatsError}</p>
+                  )}
+                  {!isListenerStatsLoading && !listenerStatsError && listenerStats && listenerStats.length > 0 ? (
+                    <ul className="space-y-1">
+                      {listenerStats.map((listener) => (
+                        <li
+                          key={listener.userId}
+                          className="flex items-center justify-between gap-3 rounded border px-2 py-1"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                            {listener.userName ?? listener.userId}
+                          </span>
+                          <div className="flex shrink-0 flex-col text-[11px]  text-muted-foreground text-right">
+                            <span className="tabular-nums">{formatListenCountCompact(listener.listenCount)}</span>
+                            <span className="tabular-nums">{describeListenTime(listener.listenTimeMs)}</span>
+                          </div>
+                          <span className="shrink-0 text-sm font-semibold tabular-nums">
+                            {formatPercentage(listener.listenTimeMs)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {!isListenerStatsLoading && !listenerStatsError && listenerStats && listenerStats.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Ingen vald minister har lyssnat ännu.</p>
+                  )}
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <p className="flex-1">{prettyPlayCount} ({prettyPlaytime})</p>
+            )}
+          </div>
         </div>
 
         {/* Line number */}
