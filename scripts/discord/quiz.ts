@@ -290,7 +290,8 @@ function computeWidthPadding(
     return { pad: "", spaces: 0, width: 0, error: 0 };
   }
 
-  const spaceWidth = ggSansWidths[" "] ?? 500;
+  const spaceWidth = ggSansWidths[" "];
+  if (!spaceWidth) throw new Error("No width data for space character");
   const floorSpaces = Math.max(0, Math.floor(targetWidth / spaceWidth));
   const ceilSpaces = Math.max(0, Math.ceil(targetWidth / spaceWidth));
 
