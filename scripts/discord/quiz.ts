@@ -5,6 +5,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
+import { ggSansWidths } from "./gg-sans-widths.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
@@ -163,29 +164,118 @@ async function main() {
   /*
    * Make new quiz
    */
+  // const dateHintStart = "-# datum *";
+  const {
+    paddedA: bestDate,
+    paddedB: bestSender,
+  } = matchStringLengths(
+    "-# datum ",
+    "-# skrevs av ",
+  );
+
   const sentDate = new Date(quote.createdTimestamp);
+  const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
+  const sender = (
+    quote.sender.toLowerCase().includes("winroth")
+    && sentDate.getUTCFullYear() === 2024
+    && sentDate.getUTCMonth() === 4
+    && sentDate.getUTCDate() === 23
+  )
+    ? "Okänd"
+    : quote.sender;
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
-    "date": `*${sentDate.toLocaleDateString("sv-SE", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}*`.padEnd(32, " "),
-    "sender": `*${
-      // The great importaning...
-      (
-        quote.sender.toLowerCase().includes("winroth")
-        && sentDate.getUTCFullYear() === 2024
-        && sentDate.getUTCMonth() === 4
-        && sentDate.getUTCDate() === 23
-      )
-        ? "Okänd"
-        : quote.sender
-      }*`.padEnd(32, " "),
-    ...quote.context ? { "context": `*${quote.context}*`.padEnd(32, " "), } : {},
     "quoteId": quote.id,
+    "date": `${bestDate}|| *${formattedDate}* ||`,
+    "sender": `${bestSender}|| *${sender}* ||`,
+    ...quote.context ? { "context": `*${quote.context}*`.padEnd(36, " "), } : {},
   };
+
+  // Pad end of hints to obfuscate lengths and use GG Sans character widths
+  const maxChars = 40;
+  const startChars = Math.max(quizData.date.length, quizData.sender.length) + 2;
+  const avgChar = 500;
+
+  const attempts: {
+    date: string;
+    sender: string;
+    diff: number;
+  }[] = [];
+  for (let chars = startChars; chars <= maxChars; chars++) {
+    const targetLength = chars * avgChar;
+    const datePadded = padGGSansToLength(quizData.date, targetLength);
+    const senderPadded = padGGSansToLength(quizData.sender, targetLength);
+    const diff = Math.abs(datePadded.finalLength - senderPadded.finalLength);
+    attempts.push({
+      date: datePadded.result,
+      sender: senderPadded.result,
+      diff,
+    });
+  }
+
+  // // Try the different target lengths to find most aligned option
+  // const bestLengthMatch: {
+  //   targetLength: number;
+  //   date: {
+  //     string: string;
+  //     length: number;
+  //   };
+  //   sender: {
+  //     string: string;
+  //     length: number;
+  //   };
+  //   context?: {
+  //     string: string;
+  //     length: number;
+  //   };
+  // } = targetChars.map((targetChar) => {
+  //   const targetLength = targetChar * avgChar;
+  //   const datePadded = padGGSansToLength(quizData.date, targetLength);
+  //   const senderPadded = padGGSansToLength(quizData.sender, targetLength);
+  //   const contextPadded = quizData.context
+  //     ? padGGSansToLength(quizData.context, targetLength)
+  //     : undefined;
+  //   return {
+  //     targetLength,
+  //     date: {
+  //       string: datePadded.result,
+  //       length: datePadded.finalLength,
+  //     },
+  //     sender: {
+  //       string: senderPadded.result,
+  //       length: senderPadded.finalLength,
+  //     },
+  //     ...(contextPadded ? {
+  //       context: {
+  //         string: contextPadded.result,
+  //         length: contextPadded.finalLength,
+  //       },
+  //     } : {}),
+  //   };
+  // })
+  //   .sort((a, b) => {
+  //     // Sort by max length difference
+  //     const dateDiffA = Math.abs(a.date.length - a.targetLength);
+  //     const senderDiffA = Math.abs(a.sender.length - a.targetLength);
+  //     const contextDiffA = a.context ? Math.abs(a.context.length - a.targetLength) : 0;
+  //     const maxDiffA = Math.max(dateDiffA, senderDiffA, contextDiffA);
+
+  //     const dateDiffB = Math.abs(b.date.length - b.targetLength);
+  //     const senderDiffB = Math.abs(b.sender.length - b.targetLength);
+  //     const contextDiffB = b.context ? Math.abs(b.context.length - b.targetLength) : 0;
+  //     const maxDiffB = Math.max(dateDiffB, senderDiffB, contextDiffB);
+
+  //     return maxDiffA - maxDiffB;
+  //   })
+  //   .at(0);
+
+  // Apply best attempt paddings
+  quizData.date = bestLengthMatch.date.string;
+  quizData.sender = bestLengthMatch.sender.string;
+  if (quizData.context && bestLengthMatch.context) {
+    quizData.context = bestLengthMatch.context.string;
+  }
 
   let quizContent = fs.readFileSync("scripts/discord/quiz-template.md", "utf-8");
   for (const [key, value] of Object.entries(quizData)) {
@@ -237,4 +327,46 @@ async function endPreviousPoll(message: Message) {
     // Poll ending can be really slow
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
+}
+
+function getGGSansLength(input: string): number {
+  let length = 0;
+  for (const char of input) {
+    length += ggSansWidths[char] ?? 500;
+  }
+  return length;
+}
+
+function padGGSansToLength(input: string, targetLength: number): { result: string; finalLength: number } {
+  const currentLength = getGGSansLength(input);
+  const remainingLength = targetLength - currentLength;
+  const spaceWidth = ggSansWidths[" "];
+  const spacesToAdd = Math.floor(remainingLength / spaceWidth);
+  return {
+    result: input + " ".repeat(spacesToAdd),
+    finalLength: currentLength + (spacesToAdd * spaceWidth),
+  };
+}
+
+function matchStringLengths(
+  strA: string,
+  strB: string,
+  lengthCap: number = 40 * 500,
+): { paddedA: string; paddedB: string } {
+  let paddedA = strA;
+  let paddedB = strB;
+  let lengthA = getGGSansLength(paddedA);
+  let lengthB = getGGSansLength(paddedB);
+
+  while (lengthA < lengthCap && lengthB < lengthCap && lengthA !== lengthB) {
+    if (lengthA < lengthB) {
+      paddedA += " ";
+      lengthA += ggSansWidths[" "];
+    } else if (lengthB < lengthA) {
+      paddedB += " ";
+      lengthB += ggSansWidths[" "];
+    }
+  }
+
+  return { paddedA, paddedB };
 }

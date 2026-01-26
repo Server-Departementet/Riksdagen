@@ -5,7 +5,7 @@ import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
-import { nameVariants } from "./name-variants.ts"
+import { nameVariants } from "./name-variants.ts";
 
 if (!env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment variables");
