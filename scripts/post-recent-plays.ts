@@ -147,6 +147,12 @@ async function addRecentTrackPlays() {
 
       // Upsert tracks
       for (const track of tracks) {
+        const ISRC = track.external_ids.isrc;
+        if (!ISRC) {
+          console.warn(`No ISRC found for track ${track.name} (${track.id}). Skipping.`);
+          continue;
+        }
+
         await prisma.track.upsert({
           where: { id: track.id },
           update: {
@@ -154,8 +160,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
-            ISRC: track.external_ids.isrc!,
-            ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
+            ISRC,
           },
           create: {
             id: track.id,
@@ -163,8 +168,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
-            ISRC: track.external_ids.isrc!,
-            ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
+            ISRC,
           },
         });
       }
