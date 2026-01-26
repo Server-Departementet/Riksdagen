@@ -540,7 +540,7 @@ export const ggSansWidths: Record<string, number> = {
   "ﬂ": 590,
   "\u0000": 600,
   "\b": 600,
-  "\t": 333,
+  "\t": 333, // Converts to 4 spaces :sob:
   "\r": 333,
   "\u001d": 600,
   "": 644,

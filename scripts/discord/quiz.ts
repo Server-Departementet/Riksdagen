@@ -74,6 +74,7 @@ async function main() {
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+    .filter(q => q.context)
     .filter(q => q.quoteeId);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
@@ -164,15 +165,6 @@ async function main() {
   /*
    * Make new quiz
    */
-  // const dateHintStart = "-# datum *";
-  const {
-    paddedA: bestDate,
-    paddedB: bestSender,
-  } = matchStringLengths(
-    "-# datum ",
-    "-# skrevs av ",
-  );
-
   const sentDate = new Date(quote.createdTimestamp);
   const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
   const sender = (
@@ -183,99 +175,44 @@ async function main() {
   )
     ? "Okänd"
     : quote.sender;
+
+  const lengths = new Array(10).fill(0).map((_, i) => (i + 20) * 500);
+  const candidates: {
+    datePad: ReturnType<typeof computeWidthPadding>;
+    senderPad: ReturnType<typeof computeWidthPadding>;
+    contextPad?: ReturnType<typeof computeWidthPadding>;
+  }[] = [];
+  for (const targetWidth of lengths) {
+    const datePad = computeWidthPadding(targetWidth - measureGGSans(formattedDate), "closest");
+    const senderPad = computeWidthPadding(targetWidth - measureGGSans(sender), "closest");
+    let contextPad: ReturnType<typeof computeWidthPadding> | undefined = undefined;
+    if (quote.context) {
+      contextPad = computeWidthPadding(targetWidth - measureGGSans(quote.context), "closest");
+    }
+    candidates.push({ datePad, senderPad, contextPad, });
+  }
+
+  // Choose candidate with minimal total error
+  candidates.sort((a, b) => {
+    const aError = a.datePad.error + a.senderPad.error + (a.contextPad ? a.contextPad.error : 0);
+    const bError = b.datePad.error + b.senderPad.error + (b.contextPad ? b.contextPad.error : 0);
+    return Math.abs(aError) - Math.abs(bError);
+  });
+  const bestCandidate = candidates[0];
+  const trailingDatePad = bestCandidate.datePad;
+  const trailingSenderPad = bestCandidate.senderPad;
+  const trailingContextPad = bestCandidate.contextPad;
+
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
+    ...quote.context
+      ? { "context": `sammanhang\t|| *${quote.context}* ${trailingContextPad?.pad}||`, }
+      : {},
+    "date": `datum\t\t\t\t || *${formattedDate}* ${trailingDatePad.pad}||`,
+    "sender": `skrevs av\t\t\t|| *${sender}* ${trailingSenderPad.pad}||`,
     "quoteId": quote.id,
-    "date": `${bestDate}|| *${formattedDate}* ||`,
-    "sender": `${bestSender}|| *${sender}* ||`,
-    ...quote.context ? { "context": `*${quote.context}*`.padEnd(36, " "), } : {},
   };
-
-  // Pad end of hints to obfuscate lengths and use GG Sans character widths
-  const maxChars = 40;
-  const startChars = Math.max(quizData.date.length, quizData.sender.length) + 2;
-  const avgChar = 500;
-
-  const attempts: {
-    date: string;
-    sender: string;
-    diff: number;
-  }[] = [];
-  for (let chars = startChars; chars <= maxChars; chars++) {
-    const targetLength = chars * avgChar;
-    const datePadded = padGGSansToLength(quizData.date, targetLength);
-    const senderPadded = padGGSansToLength(quizData.sender, targetLength);
-    const diff = Math.abs(datePadded.finalLength - senderPadded.finalLength);
-    attempts.push({
-      date: datePadded.result,
-      sender: senderPadded.result,
-      diff,
-    });
-  }
-
-  // // Try the different target lengths to find most aligned option
-  // const bestLengthMatch: {
-  //   targetLength: number;
-  //   date: {
-  //     string: string;
-  //     length: number;
-  //   };
-  //   sender: {
-  //     string: string;
-  //     length: number;
-  //   };
-  //   context?: {
-  //     string: string;
-  //     length: number;
-  //   };
-  // } = targetChars.map((targetChar) => {
-  //   const targetLength = targetChar * avgChar;
-  //   const datePadded = padGGSansToLength(quizData.date, targetLength);
-  //   const senderPadded = padGGSansToLength(quizData.sender, targetLength);
-  //   const contextPadded = quizData.context
-  //     ? padGGSansToLength(quizData.context, targetLength)
-  //     : undefined;
-  //   return {
-  //     targetLength,
-  //     date: {
-  //       string: datePadded.result,
-  //       length: datePadded.finalLength,
-  //     },
-  //     sender: {
-  //       string: senderPadded.result,
-  //       length: senderPadded.finalLength,
-  //     },
-  //     ...(contextPadded ? {
-  //       context: {
-  //         string: contextPadded.result,
-  //         length: contextPadded.finalLength,
-  //       },
-  //     } : {}),
-  //   };
-  // })
-  //   .sort((a, b) => {
-  //     // Sort by max length difference
-  //     const dateDiffA = Math.abs(a.date.length - a.targetLength);
-  //     const senderDiffA = Math.abs(a.sender.length - a.targetLength);
-  //     const contextDiffA = a.context ? Math.abs(a.context.length - a.targetLength) : 0;
-  //     const maxDiffA = Math.max(dateDiffA, senderDiffA, contextDiffA);
-
-  //     const dateDiffB = Math.abs(b.date.length - b.targetLength);
-  //     const senderDiffB = Math.abs(b.sender.length - b.targetLength);
-  //     const contextDiffB = b.context ? Math.abs(b.context.length - b.targetLength) : 0;
-  //     const maxDiffB = Math.max(dateDiffB, senderDiffB, contextDiffB);
-
-  //     return maxDiffA - maxDiffB;
-  //   })
-  //   .at(0);
-
-  // Apply best attempt paddings
-  quizData.date = bestLengthMatch.date.string;
-  quizData.sender = bestLengthMatch.sender.string;
-  if (quizData.context && bestLengthMatch.context) {
-    quizData.context = bestLengthMatch.context.string;
-  }
 
   let quizContent = fs.readFileSync("scripts/discord/quiz-template.md", "utf-8");
   for (const [key, value] of Object.entries(quizData)) {
@@ -329,44 +266,111 @@ async function endPreviousPoll(message: Message) {
   }
 }
 
-function getGGSansLength(input: string): number {
-  let length = 0;
-  for (const char of input) {
-    length += ggSansWidths[char] ?? 500;
+/** Measure visual width using your ggSansWidths table. */
+function measureGGSans(text: string): number {
+  let w = 0;
+  for (const ch of text) {
+    w += ggSansWidths[ch] ?? 500;
   }
-  return length;
+  return w;
 }
 
-function padGGSansToLength(input: string, targetLength: number): { result: string; finalLength: number } {
-  const currentLength = getGGSansLength(input);
-  const remainingLength = targetLength - currentLength;
-  const spaceWidth = ggSansWidths[" "];
-  const spacesToAdd = Math.floor(remainingLength / spaceWidth);
+type PadMode = "floor" | "closest" | "ceil";
+
+/**
+ * Find a tabs+spaces padding string whose width is:
+ * - "floor": best width <= target (won't overshoot)
+ * - "closest": minimal absolute error (may overshoot)
+ * - "ceil": best width >= target (won't undershoot)
+ */
+function computeWidthPadding(
+  targetWidth: number,
+  mode: PadMode = "floor",
+): { pad: string; tabs: number; spaces: number; width: number; error: number } {
+  if (targetWidth <= 0) {
+    return { pad: "", tabs: 0, spaces: 0, width: 0, error: 0 };
+  }
+
+  // Upper bound for tabs to consider. A small extra margin helps for closest/ceil.
+  const maxTabs = Math.ceil(targetWidth / ggSansWidths["\t"]) + 2;
+
+  let best: { tabs: number; spaces: number; width: number; error: number } | null = null;
+
+  for (let tabs = 0; tabs <= maxTabs; tabs++) {
+    const wTabs = tabs * ggSansWidths["\t"];
+    const remaining = targetWidth - wTabs;
+
+    // Choose spaces count based on mode
+    let spaces: number;
+    if (mode === "floor") {
+      spaces = Math.max(0, Math.floor(remaining / ggSansWidths[" "]));
+    }
+    else if (mode === "ceil") {
+      spaces = Math.max(0, Math.ceil(remaining / ggSansWidths[" "]));
+    }
+    else if (mode === "closest") {
+      const s0 = Math.max(0, Math.floor(remaining / ggSansWidths[" "]));
+      const s1 = Math.max(0, Math.ceil(remaining / ggSansWidths[" "]));
+      const w0 = wTabs + s0 * ggSansWidths[" "];
+      const w1 = wTabs + s1 * ggSansWidths[" "];
+      const e0 = Math.abs(targetWidth - w0);
+      const e1 = Math.abs(targetWidth - w1);
+      spaces = e1 < e0 ? s1 : s0;
+    }
+    else {
+      throw new Error(`Unknown mode: ${mode as string} (${typeof mode})`);
+    }
+
+    const width = wTabs + spaces * ggSansWidths[" "];
+    const error = targetWidth - width; // Positive means we are short
+
+    // Enforce constraints for floor/ceil
+    if (mode === "floor" && width > targetWidth) continue;
+    if (mode === "ceil" && width < targetWidth) continue;
+
+    // Scoring:
+    // 1) Minimize absolute error (or maximize width for floor / minimize width for ceil)
+    // 2) Tie-break: fewer characters (prefer tabs usually)
+    // 3) Tie-break: more tabs (often looks cleaner)
+    const absErr = Math.abs(targetWidth - width);
+    const chars = tabs + spaces;
+
+    if (!best) {
+      best = { tabs, spaces, width, error };
+      continue;
+    }
+
+    const bestAbsErr = Math.abs(targetWidth - best.width);
+    const bestChars = best.tabs + best.spaces;
+
+    const better =
+      absErr < bestAbsErr
+      || (absErr === bestAbsErr && chars < bestChars)
+      || (absErr === bestAbsErr && chars === bestChars && tabs > best.tabs);
+
+    if (better) best = { tabs, spaces, width, error };
+  }
+
+  // If nothing matched constraints, fall back (should be rare)
+  best ??= { tabs: 0, spaces: Math.ceil(targetWidth / ggSansWidths[" "]), width: Math.ceil(targetWidth / ggSansWidths[" "]) * ggSansWidths[" "], error: targetWidth - Math.ceil(targetWidth / ggSansWidths[" "]) * ggSansWidths[" "] };
+
   return {
-    result: input + " ".repeat(spacesToAdd),
-    finalLength: currentLength + (spacesToAdd * spaceWidth),
+    pad: "\t".repeat(best.tabs) + " ".repeat(best.spaces),
+    tabs: best.tabs,
+    spaces: best.spaces,
+    width: best.width,
+    error: targetWidth - best.width,
   };
 }
 
-function matchStringLengths(
-  strA: string,
-  strB: string,
-  lengthCap: number = 40 * 500,
-): { paddedA: string; paddedB: string } {
-  let paddedA = strA;
-  let paddedB = strB;
-  let lengthA = getGGSansLength(paddedA);
-  let lengthB = getGGSansLength(paddedB);
-
-  while (lengthA < lengthCap && lengthB < lengthCap && lengthA !== lengthB) {
-    if (lengthA < lengthB) {
-      paddedA += " ";
-      lengthA += ggSansWidths[" "];
-    } else if (lengthB < lengthA) {
-      paddedB += " ";
-      lengthB += ggSansWidths[" "];
-    }
-  }
-
-  return { paddedA, paddedB };
+/** Pad string to a given visual width. */
+function padEndGGSans(
+  text: string,
+  targetVisualWidth: number,
+  mode: PadMode = "floor",
+): string {
+  const w = measureGGSans(text);
+  const needed = targetVisualWidth - w;
+  const pad = computeWidthPadding(needed, mode).pad;
+  return text + pad;
 }
