@@ -40,18 +40,25 @@ async function seedColor() {
 
   console.info(`Seeding colors for ${albums.length} albums and ${artists.length} artists...`);
 
+  let count = 0;
+
   // Set colors in parallell
   await Promise.all([
     ...albums.map(async (album) => {
       if (!album.image) return;
       const color = await extractImageColor(album.image);
-      console.info("Got color for", album.name);
       if (color) album.color = color;
+
+      count += 1;
+      console.info(`${count}/${albums.length + artists.length} - Processed album: ${album.name}`);
     }),
     ...artists.map(async (artist) => {
       if (!artist.image) return;
       const color = await extractImageColor(artist.image);
       if (color) artist.color = color;
+
+      count += 1;
+      console.info(`${count}/${albums.length + artists.length} - Processed artist: ${artist.name}`);
     }),
   ]);
 
