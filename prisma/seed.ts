@@ -45,8 +45,63 @@ if (tokenResponse.data.length > 1) {
 }
 const spotifyToken = tokenResponse.data[0].token;
 
+const toPositiveInteger = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
 
-const seedGenres = async (prisma: PrismaClient) => {
+const TRANSACTION_TIMEOUT_MS = 240_000;
+const SPOTIFY_FETCH_CONCURRENCY = toPositiveInteger(env.SEED_SPOTIFY_FETCH_CONCURRENCY, 5);
+const DB_WRITE_CONCURRENCY = toPositiveInteger(env.SEED_DB_WRITE_CONCURRENCY, 25);
+
+const chunkArray = <T>(items: T[], size: number): T[][] => {
+  if (size <= 0) throw new Error("Chunk size must be greater than zero");
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
+
+const runWithConcurrency = async <T>(
+  items: T[],
+  concurrency: number,
+  handler: (item: T, index: number) => Promise<void>,
+) => {
+  if (concurrency <= 0) throw new Error("Concurrency must be greater than zero");
+  if (!items.length) return;
+  let currentIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (currentIndex < items.length) {
+        const index = currentIndex++;
+        await handler(items[index]!, index);
+      }
+    },
+  );
+  await Promise.all(workers);
+};
+
+const runInTransaction = async (
+  label: string,
+  action: (tx: Prisma.TransactionClient) => Promise<void>,
+) => {
+  console.info(`[${label}] Starting transaction`);
+  await prisma.$transaction(async (tx) => action(tx), { timeout: TRANSACTION_TIMEOUT_MS });
+  console.info(`[${label}] Transaction committed`);
+};
+
+type TrackSeedPayload = {
+  id: string;
+  name: string;
+  url: string;
+  duration: number;
+  albumId: string;
+  ISRC?: string;
+};
+
+const seedGenres = async () => {
   console.debug("Seeding genres...");
 
   const remoteGenres = await remotePrisma.genre.findMany({
@@ -55,15 +110,17 @@ const seedGenres = async (prisma: PrismaClient) => {
     },
   });
 
-  await prisma.genre.createMany({
-    data: remoteGenres,
-    skipDuplicates: true,
+  await runInTransaction("genres", async (tx) => {
+    await tx.genre.createMany({
+      data: remoteGenres,
+      skipDuplicates: true,
+    });
   });
 
   console.debug("Seeding genres complete.");
 };
 
-const seedAlbums = async (prisma: PrismaClient) => {
+const seedAlbums = async () => {
   console.debug("Seeding albums...");
 
   const remoteAlbums = await remotePrisma.album.findMany({
@@ -75,107 +132,123 @@ const seedAlbums = async (prisma: PrismaClient) => {
     },
   });
 
-  await prisma.album.createMany({
-    data: remoteAlbums,
-    skipDuplicates: true,
-  });
+  const albumIdChunks = chunkArray(remoteAlbums.map(album => album.id), 20);
+  const albumRequests = albumIdChunks.map(ids => ({
+    encodedIds: encodeURIComponent(ids.join(",")),
+    rawIds: ids,
+  }));
 
-  const paginatedAlbums: string[] = [];
-  for (let i = 0; i < remoteAlbums.length; i += 20) {
-    const batch = remoteAlbums.slice(i, i + 20).map(album => album.id);
-    paginatedAlbums.push(encodeURIComponent(batch.join(",")));
-  }
-
-  for (const batch of paginatedAlbums) {
-    const response = await fetch(`https://api.spotify.com/v1/albums?ids=${batch}`, {
+  const releaseDates = new Map<string, Date>();
+  await runWithConcurrency(albumRequests, SPOTIFY_FETCH_CONCURRENCY, async ({ encodedIds, rawIds }) => {
+    const response = await fetch(`https://api.spotify.com/v1/albums?ids=${encodedIds}`, {
       headers: {
         Authorization: `Bearer ${spotifyToken}`,
       },
     });
     if (!response.ok) {
-      console.warn(`Failed to fetch album data for album ID: ${batch}`);
-      console.log(response);
-      continue;
+      console.warn(`Failed to fetch album data for album IDs: ${rawIds.join(",")}`);
+      return;
     }
     const data = await response.json() as SpotifyApi.MultipleAlbumsResponse;
 
-    for (const album of data.albums) {
-      const releaseDate = album.release_date;
-      await prisma.album.update({
-        where: { id: album.id },
-        data: {
-          releaseDate: new Date(releaseDate),
-        },
-      });
+    for (const album of data.albums ?? []) {
+      if (!album?.release_date) continue;
+      releaseDates.set(album.id, new Date(album.release_date));
     }
-  }
+  });
+
+  await runInTransaction("albums", async (tx) => {
+    await tx.album.createMany({
+      data: remoteAlbums,
+      skipDuplicates: true,
+    });
+
+    const releaseEntries = Array.from(releaseDates.entries());
+    await runWithConcurrency(releaseEntries, DB_WRITE_CONCURRENCY, async ([albumId, releaseDate]) => {
+      await tx.album.update({
+        where: { id: albumId },
+        data: { releaseDate },
+      });
+    });
+  });
 
   console.debug("Seeding albums complete.");
 };
 
-const seedTracks = async (prisma: PrismaClient) => {
+const seedTracks = async () => {
   console.debug("Seeding tracks...");
 
-  const remoteTracks = await remotePrisma.track.findMany({
+  const remoteTrackIds = await remotePrisma.track.findMany({
     select: {
       id: true,
-      name: true,
-      url: true,
-      duration: true,
-      albumId: true,
     },
   });
 
-  // Get ISRCs separately from spotify API
-  const paginatedTracks: string[] = [];
-  for (let i = 0; i < remoteTracks.length; i += 50) {
-    const batch = remoteTracks.slice(i, i + 50).map(track => track.id);
-    paginatedTracks.push(encodeURIComponent(batch.join(",")));
-  }
+  const trackIdChunks = chunkArray(remoteTrackIds.map(track => track.id), 50);
+  const trackRequests = trackIdChunks.map(ids => ({
+    encodedIds: encodeURIComponent(ids.join(",")),
+    rawIds: ids,
+  }));
 
-  for (const batch of paginatedTracks) {
-    const response = await fetch(`https://api.spotify.com/v1/tracks?ids=${batch}`, {
+  const trackPayloads: TrackSeedPayload[] = [];
+
+  await runWithConcurrency(trackRequests, SPOTIFY_FETCH_CONCURRENCY, async ({ encodedIds, rawIds }) => {
+    const response = await fetch(`https://api.spotify.com/v1/tracks?ids=${encodedIds}`, {
       headers: {
         Authorization: `Bearer ${spotifyToken}`,
       },
     });
     if (!response.ok) {
-      console.warn(`Failed to fetch track data for track IDs: ${batch}`);
-      continue;
+      console.warn(`Failed to fetch track data for track IDs: ${rawIds.join(",")}`);
+      return;
     }
     const data = await response.json() as SpotifyApi.MultipleTracksResponse;
 
-    for (const track of data.tracks) {
-      const ISRC = track.external_ids?.isrc as string;
+    for (const track of data.tracks ?? []) {
+      if (!track) continue;
+      const ISRC = track.external_ids?.isrc ?? undefined;
       if (!ISRC) {
         console.warn(`No ISRC found for track ID: ${track.id}`);
       }
 
-      await prisma.track.upsert({
-        where: { id: track.id },
-        update: {
-          name: track.name,
-          url: track.external_urls.spotify,
-          duration: track.duration_ms,
-          albumId: track.album.id,
-          ISRC: ISRC,
-        },
-        create: {
-          id: track.id,
-          name: track.name,
-          url: track.external_urls.spotify,
-          duration: track.duration_ms,
-          albumId: track.album.id,
-          ISRC: ISRC,
-        },
+      trackPayloads.push({
+        id: track.id,
+        name: track.name,
+        url: track.external_urls.spotify,
+        duration: track.duration_ms,
+        albumId: track.album.id,
+        ISRC,
       });
     }
-  }
+  });
+
+  await runInTransaction("tracks", async (tx) => {
+    await runWithConcurrency(trackPayloads, DB_WRITE_CONCURRENCY, async (trackData) => {
+      if (!trackData.ISRC) {
+        console.warn(`Skipping track without ISRC: ${trackData.id} - ${trackData.name}`);
+        return;
+      }
+      const payload = {
+        id: trackData.id,
+        name: trackData.name,
+        url: trackData.url,
+        duration: trackData.duration,
+        album: { connect: { id: trackData.albumId } },
+        ISRC: trackData.ISRC,
+      } satisfies Prisma.TrackCreateInput;
+
+      await tx.track.upsert({
+        where: { id: trackData.id },
+        update: payload,
+        create: payload,
+      });
+    });
+  });
 
   console.debug("Seeding tracks complete.");
 };
 
-const seedArtists = async (prisma: PrismaClient) => {
+const seedArtists = async () => {
   console.debug("Seeding artists...");
 
   const remoteArtists = await remotePrisma.artist.findMany({
@@ -197,50 +270,69 @@ const seedArtists = async (prisma: PrismaClient) => {
     },
   });
 
-  for (const artist of remoteArtists) {
-    const { genres, ...artistData } = artist;
+  await runInTransaction("artists", async (tx) => {
+    await runWithConcurrency(remoteArtists, DB_WRITE_CONCURRENCY, async (artist) => {
+      const { genres, tracks, ...artistData } = artist;
+      const genreConnections = genres.map(genre => ({ name: genre.name }));
+      const trackConnections = tracks.map(track => ({ id: track.id }));
+      const genrePayload = genreConnections.length ? { genres: { connect: genreConnections } } : {};
+      const trackPayload = trackConnections.length ? { tracks: { connect: trackConnections } } : {};
 
-    await prisma.artist.upsert({
-      where: { id: artist.id },
-      update: {
-        ...artistData,
-        genres: {
-          connect: genres.map(genre => ({ name: genre.name })),
+      await tx.artist.upsert({
+        where: { id: artist.id },
+        update: {
+          ...artistData,
+          ...genrePayload,
+          ...trackPayload,
         },
-        tracks: {
-          connect: artist.tracks.map(track => ({ id: track.id })),
+        create: {
+          ...artistData,
+          ...genrePayload,
+          ...trackPayload,
         },
-      },
-      create: {
-        ...artistData,
-        genres: {
-          connect: genres.map(genre => ({ name: genre.name })),
-        },
-        tracks: {
-          connect: artist.tracks.map(track => ({ id: track.id })),
-        },
-      },
+      });
     });
-  }
+  });
 
   console.debug("Seeding artists complete.");
 };
 
-const seedTrackPlays = async (prisma: PrismaClient) => {
+const seedTrackPlays = async () => {
   console.debug("Seeding track plays...");
 
   const remoteTrackPlays = await remotePrisma.trackPlay.findMany();
 
-  const users = await prisma.user.findMany();
+  await runInTransaction("trackPlays", async (tx) => {
+    const users = await tx.user.findMany({
+      select: {
+        id: true,
+        clerkDevId: true,
+        clerkProdId: true,
+      },
+    });
 
-  await prisma.trackPlay.createMany({
-    data: remoteTrackPlays.map(tp => ({
-      playedAt: tp.playedAt,
-      userId: users.find(u => u.clerkDevId === tp.userId || u.clerkProdId === tp.userId)?.id
-        ?? (() => { throw new Error("User not found for track play seeding"); })(),
-      trackId: tp.trackId,
-    }) satisfies Prisma.TrackPlayCreateManyInput),
-    skipDuplicates: true,
+    const clerkToUserId = new Map<string, string>();
+    for (const user of users) {
+      if (user.clerkDevId) clerkToUserId.set(user.clerkDevId, user.id);
+      if (user.clerkProdId) clerkToUserId.set(user.clerkProdId, user.id);
+    }
+
+    const trackPlayData = remoteTrackPlays.map(tp => {
+      const userId = clerkToUserId.get(tp.userId);
+      if (!userId) {
+        throw new Error(`User not found for track play seeding (remote ID: ${tp.userId})`);
+      }
+      return {
+        playedAt: tp.playedAt,
+        userId,
+        trackId: tp.trackId,
+      } satisfies Prisma.TrackPlayCreateManyInput;
+    });
+
+    await tx.trackPlay.createMany({
+      data: trackPlayData,
+      skipDuplicates: true,
+    });
   });
 
   console.debug("Seeding track plays complete.");
@@ -251,13 +343,11 @@ async function main() {
   execSync("yarn tsx scripts/make-users.ts");
   console.info("Finished making users");
 
-  await prisma.$transaction(async (prisma) => {
-    await seedGenres(prisma as PrismaClient);
-    await seedAlbums(prisma as PrismaClient);
-    await seedTracks(prisma as PrismaClient);
-    await seedArtists(prisma as PrismaClient);
-    await seedTrackPlays(prisma as PrismaClient);
-  }, { timeout: 240_000 });
+  await seedGenres();
+  await seedAlbums();
+  await seedTracks();
+  await seedArtists();
+  await seedTrackPlays();
 }
 
 main()
