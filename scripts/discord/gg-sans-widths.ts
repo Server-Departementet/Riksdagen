@@ -1,5 +1,7 @@
 export const ggSansWidths: Record<string, number> = {
-  " ": 220,
+  " ": 220, // 3.51669
+  // "\t": 333, // 28.1334
+  "\t": 7.999965877003660 * 220,
   "!": 234,
   "\"": 348,
   "#": 634,
@@ -540,7 +542,6 @@ export const ggSansWidths: Record<string, number> = {
   "ﬂ": 590,
   "\u0000": 600,
   "\b": 600,
-  "\t": 333, // Converts to 4 spaces :sob:
   "\r": 333,
   "\u001d": 600,
   "": 644,
