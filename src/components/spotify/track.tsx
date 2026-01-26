@@ -104,15 +104,13 @@ function TrackElement({
       name: trackData.name,
       url: trackData.url,
       duration: trackData.duration,
+      ISRC: trackData.ISRC,
     }
     : null
     , [trackData]);
-  const album = useMemo<Album | null>(() => trackData
-    ? trackData.album : null, [trackData]);
-  const artists = useMemo<Artist[] | null>(() => trackData
-    ? trackData.artists : null, [trackData]);
-  const trackPlays = useMemo<number | null>(() => trackData
-    ? trackData._count.TrackPlays : null, [trackData]);
+  const album = useMemo<Album | null>(() => trackData ? trackData.album : null, [trackData]);
+  const artists = useMemo<Artist[] | null>(() => trackData ? trackData.artists : null, [trackData]);
+  const trackPlays = useMemo<number | null>(() => trackData ? trackData._count.TrackPlays : null, [trackData]);
 
   const timeUnits = useMemo(() => {
     if (!track) return { minute: " ", second: " " };

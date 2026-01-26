@@ -17,6 +17,7 @@ export type TrackWithCompany = Track & {
     url: string;
     image: string | null;
     color: string | null;
+    releaseDate: Date | null;
   };
   artists: {
     name: string;
