@@ -56,11 +56,11 @@ export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompa
     const canonicalTrack = candidates
       .slice()
       .sort((a, b) => {
-        const releaseDiff = (b.album.releaseDate?.getTime() ?? 0) - (a.album.releaseDate?.getTime() ?? 0);
-        if (releaseDiff !== 0) return releaseDiff;
-
         const playDiff = b._count.TrackPlays - a._count.TrackPlays;
         if (playDiff !== 0) return playDiff;
+
+        const releaseDiff = (b.album.releaseDate?.getTime() ?? 0) - (a.album.releaseDate?.getTime() ?? 0);
+        if (releaseDiff !== 0) return releaseDiff;
 
         return a.id.localeCompare(b.id);
       })[0];
