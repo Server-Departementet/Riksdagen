@@ -154,6 +154,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
+            ISRC: track.external_ids.isrc!,
             ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
           },
           create: {
@@ -162,6 +163,7 @@ async function addRecentTrackPlays() {
             url: track.external_urls.spotify,
             duration: track.duration_ms,
             albumId: track.album.id,
+            ISRC: track.external_ids.isrc!,
             ...track.external_ids.isrc ? { ISRC: track.external_ids.isrc } : {},
           },
         });
