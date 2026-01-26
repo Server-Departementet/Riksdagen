@@ -346,7 +346,7 @@ function TrackElement({
                 <button
                   type="button"
                   aria-label="Visa sammanfogade versioner"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-700/70 text-white shadow focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black-700/70 text-white shadow focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black"
                 >
                   <Layers3Icon className="size-4" />
                 </button>
