@@ -126,17 +126,6 @@ const seedTracks = async (prisma: PrismaClient) => {
     },
   });
 
-  await prisma.track.createMany({
-    data: remoteTracks.map(track => ({
-      id: track.id,
-      name: track.name,
-      url: track.url,
-      duration: track.duration,
-      albumId: track.albumId,
-    }) satisfies Prisma.TrackCreateManyInput),
-    skipDuplicates: true,
-  });
-
   // Get ISRCs separately from spotify API
   const paginatedTracks: string[] = [];
   for (let i = 0; i < remoteTracks.length; i += 50) {
@@ -157,15 +146,29 @@ const seedTracks = async (prisma: PrismaClient) => {
     const data = await response.json() as SpotifyApi.MultipleTracksResponse;
 
     for (const track of data.tracks) {
-      const isrc = track.external_ids?.isrc;
-      if (isrc) {
-        await prisma.track.update({
-          where: { id: track.id },
-          data: {
-            ISRC: isrc,
-          },
-        });
+      const ISRC = track.external_ids?.isrc as string;
+      if (!ISRC) {
+        console.warn(`No ISRC found for track ID: ${track.id}`);
       }
+
+      await prisma.track.upsert({
+        where: { id: track.id },
+        update: {
+          name: track.name,
+          url: track.external_urls.spotify,
+          duration: track.duration_ms,
+          albumId: track.album.id,
+          ISRC: ISRC,
+        },
+        create: {
+          id: track.id,
+          name: track.name,
+          url: track.external_urls.spotify,
+          duration: track.duration_ms,
+          albumId: track.album.id,
+          ISRC: ISRC,
+        },
+      });
     }
   }
 
