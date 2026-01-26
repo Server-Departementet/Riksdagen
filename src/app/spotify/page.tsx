@@ -70,6 +70,7 @@ export default async function SpotifyPage({
             .sort((a, b) => b[1] - a[1])
             .map(([trackISRC]) => trackISRC)
         ))]}
+        filterUserIds={selectedUsers.map(u => u.id)}
       />
     </section>
   </main>;

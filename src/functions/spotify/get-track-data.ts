@@ -3,11 +3,18 @@
 import { prisma } from "@/lib/prisma";
 import { TrackWithCompany } from "@/types";
 
-export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompany[]> {
+export type TrackDataFilters = {
+  userIds?: string[];
+};
+
+export async function getTrackDataBatch(ISRCs: string[], filters?: TrackDataFilters): Promise<TrackWithCompany[]> {
   "use cache";
 
   const uniqueISRCs = Array.from(new Set(ISRCs.filter(Boolean)));
   if (uniqueISRCs.length === 0) return [];
+
+  const filteredUserIds = (filters?.userIds ?? []).filter(Boolean);
+  const shouldFilterTrackPlays = filteredUserIds.length > 0;
 
   const tracks = await prisma.track.findMany({
     where: { ISRC: { in: uniqueISRCs } },
@@ -38,9 +45,31 @@ export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompa
   });
 
   const tracksWithRelations = tracks as TrackWithCompany[];
+
+  let tracksWithCounts = tracksWithRelations;
+  if (shouldFilterTrackPlays && tracksWithRelations.length > 0) {
+    const trackIds = tracksWithRelations.map(track => track.id);
+    const filteredCounts = await prisma.trackPlay.groupBy({
+      by: ["trackId"],
+      _count: { trackId: true },
+      where: {
+        trackId: { in: trackIds },
+        userId: { in: filteredUserIds },
+      },
+    });
+    const countMap = new Map(filteredCounts.map(count => [count.trackId, count._count.trackId]));
+    tracksWithCounts = tracksWithRelations.map(track => ({
+      ...track,
+      _count: {
+        TrackPlays: countMap.get(track.id) ?? 0,
+      },
+    }));
+  }
+
+  const workingTracks = tracksWithCounts;
   const tracksByISRC = new Map<string, TrackWithCompany[]>();
 
-  for (const track of tracksWithRelations) {
+  for (const track of workingTracks) {
     const current = tracksByISRC.get(track.ISRC) ?? [];
     current.push(track);
     tracksByISRC.set(track.ISRC, current);

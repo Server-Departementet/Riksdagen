@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { TrackWithCompany } from "@/types";
+import { TrackDataFilters } from "./get-track-data";
 
 const sortTracksByRelevance = (a: TrackWithCompany, b: TrackWithCompany) => {
   const playDiff = b._count.TrackPlays - a._count.TrackPlays;
@@ -13,9 +14,12 @@ const sortTracksByRelevance = (a: TrackWithCompany, b: TrackWithCompany) => {
   return a.id.localeCompare(b.id);
 };
 
-export async function getMergedTrackVariants(ISRC: string): Promise<TrackWithCompany[]> {
+export async function getMergedTrackVariants(ISRC: string, filters?: TrackDataFilters): Promise<TrackWithCompany[]> {
   const trimmedISRC = ISRC?.trim();
   if (!trimmedISRC) return [];
+
+  const filteredUserIds = (filters?.userIds ?? []).filter(Boolean);
+  const shouldFilterTrackPlays = filteredUserIds.length > 0;
 
   const tracks = await prisma.track.findMany({
     where: { ISRC: trimmedISRC },
@@ -46,9 +50,30 @@ export async function getMergedTrackVariants(ISRC: string): Promise<TrackWithCom
   });
 
   const variants = tracks as TrackWithCompany[];
-  const mergedVariantCount = variants.length;
 
-  return variants
+  let variantsWithCounts = variants;
+  if (shouldFilterTrackPlays && variants.length > 0) {
+    const trackIds = variants.map(track => track.id);
+    const filteredCounts = await prisma.trackPlay.groupBy({
+      by: ["trackId"],
+      _count: { trackId: true },
+      where: {
+        trackId: { in: trackIds },
+        userId: { in: filteredUserIds },
+      },
+    });
+    const countMap = new Map(filteredCounts.map(count => [count.trackId, count._count.trackId]));
+    variantsWithCounts = variants.map(track => ({
+      ...track,
+      _count: {
+        TrackPlays: countMap.get(track.id) ?? 0,
+      },
+    }));
+  }
+
+  const mergedVariantCount = variantsWithCounts.length;
+
+  return variantsWithCounts
     .map(variant => ({
       ...variant,
       mergedVariantCount,

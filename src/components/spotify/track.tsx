@@ -16,25 +16,69 @@ import { Layers3Icon } from "lucide-react";
 
 export function TrackList({
   trackISRCs: allTrackISRCs,
+  filterUserIds,
 }: {
   trackISRCs: string[];
+  filterUserIds: string[];
 }) {
+  const normalizedFilterUserIds = useMemo(
+    () => Array.from(new Set(filterUserIds.filter(Boolean))).sort(),
+    [filterUserIds],
+  );
+  const filterSignature = useMemo(() => normalizedFilterUserIds.join("|"), [normalizedFilterUserIds]);
+  const trackListSignature = useMemo(() => allTrackISRCs.join("|"), [allTrackISRCs]);
+  const dataSignature = useMemo(() => `${filterSignature}::${trackListSignature}`, [filterSignature, trackListSignature]);
+
   const batchSize = 100;
-  const [loadedBatchCount, setLoadedBatchCount] = useState<number>(1);
+  const [loadedBatchState, setLoadedBatchState] = useState<{ signature: string; value: number }>(() => ({
+    signature: dataSignature,
+    value: 1,
+  }));
+  const loadedBatchCount = loadedBatchState.signature === dataSignature ? loadedBatchState.value : 1;
+  const setLoadedBatchCount = useCallback((value: number | ((prev: number) => number)) => {
+    setLoadedBatchState(prev => {
+      const previousValue = prev.signature === dataSignature ? prev.value : 1;
+      const nextValue = typeof value === "function"
+        ? (value as (prev: number) => number)(previousValue)
+        : value;
+
+      if (prev.signature === dataSignature && nextValue === previousValue) {
+        return prev;
+      }
+
+      return {
+        signature: dataSignature,
+        value: nextValue,
+      };
+    });
+  }, [dataSignature]);
   const trackISRCBatches = useMemo<string[][]>(() =>
     new Array(Math.min(loadedBatchCount, Math.ceil(allTrackISRCs.length / batchSize)))
       .fill(0).map((_, i) => allTrackISRCs.slice(i * batchSize, i * batchSize + batchSize))
     , [allTrackISRCs, loadedBatchCount]);
 
-  const [trackDataBatches, setTrackDataBatches] = useState<Record<string, TrackWithCompany>>({});
+  const [trackDataState, setTrackDataState] = useState<{
+    signature: string;
+    data: Record<string, TrackWithCompany>;
+  }>(() => ({
+    signature: dataSignature,
+    data: {},
+  }));
+  const emptyTrackData = useMemo<Record<string, TrackWithCompany>>(() => ({}), []);
+  const trackDataBatches = useMemo(() => (
+    trackDataState.signature === dataSignature
+      ? trackDataState.data
+      : emptyTrackData
+  ), [trackDataState, dataSignature, emptyTrackData]);
   const trackElements = useMemo<ReactNode[]>(() =>
     allTrackISRCs.map((trackISRC, index) =>
       <TrackElement
         key={`track-${trackISRC}`}
         trackData={trackDataBatches[trackISRC] ?? null}
         lineNumber={index + 1}
+        filterUserIds={normalizedFilterUserIds}
       />
-    ), [allTrackISRCs, trackDataBatches]);
+    ), [allTrackISRCs, trackDataBatches, normalizedFilterUserIds]);
 
   // Fetch track data when loadedBatchCount changes
   useEffect(() => {
@@ -44,18 +88,29 @@ export function TrackList({
         .filter(trackISRC => !(trackDataBatches && trackDataBatches[trackISRC]));
 
       if (trackISRCToFetch.length === 0) return;
-      const trackDataArray = await getTrackDataBatch(trackISRCToFetch);
-      setTrackDataBatches(prev => {
-        const newData = { ...prev };
+      const trackDataArray = await getTrackDataBatch(trackISRCToFetch, {
+        userIds: normalizedFilterUserIds,
+      });
+      setTrackDataState(prev => {
+        const previousData = prev.signature === dataSignature ? prev.data : {};
+        if (trackDataArray.length === 0 && prev.signature === dataSignature) {
+          return prev;
+        }
+
+        const mergedData = { ...previousData };
         trackDataArray.forEach(trackData => {
-          newData[trackData.ISRC] = trackData;
+          mergedData[trackData.ISRC] = trackData;
         });
-        return newData;
+
+        return {
+          signature: dataSignature,
+          data: mergedData,
+        };
       });
     }
     fetchTrackData()
       .catch(console.error);
-  }, [loadedBatchCount, trackISRCBatches, trackDataBatches]);
+  }, [loadedBatchCount, trackISRCBatches, trackDataBatches, normalizedFilterUserIds, dataSignature]);
 
   return (<>
     <p
@@ -96,9 +151,11 @@ export function TrackList({
 function TrackElement({
   trackData,
   lineNumber,
+  filterUserIds,
 }: {
   trackData: TrackWithCompany | null;
   lineNumber: number;
+  filterUserIds: string[];
 }) {
   const track = useMemo<Track | null>(() => trackData
     ? {
@@ -150,6 +207,7 @@ function TrackElement({
 
   const hasMergedVariants = (trackData?.mergedVariantCount ?? 1) > 1;
   const trackISRC = track?.ISRC ?? null;
+  const filterSignature = useMemo(() => filterUserIds.join("|"), [filterUserIds]);
 
   const [isMergedPopoverOpen, setIsMergedPopoverOpen] = useState(false);
   const [mergedVariants, setMergedVariants] = useState<TrackWithCompany[] | null>(null);
@@ -161,7 +219,9 @@ function TrackElement({
     setIsMergedVariantsLoading(true);
     setMergedVariantsError(null);
     try {
-      const variants = await getMergedTrackVariants(trackISRC);
+      const variants = await getMergedTrackVariants(trackISRC, {
+        userIds: filterUserIds,
+      });
       setMergedVariants(variants);
     } catch (error) {
       console.error(error);
@@ -169,7 +229,14 @@ function TrackElement({
     } finally {
       setIsMergedVariantsLoading(false);
     }
-  }, [trackISRC, mergedVariants, isMergedVariantsLoading]);
+  }, [trackISRC, mergedVariants, isMergedVariantsLoading, filterUserIds]);
+
+  useEffect(() => {
+    setMergedVariants(null);
+    setMergedVariantsError(null);
+    setIsMergedVariantsLoading(false);
+    setIsMergedPopoverOpen(false);
+  }, [filterSignature, trackISRC]);
 
   useEffect(() => {
     if (isMergedPopoverOpen && hasMergedVariants) {
@@ -324,10 +391,8 @@ function TrackElement({
                               {variant.album.name}
                             </Link>
                           </p>
-                          <p className="text-xs text-muted-foreground flex items-center">
-                            {variant._count.TrackPlays.toLocaleString("sv-SE")} lyssningar
-                            <span className="flex-1"></span>
-                            släpptes {releaseDateLabel}
+                          <p className="text-xs text-muted-foreground">
+                            {variant._count.TrackPlays.toLocaleString("sv-SE")}&nbsp;{variant._count.TrackPlays === 1 ? "lyssning" : "lyssningar"}&nbsp;&nbsp;&middot;&nbsp;&nbsp;släpptes&nbsp;{releaseDateLabel}
                           </p>
                         </li>
                       );
