@@ -52,6 +52,7 @@ export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompa
     if (candidates.length === 0) continue;
 
     const totalTrackPlays = candidates.reduce((sum, candidate) => sum + candidate._count.TrackPlays, 0);
+    const mergedVariantCount = candidates.length;
 
     const canonicalTrack = candidates
       .slice()
@@ -68,6 +69,7 @@ export async function getTrackDataBatch(ISRCs: string[]): Promise<TrackWithCompa
     mergedTracks.set(isrc, {
       ...canonicalTrack,
       _count: { TrackPlays: totalTrackPlays },
+      mergedVariantCount,
     });
   }
 

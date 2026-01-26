@@ -5,11 +5,14 @@ import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.sv
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Fragment, ReactNode, useEffect, useMemo, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Fragment, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
+import { getMergedTrackVariants } from "@/functions/spotify/get-merged-track-variants";
 import { Album, Artist, Track } from "@/prisma/generated";
 import { TrackWithCompany } from "@/types";
+import { Layers3Icon } from "lucide-react";
 
 export function TrackList({
   trackISRCs: allTrackISRCs,
@@ -145,6 +148,35 @@ function TrackElement({
       .join(" ");
   }, [totalPlaytimeSeconds]);
 
+  const hasMergedVariants = (trackData?.mergedVariantCount ?? 1) > 1;
+  const trackISRC = track?.ISRC ?? null;
+
+  const [isMergedPopoverOpen, setIsMergedPopoverOpen] = useState(false);
+  const [mergedVariants, setMergedVariants] = useState<TrackWithCompany[] | null>(null);
+  const [isMergedVariantsLoading, setIsMergedVariantsLoading] = useState(false);
+  const [mergedVariantsError, setMergedVariantsError] = useState<string | null>(null);
+
+  const loadMergedVariants = useCallback(async () => {
+    if (!trackISRC || mergedVariants || isMergedVariantsLoading) return;
+    setIsMergedVariantsLoading(true);
+    setMergedVariantsError(null);
+    try {
+      const variants = await getMergedTrackVariants(trackISRC);
+      setMergedVariants(variants);
+    } catch (error) {
+      console.error(error);
+      setMergedVariantsError("Kunde inte hämta sammanfogade spår.");
+    } finally {
+      setIsMergedVariantsLoading(false);
+    }
+  }, [trackISRC, mergedVariants, isMergedVariantsLoading]);
+
+  useEffect(() => {
+    if (isMergedPopoverOpen && hasMergedVariants) {
+      void loadMergedVariants();
+    }
+  }, [isMergedPopoverOpen, hasMergedVariants, loadMergedVariants]);
+
   return (
     <li
       className={`
@@ -161,6 +193,7 @@ function TrackElement({
         rounded-lg 
         gap-x-2 gap-y-1
         overflow-hidden 
+        relative
       `}
       {...album?.color
         ? { style: { backgroundColor: album.color } }
@@ -223,6 +256,57 @@ function TrackElement({
           {/* Listening time (long) */}
           <p className="">{prettyPlayCount} ({prettyPlaytime})</p>
         </div>
+
+        {/* Merged indicator */}
+        {hasMergedVariants && track ? (
+          <Popover open={isMergedPopoverOpen} onOpenChange={setIsMergedPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Visa sammanfogade versioner"
+                className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white shadow focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black"
+              >
+                <Layers3Icon className="size-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" side="right" className="w-80 text-sm">
+              <p className="mb-1 font-semibold">Sammanfogade versioner</p>
+              <p className="mb-3 text-xs text-muted-foreground">ISRC {track.ISRC}</p>
+              {isMergedVariantsLoading && <p>Laddar spår...</p>}
+              {!isMergedVariantsLoading && mergedVariantsError && (
+                <p className="text-sm text-destructive">{mergedVariantsError}</p>
+              )}
+              {!isMergedVariantsLoading && !mergedVariantsError && mergedVariants && mergedVariants.length > 0 ? (
+                <ul className="space-y-2">
+                  {mergedVariants.map((variant) => {
+                    const releaseDateLabel = variant.album.releaseDate
+                      ? new Date(variant.album.releaseDate).toLocaleDateString("sv-SE", { year: "numeric", month: "short" })
+                      : "Okänt datum";
+                    const isCanonical = variant.id === track.id;
+                    return (
+                      <li
+                        key={variant.id}
+                        className={`rounded-md border p-2 ${isCanonical ? "border-green-500 bg-green-50" : "border-border bg-muted"}`}
+                      >
+                        <p className="flex items-center justify-between text-sm font-medium">
+                          <span className="truncate pr-2">{variant.name}</span>
+                          {isCanonical && <span className="text-xs font-semibold text-green-700">Visas</span>}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{variant.album.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {variant._count.TrackPlays.toLocaleString("sv-SE")} lyssningar · {releaseDateLabel}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+              {!isMergedVariantsLoading && !mergedVariantsError && (!mergedVariants || mergedVariants.length === 0) && (
+                <p className="text-sm text-muted-foreground">Inga ytterligare versioner hittades.</p>
+              )}
+            </PopoverContent>
+          </Popover>
+        ) : null}
 
         {/* Line number */}
         <div className="col-start-3 col-span-2 row-start-1 flex flex-row items-center justify-end px-1">

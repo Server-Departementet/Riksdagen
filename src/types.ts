@@ -29,6 +29,7 @@ export type TrackWithCompany = Track & {
   _count: {
     TrackPlays: number;
   };
+  mergedVariantCount?: number;
 } & {
   name: string;
   id: string;
