@@ -74,7 +74,6 @@ async function main() {
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
-    .filter(q => q.context)
     .filter(q => q.quoteeId);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
@@ -176,7 +175,7 @@ async function main() {
     ? "Okänd"
     : quote.sender;
 
-  const lengths = new Array(10).fill(0).map((_, i) => (i + 20) * 500);
+  const lengths: number[] = (new Array(50).fill(8500) as number[]).map((floor, i) => floor + i * 100);
   const candidates: {
     datePad: ReturnType<typeof computeWidthPadding>;
     senderPad: ReturnType<typeof computeWidthPadding>;
@@ -194,8 +193,8 @@ async function main() {
 
   // Choose candidate with minimal total error
   candidates.sort((a, b) => {
-    const aError = a.datePad.error + a.senderPad.error + (a.contextPad ? a.contextPad.error : 0);
-    const bError = b.datePad.error + b.senderPad.error + (b.contextPad ? b.contextPad.error : 0);
+    const aError = a.datePad.error - a.senderPad.error;
+    const bError = b.datePad.error - b.senderPad.error;
     return Math.abs(aError) - Math.abs(bError);
   });
   const bestCandidate = candidates[0];
@@ -278,7 +277,7 @@ function measureGGSans(text: string): number {
 type PadMode = "floor" | "closest" | "ceil";
 
 /**
- * Find a tabs+spaces padding string whose width is:
+ * Build a spaces-only padding string whose width is:
  * - "floor": best width <= target (won't overshoot)
  * - "closest": minimal absolute error (may overshoot)
  * - "ceil": best width >= target (won't undershoot)
@@ -286,91 +285,43 @@ type PadMode = "floor" | "closest" | "ceil";
 function computeWidthPadding(
   targetWidth: number,
   mode: PadMode = "floor",
-): { pad: string; tabs: number; spaces: number; width: number; error: number } {
+): { pad: string; spaces: number; width: number; error: number } {
   if (targetWidth <= 0) {
-    return { pad: "", tabs: 0, spaces: 0, width: 0, error: 0 };
+    return { pad: "", spaces: 0, width: 0, error: 0 };
   }
 
-  // Upper bound for tabs to consider. A small extra margin helps for closest/ceil.
-  const maxTabs = Math.ceil(targetWidth / ggSansWidths["\t"]) + 2;
+  const spaceWidth = ggSansWidths[" "] ?? 500;
+  const floorSpaces = Math.max(0, Math.floor(targetWidth / spaceWidth));
+  const ceilSpaces = Math.max(0, Math.ceil(targetWidth / spaceWidth));
 
-  let best: { tabs: number; spaces: number; width: number; error: number } | null = null;
-
-  for (let tabs = 0; tabs <= maxTabs; tabs++) {
-    const wTabs = tabs * ggSansWidths["\t"];
-    const remaining = targetWidth - wTabs;
-
-    // Choose spaces count based on mode
-    let spaces: number;
-    if (mode === "floor") {
-      spaces = Math.max(0, Math.floor(remaining / ggSansWidths[" "]));
-    }
-    else if (mode === "ceil") {
-      spaces = Math.max(0, Math.ceil(remaining / ggSansWidths[" "]));
-    }
-    else if (mode === "closest") {
-      const s0 = Math.max(0, Math.floor(remaining / ggSansWidths[" "]));
-      const s1 = Math.max(0, Math.ceil(remaining / ggSansWidths[" "]));
-      const w0 = wTabs + s0 * ggSansWidths[" "];
-      const w1 = wTabs + s1 * ggSansWidths[" "];
-      const e0 = Math.abs(targetWidth - w0);
-      const e1 = Math.abs(targetWidth - w1);
-      spaces = e1 < e0 ? s1 : s0;
+  let spaces: number;
+  if (mode === "floor") {
+    spaces = floorSpaces;
+  }
+  else if (mode === "ceil") {
+    spaces = ceilSpaces;
+  }
+  else if (mode === "closest") {
+    if (floorSpaces === ceilSpaces) {
+      spaces = floorSpaces;
     }
     else {
-      throw new Error(`Unknown mode: ${mode as string} (${typeof mode})`);
+      const floorWidth = floorSpaces * spaceWidth;
+      const ceilWidth = ceilSpaces * spaceWidth;
+      const floorErr = Math.abs(targetWidth - floorWidth);
+      const ceilErr = Math.abs(targetWidth - ceilWidth);
+      spaces = ceilErr < floorErr ? ceilSpaces : floorSpaces;
     }
-
-    const width = wTabs + spaces * ggSansWidths[" "];
-    const error = targetWidth - width; // Positive means we are short
-
-    // Enforce constraints for floor/ceil
-    if (mode === "floor" && width > targetWidth) continue;
-    if (mode === "ceil" && width < targetWidth) continue;
-
-    // Scoring:
-    // 1) Minimize absolute error (or maximize width for floor / minimize width for ceil)
-    // 2) Tie-break: fewer characters (prefer tabs usually)
-    // 3) Tie-break: more tabs (often looks cleaner)
-    const absErr = Math.abs(targetWidth - width);
-    const chars = tabs + spaces;
-
-    if (!best) {
-      best = { tabs, spaces, width, error };
-      continue;
-    }
-
-    const bestAbsErr = Math.abs(targetWidth - best.width);
-    const bestChars = best.tabs + best.spaces;
-
-    const better =
-      absErr < bestAbsErr
-      || (absErr === bestAbsErr && chars < bestChars)
-      || (absErr === bestAbsErr && chars === bestChars && tabs > best.tabs);
-
-    if (better) best = { tabs, spaces, width, error };
+  }
+  else {
+    throw new Error(`Unknown mode: ${mode as string} (${typeof mode})`);
   }
 
-  // If nothing matched constraints, fall back (should be rare)
-  best ??= { tabs: 0, spaces: Math.ceil(targetWidth / ggSansWidths[" "]), width: Math.ceil(targetWidth / ggSansWidths[" "]) * ggSansWidths[" "], error: targetWidth - Math.ceil(targetWidth / ggSansWidths[" "]) * ggSansWidths[" "] };
-
+  const width = spaces * spaceWidth;
   return {
-    pad: "\t".repeat(best.tabs) + " ".repeat(best.spaces),
-    tabs: best.tabs,
-    spaces: best.spaces,
-    width: best.width,
-    error: targetWidth - best.width,
+    pad: " ".repeat(spaces),
+    spaces,
+    width,
+    error: targetWidth - width,
   };
-}
-
-/** Pad string to a given visual width. */
-function padEndGGSans(
-  text: string,
-  targetVisualWidth: number,
-  mode: PadMode = "floor",
-): string {
-  const w = measureGGSans(text);
-  const needed = targetVisualWidth - w;
-  const pad = computeWidthPadding(needed, mode).pad;
-  return text + pad;
 }
