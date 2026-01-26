@@ -1,8 +1,8 @@
-### Environment Variables
+## Environment Variables
 
 ```bash
 DATABASE_URL=""
-# For seeding (don't be dumb, don't put this on the server)
+# For seeding (don't be silly, don't put this on the server)
 REMOTE_DB_URL=""
 
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
@@ -18,14 +18,32 @@ QUOTE_CHANNEL_ID=""
 QUIZ_CHANNEL_ID=""
 ```
 
-#### Required files
+### Required files
 - Seeding
   - `scripts/complete-usermap.ts`
 - Quiz
   - `scripts/discord/name-variants`
 
+Contact a contributor for these files.
 
-### Setup
+
+## Setup
+
+### Mariadb
+You are a strong independent woman who can install mariadb on your own :sparkles:
+
+Make sure your user has the right permissions to create databases (if you want prisma to create it for you) or full access to the database you create.
+
+```sql
+-- I am lazy
+CREATE USER 'riks'@'localhost' IDENTIFIED BY 'someCoolPassword';
+CREATE DATABASE riksdagen;
+GRANT ALL PRIVILEGES ON riksdagen.* TO 'riks'@'localhost';
+FLUSH PRIVILEGES;
+-- But don't be silly in production, use other credentials plz
+```
+
+### App setup
 
 ```bash
 # Install dependencies
@@ -36,12 +54,14 @@ yarn prisma generate
 yarn prisma db push
 # Seed db via a remote connection
 yarn prisma db seed
+
 # Optional, you will get a bunch of rejected requests since it's not throttled and it fetches a lot from spotify
+# idk, maybe you'll get IP-banned (✿◠‿◠)
 yarn seed-colors
 ```
 
 
-### Commands
+## Commands
 
 ```bash
 # Running dev server
@@ -57,7 +77,7 @@ yarn lint
 ```
 
 
-### Discord bot
+## Discord bot
 
 ```bash
 # Scrape quotes channel, saves to scripts/discord/quotes.json
