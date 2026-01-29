@@ -1,24 +1,14 @@
 import "dotenv/config";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@/prisma/generated";
+import { makeMariaDBAdapter } from "./mariadb-adapter";
+import { env } from "node:process";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const dbEnv = process.env.DATABASE_URL;
-if (!dbEnv) {
-  throw new Error("DATABASE_URL is not defined");
-}
-const dbURL = new URL(dbEnv);
-const adapter = new PrismaMariaDb({
-  host: decodeURI(dbURL.hostname),
-  port: Number(decodeURI(dbURL.port)),
-  user: decodeURI(dbURL.username),
-  password: decodeURI(dbURL.password),
-  database: decodeURI(dbURL.pathname.slice(1)),
-  connectionLimit: 5,
-});
+const { DATABASE_URL } = env;
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not defined");
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
+export const prisma = globalForPrisma.prisma || new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 

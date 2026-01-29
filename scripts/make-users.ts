@@ -2,21 +2,20 @@ import { idGroups } from "./complete-usermap.ts";
 import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient, User } from "../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
+import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.js";
 
-if (!idGroups || typeof idGroups !== "object") {
-  throw new Error("Invalid idGroups data.");
-}
-if (!env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-if (!env.DISCORD_BOT_TOKEN) {
-  throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-}
-if (!env.REGERINGEN_GUILD_ID) {
-  throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
-}
+const {
+  DATABASE_URL,
+  DISCORD_BOT_TOKEN,
+  REGERINGEN_GUILD_ID,
+} = env;
+
+if (!idGroups || typeof idGroups !== "object") throw new Error("Missing scripts/complete-usermap.ts or invalid idGroups data.");
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+
 
 makeUsers()
   .then(() => {
@@ -31,16 +30,7 @@ makeUsers()
   .catch(() => process.exit());
 
 async function makeUsers() {
-  const dbURL = new URL(env.DATABASE_URL!);
-  const adapter = new PrismaMariaDb({
-    host: decodeURI(dbURL.hostname),
-    port: Number(decodeURI(dbURL.port)),
-    user: decodeURI(dbURL.username),
-    password: decodeURI(dbURL.password),
-    database: decodeURI(dbURL.pathname.slice(1)),
-    connectionLimit: 5,
-  });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL!));
 
   /* 
    * Get users nicknames on Discord via bot

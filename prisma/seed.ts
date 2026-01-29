@@ -2,36 +2,20 @@
 
 import "dotenv/config";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { execSync } from "node:child_process";
 import { createClerkClient } from "@clerk/backend";
 import { env } from "node:process";
+import { makeMariaDBAdapter } from "@/lib/mariadb-adapter.js";
 
-const dbURL = process.env.DATABASE_URL;
-if (!dbURL) throw new Error("DATABASE_URL environment variable is not set");
-const localDBURL = new URL(dbURL);
-const adapter = new PrismaMariaDb({
-  host: decodeURI(localDBURL.hostname),
-  port: Number(decodeURI(localDBURL.port)),
-  user: decodeURI(localDBURL.username),
-  password: decodeURI(localDBURL.password),
-  database: decodeURI(localDBURL.pathname.slice(1)),
-  connectionLimit: 5,
-});
-const prisma = new PrismaClient({ adapter });
+const {
+  DATABASE_URL,
+  REMOTE_DB_URL,
+} = env;
+if (!DATABASE_URL) throw new Error("DATABASE_URL environment variable is not set");
+if (!REMOTE_DB_URL) throw new Error("REMOTE_DB_URL environment variable is not set");
 
-const remoteDB = process.env.REMOTE_DB_URL;
-if (!remoteDB) throw new Error("REMOTE_DB_URL environment variable is not set");
-const remoteDBURL = new URL(remoteDB);
-const remoteAdapter = new PrismaMariaDb({
-  host: decodeURI(remoteDBURL.hostname),
-  port: Number(decodeURI(remoteDBURL.port)),
-  user: decodeURI(remoteDBURL.username),
-  password: decodeURI(remoteDBURL.password),
-  database: decodeURI(remoteDBURL.pathname.slice(1)),
-  connectionLimit: 5,
-});
-const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
+const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
+const remotePrisma = new PrismaClient(makeMariaDBAdapter(REMOTE_DB_URL));
 
 const clerkClient = createClerkClient({
   publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,

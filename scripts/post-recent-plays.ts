@@ -2,18 +2,18 @@ import "dotenv/config";
 import { extractImageColor } from "../src/functions/extract-image-color.ts";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
 import { createClerkClient } from "@clerk/backend";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { env } from "node:process";
+import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.ts";
 
-if (!env.CLERK_SECRET_KEY) {
-  throw new Error("CLERK_SECRET_KEY is not set in environment variables");
-}
-if (!env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-  throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
-}
-if (!env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
+const {
+  CLERK_SECRET_KEY,
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  DATABASE_URL,
+} = env;
+
+if (!CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY is not set in environment variables");
+if (!NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 
 addRecentTrackPlays()
   .then(() => {
@@ -28,20 +28,11 @@ addRecentTrackPlays()
 async function addRecentTrackPlays() {
   console.info("Starting recent track plays import.");
   const clerkClient = createClerkClient({
-    publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
-    secretKey: env.CLERK_SECRET_KEY!,
+    publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
+    secretKey: CLERK_SECRET_KEY!,
   });
 
-  const dbURL = new URL(env.DATABASE_URL!);
-  const adapter = new PrismaMariaDb({
-    host: decodeURI(dbURL.hostname),
-    port: Number(decodeURI(dbURL.port)),
-    user: decodeURI(dbURL.username),
-    password: decodeURI(dbURL.password),
-    database: decodeURI(dbURL.pathname.slice(1)),
-    connectionLimit: 5,
-  });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL!));
 
   try {
     console.info("Fetching Clerk users.");

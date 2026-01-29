@@ -1,42 +1,32 @@
 import "dotenv/config";
 import { env } from "node:process";
 import { Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
 import { ggSansWidths } from "./gg-sans-widths.ts";
+import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
-if (!env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-if (!env.DISCORD_BOT_TOKEN) {
-  throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-}
-if (!env.REGERINGEN_GUILD_ID) {
-  throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
-}
-if (!env.QUIZ_CHANNEL_ID) {
-  throw new Error("QUIZ_CHANNEL_ID is not set in environment variables");
-}
-if (!env.CANONICAL_URL) {
-  throw new Error("CANONICAL_URL is not set in environment variables");
-}
+const {
+  DATABASE_URL,
+  DISCORD_BOT_TOKEN,
+  REGERINGEN_GUILD_ID,
+  QUIZ_CHANNEL_ID,
+  CANONICAL_URL,
+} = env;
+
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+if (!QUIZ_CHANNEL_ID) throw new Error("QUIZ_CHANNEL_ID is not set in environment variables");
+if (!CANONICAL_URL) throw new Error("CANONICAL_URL is not set in environment variables");
 
 const isDryRun = process.argv.includes("--dry-run");
+
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
-const dbURL = new URL(env.DATABASE_URL);
-const adapter = new PrismaMariaDb({
-  host: decodeURI(dbURL.hostname),
-  port: Number(decodeURI(dbURL.port)),
-  user: decodeURI(dbURL.username),
-  password: decodeURI(dbURL.password),
-  database: decodeURI(dbURL.pathname.slice(1)),
-  connectionLimit: 5,
-});
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));

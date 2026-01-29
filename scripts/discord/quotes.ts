@@ -2,37 +2,27 @@ import "dotenv/config";
 import { argv, env } from "node:process";
 import fs from "node:fs";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
 import { nameVariants } from "./name-variants.ts";
+import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
-if (!env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-if (!env.DISCORD_BOT_TOKEN) {
-  throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-}
-if (!env.REGERINGEN_GUILD_ID) {
-  throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
-}
-if (!env.QUOTE_CHANNEL_ID) {
-  throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
-}
+const {
+  DATABASE_URL,
+  DISCORD_BOT_TOKEN,
+  REGERINGEN_GUILD_ID,
+  QUOTE_CHANNEL_ID,
+} = env;
+
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+if (!QUOTE_CHANNEL_ID) throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
 
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
-const dbURL = new URL(env.DATABASE_URL);
-const adapter = new PrismaMariaDb({
-  host: decodeURI(dbURL.hostname),
-  port: Number(decodeURI(dbURL.port)),
-  user: decodeURI(dbURL.username),
-  password: decodeURI(dbURL.password),
-  database: decodeURI(dbURL.pathname.slice(1)),
-  connectionLimit: 5,
-});
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));

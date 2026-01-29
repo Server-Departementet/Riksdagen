@@ -1,12 +1,14 @@
 import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient } from "../src/prisma/generated/client.js";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { extractImageColor } from "../src/functions/extract-image-color.ts";
+import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.ts";
 
-if (!env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
+const {
+  DATABASE_URL,
+} = env;
+
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 
 seedColor()
   .then(() => {
@@ -20,16 +22,7 @@ seedColor()
   .finally(() => process.exit());
 
 async function seedColor() {
-  const dbURL = new URL(env.DATABASE_URL!);
-  const adapter = new PrismaMariaDb({
-    host: decodeURI(dbURL.hostname),
-    port: Number(decodeURI(dbURL.port)),
-    user: decodeURI(dbURL.username),
-    password: decodeURI(dbURL.password),
-    database: decodeURI(dbURL.pathname.slice(1)),
-    connectionLimit: 5,
-  });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL!));
 
   const [
     albums,
