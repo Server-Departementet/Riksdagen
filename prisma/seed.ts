@@ -9,23 +9,27 @@ import { env } from "node:process";
 
 const dbURL = process.env.DATABASE_URL;
 if (!dbURL) throw new Error("DATABASE_URL environment variable is not set");
+const localDBURL = new URL(dbURL);
 const adapter = new PrismaMariaDb({
-  host: new URL(dbURL).hostname,
-  port: Number(new URL(dbURL).port),
-  user: new URL(dbURL).username,
-  password: new URL(dbURL).password,
-  database: new URL(dbURL).pathname.slice(1),
+  host: decodeURI(localDBURL.hostname),
+  port: Number(decodeURI(localDBURL.port)),
+  user: decodeURI(localDBURL.username),
+  password: decodeURI(localDBURL.password),
+  database: decodeURI(localDBURL.pathname.slice(1)),
+  connectionLimit: 5,
 });
 const prisma = new PrismaClient({ adapter });
 
 const remoteDB = process.env.REMOTE_DB_URL;
 if (!remoteDB) throw new Error("REMOTE_DB_URL environment variable is not set");
+const remoteDBURL = new URL(remoteDB);
 const remoteAdapter = new PrismaMariaDb({
-  host: new URL(remoteDB).hostname,
-  port: Number(new URL(remoteDB).port),
-  user: new URL(remoteDB).username,
-  password: new URL(remoteDB).password,
-  database: new URL(remoteDB).pathname.slice(1),
+  host: decodeURI(remoteDBURL.hostname),
+  port: Number(decodeURI(remoteDBURL.port)),
+  user: decodeURI(remoteDBURL.username),
+  password: decodeURI(remoteDBURL.password),
+  database: decodeURI(remoteDBURL.pathname.slice(1)),
+  connectionLimit: 5,
 });
 const remotePrisma = new PrismaClient({ adapter: remoteAdapter });
 

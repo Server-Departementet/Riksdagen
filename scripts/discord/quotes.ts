@@ -25,11 +25,12 @@ const discordClient = new DiscordClient({
 });
 const dbURL = new URL(env.DATABASE_URL);
 const adapter = new PrismaMariaDb({
-  host: dbURL.hostname,
-  port: Number(dbURL.port),
-  user: dbURL.username,
-  password: dbURL.password,
-  database: dbURL.pathname.slice(1),
+  host: decodeURI(dbURL.hostname),
+  port: Number(decodeURI(dbURL.port)),
+  user: decodeURI(dbURL.username),
+  password: decodeURI(dbURL.password),
+  database: decodeURI(dbURL.pathname.slice(1)),
+  connectionLimit: 5,
 });
 const prisma = new PrismaClient({ adapter });
 const users = Object.fromEntries((
