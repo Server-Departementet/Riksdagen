@@ -2,7 +2,7 @@ import { idGroups } from "./complete-usermap.ts";
 import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient, User } from "../src/prisma/generated/client.js";
-import { createMariaDbAdapter } from "../src/lib/mariadb-url.ts";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
 
 if (!idGroups || typeof idGroups !== "object") {
@@ -31,7 +31,15 @@ makeUsers()
   .catch(() => process.exit());
 
 async function makeUsers() {
-  const prisma = new PrismaClient({ adapter: createMariaDbAdapter(env.DATABASE_URL!) });
+  const dbURL = new URL(env.DATABASE_URL!);
+  const adapter = new PrismaMariaDb({
+    host: dbURL.hostname,
+    port: Number(dbURL.port),
+    user: dbURL.username,
+    password: dbURL.password,
+    database: dbURL.pathname.slice(1),
+  });
+  const prisma = new PrismaClient({ adapter });
 
   /* 
    * Get users nicknames on Discord via bot

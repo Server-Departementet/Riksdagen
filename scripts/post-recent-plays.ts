@@ -2,8 +2,8 @@ import "dotenv/config";
 import { extractImageColor } from "../src/functions/extract-image-color.ts";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
 import { createClerkClient } from "@clerk/backend";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { env } from "node:process";
-import { createMariaDbAdapter } from "../src/lib/mariadb-url.ts";
 
 if (!env.CLERK_SECRET_KEY) {
   throw new Error("CLERK_SECRET_KEY is not set in environment variables");
@@ -31,7 +31,15 @@ async function addRecentTrackPlays() {
     secretKey: env.CLERK_SECRET_KEY!,
   });
 
-  const prisma = new PrismaClient({ adapter: createMariaDbAdapter(env.DATABASE_URL!) });
+  const dbURL = new URL(env.DATABASE_URL!);
+  const adapter = new PrismaMariaDb({
+    host: dbURL.hostname,
+    port: Number(dbURL.port),
+    user: dbURL.username,
+    password: dbURL.password,
+    database: dbURL.pathname.slice(1),
+  });
+  const prisma = new PrismaClient({ adapter });
 
   const users = await clerkClient.users.getUserList();
   const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
