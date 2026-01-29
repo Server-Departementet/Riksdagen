@@ -18,14 +18,15 @@ if (!env.DATABASE_URL) {
 addRecentTrackPlays()
   .then(() => {
     console.log("Finished adding recent track plays.");
-    process.exitCode = 0;
+    process.exit(0);
   })
   .catch((error) => {
     console.error("Error adding recent track plays:", error);
-    process.exitCode = 1;
+    process.exit(1);
   });
 
 async function addRecentTrackPlays() {
+  console.info("Starting recent track plays import.");
   const clerkClient = createClerkClient({
     publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
     secretKey: env.CLERK_SECRET_KEY!,
@@ -42,198 +43,214 @@ async function addRecentTrackPlays() {
   });
   const prisma = new PrismaClient({ adapter });
 
-  const users = await clerkClient.users.getUserList();
-  const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
+  try {
+    console.info("Fetching Clerk users.");
+    const users = await clerkClient.users.getUserList();
+    const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
+    console.info(`Found ${users.data.length} users, ${ministers.length} ministers.`);
 
-  for (const clerkUser of ministers) {
-    /* 
-     * Get spotify OAuth token for the user 
-     */
-    const tokenResponse = await clerkClient.users.getUserOauthAccessToken(clerkUser.id, "spotify");
-    if (!tokenResponse.data.length) {
-      console.warn(`No Spotify token found for user: ${clerkUser.firstName}`);
-      continue;
-    }
-    if (tokenResponse.data.length > 1) {
-      console.warn(`Multiple Spotify tokens found for user: ${clerkUser.firstName}. Only using the first one.`);
-    }
-    const spotifyToken = tokenResponse.data[0].token;
+    for (const clerkUser of ministers) {
+      console.info(`Processing user: ${clerkUser.firstName ?? "[Unknown user]"} (${clerkUser.id}).`);
+      /* 
+       * Get spotify OAuth token for the user 
+       */
+      const tokenResponse = await clerkClient.users.getUserOauthAccessToken(clerkUser.id, "spotify");
+      if (!tokenResponse.data.length) {
+        console.warn(`No Spotify token found for user: ${clerkUser.firstName}`);
+        continue;
+      }
+      if (tokenResponse.data.length > 1) {
+        console.warn(`Multiple Spotify tokens found for user: ${clerkUser.firstName}. Only using the first one.`);
+      }
+      const spotifyToken = tokenResponse.data[0].token;
+      console.info(`Spotify token resolved for ${clerkUser.firstName ?? "[Unknown user]"}.`);
 
-    /* 
-     * Ensure user is in our database 
-     */
-    const dbUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { clerkDevId: clerkUser.id, },
-          { clerkProdId: clerkUser.id, },
-          // It should only be one of the above but in migration clerk ids may have been dumped as User.id  TODO remove
-          { id: clerkUser.id, },
-        ],
-      },
-    });
-    if (!dbUser) {
-      console.warn(`User ${clerkUser.firstName} not found in database. Skipping.`);
-      continue;
-    }
-
-    /* 
-     * Get recently played tracks from Spotify API 
-     */
-    const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, clerkUser.firstName ?? "[Unknown user]");
-    if (!recentlyPlayedTracks) {
-      continue;
-    }
-
-    /* 
-     * Prepare data for upserting to database
-     */
-    const existingArtistIds = await prisma.artist.findMany({ select: { id: true }, });
-    const missingArtistsSimple = recentlyPlayedTracks.items
-      .flatMap((item) => item.track.artists)
-      .filter((artist) => !existingArtistIds.find((a) => a.id === artist.id));
-    const artists = await getSpotifyArtists(missingArtistsSimple, spotifyToken);
-    const genres = artists.flatMap((artist) => artist.genres);
-    const albums = recentlyPlayedTracks.items.map((item) => item.track.album);
-    const tracks = recentlyPlayedTracks.items.map((item) => item.track);
-
-    // Colors
-    const colors: Record<string, string> = {};
-    const allImageUrls = [
-      ...artists.map((artist) => artist.images[0]?.url).filter((url): url is string => !!url),
-      ...albums.map((album) => album.images[0]?.url).filter((url): url is string => !!url),
-    ];
-    await Promise.all(allImageUrls.map(async (url) => {
-      if (colors[url]) return;
-      const color = await extractImageColor(url);
-      if (!color) return;
-      colors[url] = color;
-    }));
-
-    /* 
-     * Write Genres, Artists, Albums, Tracks and TrackPlays to database
-     */
-    await prisma.$transaction(async (prisma) => {
-      // Insert Genres, skip dupes
-      await prisma.genre.createMany({
-        skipDuplicates: true,
-        data: [
-          ...genres.map((genre) => ({ name: genre }))
-        ] satisfies Prisma.GenreCreateManyInput[],
+      /* 
+       * Ensure user is in our database 
+       */
+      const dbUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { clerkDevId: clerkUser.id, },
+            { clerkProdId: clerkUser.id, },
+            // It should only be one of the above but in migration clerk ids may have been dumped as User.id  TODO remove
+            { id: clerkUser.id, },
+          ],
+        },
       });
-
-
-      // Upsert Albums
-      for (const album of albums) {
-        const imageUrl = album.images[0]?.url || null;
-        await prisma.album.upsert({
-          where: { id: album.id },
-          update: {
-            name: album.name,
-            url: album.external_urls.spotify,
-            image: imageUrl,
-            color: imageUrl ? colors[imageUrl] : undefined,
-            releaseDate: new Date(album.release_date),
-          },
-          create: {
-            id: album.id,
-            name: album.name,
-            url: album.external_urls.spotify,
-            image: imageUrl,
-            color: imageUrl ? colors[imageUrl] : undefined,
-            releaseDate: new Date(album.release_date),
-          },
-        });
+      if (!dbUser) {
+        console.warn(`User ${clerkUser.firstName} not found in database. Skipping.`);
+        continue;
       }
+      console.info(`Matched DB user ${dbUser.id} for ${clerkUser.firstName ?? "[Unknown user]"}.`);
 
-      // Upsert tracks
-      for (const track of tracks) {
-        const ISRC = track.external_ids.isrc;
-        if (!ISRC) {
-          console.warn(`No ISRC found for track ${track.name} (${track.id}). Skipping.`);
-          continue;
-        }
-
-        await prisma.track.upsert({
-          where: { id: track.id },
-          update: {
-            name: track.name,
-            url: track.external_urls.spotify,
-            duration: track.duration_ms,
-            albumId: track.album.id,
-            ISRC,
-          },
-          create: {
-            id: track.id,
-            name: track.name,
-            url: track.external_urls.spotify,
-            duration: track.duration_ms,
-            albumId: track.album.id,
-            ISRC,
-          },
-        });
+      /* 
+       * Get recently played tracks from Spotify API 
+       */
+      const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, clerkUser.firstName ?? "[Unknown user]");
+      if (!recentlyPlayedTracks) {
+        continue;
       }
+      console.info(`Fetched ${recentlyPlayedTracks.items.length} recent plays for ${clerkUser.firstName ?? "[Unknown user]"}.`);
 
-      // Upsert Artists
-      for (const artist of artists) {
-        const imageUrl = artist.images[0]?.url || null;
-        await prisma.artist.upsert({
-          where: { id: artist.id },
-          update: {
-            name: artist.name,
-            url: artist.external_urls.spotify,
-            image: imageUrl,
-            color: imageUrl ? colors[imageUrl] : undefined,
-            genres: {
-              connect: artist.genres.map((genre) => ({ name: genre })),
-            },
-            tracks: {
-              connect: tracks
-                .filter((track) => track.artists.some((a) => a.id === artist.id))
-                .map((track) => ({ id: track.id })),
-            },
-          },
-          create: {
-            id: artist.id,
-            name: artist.name,
-            url: artist.external_urls.spotify,
-            image: imageUrl,
-            color: imageUrl ? colors[imageUrl] : undefined,
-            genres: {
-              connect: artist.genres.map((genre) => ({ name: genre })),
-            },
-            tracks: {
-              connect: tracks
-                .filter((track) => track.artists.some((a) => a.id === artist.id))
-                .map((track) => ({ id: track.id })),
-            },
-          },
+      /* 
+       * Prepare data for upserting to database
+       */
+      const existingArtistIds = await prisma.artist.findMany({ select: { id: true }, });
+      const missingArtistsSimple = recentlyPlayedTracks.items
+        .flatMap((item) => item.track.artists)
+        .filter((artist) => !existingArtistIds.find((a) => a.id === artist.id));
+      console.info(`Missing artists to fetch: ${missingArtistsSimple.length}.`);
+      const artists = await getSpotifyArtists(missingArtistsSimple, spotifyToken);
+      const genres = artists.flatMap((artist) => artist.genres);
+      const albums = recentlyPlayedTracks.items.map((item) => item.track.album);
+      const tracks = recentlyPlayedTracks.items.map((item) => item.track);
+      console.info(`Prepared ${artists.length} artists, ${albums.length} albums, ${tracks.length} tracks, ${genres.length} genres.`);
+
+      // Colors
+      const colors: Record<string, string> = {};
+      const allImageUrls = [
+        ...artists.map((artist) => artist.images[0]?.url).filter((url): url is string => !!url),
+        ...albums.map((album) => album.images[0]?.url).filter((url): url is string => !!url),
+      ];
+      await Promise.all(allImageUrls.map(async (url) => {
+        if (colors[url]) return;
+        const color = await extractImageColor(url);
+        if (!color) return;
+        colors[url] = color;
+      }));
+      console.info(`Resolved ${Object.keys(colors).length} image colors.`);
+
+      /* 
+       * Write Genres, Artists, Albums, Tracks and TrackPlays to database
+       */
+      await prisma.$transaction(async (prisma) => {
+        console.info(`Writing data for ${clerkUser.firstName ?? "[Unknown user]"} in a transaction.`);
+        // Insert Genres, skip dupes
+        await prisma.genre.createMany({
+          skipDuplicates: true,
+          data: [
+            ...genres.map((genre) => ({ name: genre }))
+          ] satisfies Prisma.GenreCreateManyInput[],
         });
-      }
 
-      // Really ensure Track-Artist relations
-      for (const track of tracks) {
-        for (const artist of track.artists) {
-          await prisma.track.update({
-            where: { id: track.id },
-            data: { artists: { connect: { id: artist.id } } },
+
+        // Upsert Albums
+        for (const album of albums) {
+          const imageUrl = album.images[0]?.url || null;
+          await prisma.album.upsert({
+            where: { id: album.id },
+            update: {
+              name: album.name,
+              url: album.external_urls.spotify,
+              image: imageUrl,
+              color: imageUrl ? colors[imageUrl] : undefined,
+              releaseDate: new Date(album.release_date),
+            },
+            create: {
+              id: album.id,
+              name: album.name,
+              url: album.external_urls.spotify,
+              image: imageUrl,
+              color: imageUrl ? colors[imageUrl] : undefined,
+              releaseDate: new Date(album.release_date),
+            },
           });
         }
-      }
 
-      // Insert TrackPlays, skip dupes
-      await prisma.trackPlay.createMany({
-        skipDuplicates: true,
-        data: recentlyPlayedTracks.items.map((item) => ({
-          playedAt: new Date(item.played_at),
-          userId: dbUser.id,
-          trackId: item.track.id,
-        })) satisfies Prisma.TrackPlayCreateManyInput[],
-      });
-    })
-      .catch((error) => {
-        console.error(`Error upserting data for user ${clerkUser.firstName}:`, error);
-      });
+        // Upsert tracks
+        for (const track of tracks) {
+          const ISRC = track.external_ids.isrc;
+          if (!ISRC) {
+            console.warn(`No ISRC found for track ${track.name} (${track.id}). Skipping.`);
+            continue;
+          }
+
+          await prisma.track.upsert({
+            where: { id: track.id },
+            update: {
+              name: track.name,
+              url: track.external_urls.spotify,
+              duration: track.duration_ms,
+              albumId: track.album.id,
+              ISRC,
+            },
+            create: {
+              id: track.id,
+              name: track.name,
+              url: track.external_urls.spotify,
+              duration: track.duration_ms,
+              albumId: track.album.id,
+              ISRC,
+            },
+          });
+        }
+
+        // Upsert Artists
+        for (const artist of artists) {
+          const imageUrl = artist.images[0]?.url || null;
+          await prisma.artist.upsert({
+            where: { id: artist.id },
+            update: {
+              name: artist.name,
+              url: artist.external_urls.spotify,
+              image: imageUrl,
+              color: imageUrl ? colors[imageUrl] : undefined,
+              genres: {
+                connect: artist.genres.map((genre) => ({ name: genre })),
+              },
+              tracks: {
+                connect: tracks
+                  .filter((track) => track.artists.some((a) => a.id === artist.id))
+                  .map((track) => ({ id: track.id })),
+              },
+            },
+            create: {
+              id: artist.id,
+              name: artist.name,
+              url: artist.external_urls.spotify,
+              image: imageUrl,
+              color: imageUrl ? colors[imageUrl] : undefined,
+              genres: {
+                connect: artist.genres.map((genre) => ({ name: genre })),
+              },
+              tracks: {
+                connect: tracks
+                  .filter((track) => track.artists.some((a) => a.id === artist.id))
+                  .map((track) => ({ id: track.id })),
+              },
+            },
+          });
+        }
+
+        // Really ensure Track-Artist relations
+        for (const track of tracks) {
+          for (const artist of track.artists) {
+            await prisma.track.update({
+              where: { id: track.id },
+              data: { artists: { connect: { id: artist.id } } },
+            });
+          }
+        }
+
+        // Insert TrackPlays, skip dupes
+        await prisma.trackPlay.createMany({
+          skipDuplicates: true,
+          data: recentlyPlayedTracks.items.map((item) => ({
+            playedAt: new Date(item.played_at),
+            userId: dbUser.id,
+            trackId: item.track.id,
+          })) satisfies Prisma.TrackPlayCreateManyInput[],
+        });
+        console.info(`Inserted ${recentlyPlayedTracks.items.length} track plays (duplicates skipped).`);
+      })
+        .catch((error) => {
+          console.error(`Error upserting data for user ${clerkUser.firstName}:`, error);
+        });
+    }
+  } finally {
+    console.info("Disconnecting Prisma.");
+    await prisma.$disconnect();
   }
 
   return;
