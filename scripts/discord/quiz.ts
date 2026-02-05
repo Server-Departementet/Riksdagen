@@ -156,12 +156,17 @@ async function main() {
    * Make new quiz
    */
   const sentDate = new Date(quote.createdTimestamp);
-  const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
-  const sender = (
-    quote.sender.toLowerCase().includes("winroth")
-    && sentDate.getUTCFullYear() === 2024
+  const is23may2024 = (
+    sentDate.getUTCFullYear() === 2024
     && sentDate.getUTCMonth() === 4
     && sentDate.getUTCDate() === 23
+  );
+  const formattedDate = is23may2024
+    ? "Okänt"
+    : sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
+  const sender = (
+    quote.sender.toLowerCase().includes("winroth")
+    && is23may2024
   )
     ? "Okänd"
     : quote.sender;
