@@ -134,7 +134,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     [quotee, context] = meta.split(dividableBy).map((s, i) => i === 0
       ? s.trim()
       // Kind ugly way to exempt , from being re-added to the context
-      : (dividableBy === ", " ? "" : dividableBy + s).trim()
+      : (dividableBy === ", " ? s : dividableBy + s).trim()
     );
   }
 
