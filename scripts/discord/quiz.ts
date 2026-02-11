@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { env } from "node:process";
-import { Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
+import { Channel, Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
@@ -22,6 +22,7 @@ if (!QUIZ_CHANNEL_ID) throw new Error("QUIZ_CHANNEL_ID is not set in environment
 if (!CANONICAL_URL) throw new Error("CANONICAL_URL is not set in environment variables");
 
 const isDryRun = process.argv.includes("--dry-run");
+let pollCleanupPromise: Promise<void> | null = null;
 
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
@@ -41,6 +42,9 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    if (pollCleanupPromise) {
+      await pollCleanupPromise;
+    }
     await discordClient.destroy();
     await prisma.$disconnect();
   });
@@ -90,15 +94,7 @@ async function main() {
     }
 
     // End previous poll early if still running
-    await endPreviousPoll(lastQuiz);
-
-    // Delete poll results message cause it's ugly and not helpful in a quiz with correct answers
-    const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
-      .filter(msg =>
-        msg.author.id === discordClient.user?.id
-        && msg.type === MessageType.PollResult
-      );
-    await Promise.all(pollResultMessages.map(msg => msg.delete()));
+    pollCleanupPromise = endPreviousPoll(lastQuiz, channel);
 
     /*
      * Compile and send quiz results
@@ -251,30 +247,63 @@ async function main() {
     });
 }
 
-async function endPreviousPoll(message: Message) {
-  if (!message.poll?.expiresAt) {
-    console.info("No previous poll found to reveal answers for");
-    return;
-  }
-  // End previous poll
-  if (message.poll.expiresAt > new Date()) {
-    let ended = false;
-    for (let attempt = 0; attempt < 10; attempt += 1) {
+function endPreviousPoll(pollMessage: Message, channel: Channel): Promise<void> {
+  return (async () => {
+    try {
+      if (!pollMessage.poll?.expiresAt) {
+        console.info("No previous poll found to reveal answers for");
+        return;
+      }
+
+      if (!channel.isTextBased()) {
+        throw new Error("Quiz channel is not a text-based channel");
+      }
+
+      // End previous poll
+      await pollMessage.poll.end();
+
+      // Delete poll results message because it's ugly and not helpful in a quiz with correct answers
+      const timeoutMs = 30_000;
+      const intervalMs = 2_000;
+      const maxAttempts = Math.ceil(timeoutMs / intervalMs);
+      const deadline = Date.now() + timeoutMs;
+      let timedOut = false;
       try {
-        await message.poll.end();
-        ended = true;
-        break;
+        for (let i = 0; i < maxAttempts; i++) {
+          if (Date.now() >= deadline) {
+            timedOut = true;
+            break;
+          }
+          const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
+            .filter(msg =>
+              msg.author.id === discordClient.user?.id
+              && msg.type === MessageType.PollResult
+            );
+          const foundCount = pollResultMessages.size;
+          await Promise.all(pollResultMessages.map(msg => msg.delete()));
+          if (foundCount) {
+            console.info(`Deleted ${foundCount} poll result ${foundCount === 1 ? "message" : "messages"}`);
+            break;
+          }
+          const remainingMs = deadline - Date.now();
+          if (remainingMs <= 0) {
+            timedOut = true;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, Math.min(intervalMs, remainingMs)));
+        }
       }
       catch (error) {
-        if (attempt === 9) {
-          console.warn("Failed to end poll after 10 seconds", error);
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.error("Failed to delete poll result messages:", error);
+      }
+      if (timedOut) {
+        console.warn("Poll result deleter timed out after 60 seconds");
       }
     }
-    if (!ended) return;
-  }
+    catch (error) {
+      console.error("Failed to end previous poll:", error);
+    }
+  })();
 }
 
 /** Measure visual width using your ggSansWidths table. */
