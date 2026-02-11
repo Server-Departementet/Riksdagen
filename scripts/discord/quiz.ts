@@ -152,23 +152,14 @@ async function main() {
    * Make new quiz
    */
   const sentDate = new Date(quote.createdTimestamp);
-  const is23may2024 = (
+  const isMigratedQuote = (
     sentDate.getUTCFullYear() === 2024
     && sentDate.getUTCMonth() === 4
     && sentDate.getUTCDate() === 23
+    && quote.sender.toLowerCase().includes("winroth")
   );
-  const formattedDate = is23may2024
-    ? "Okänt"
-    : sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
-  const formattedTime = is23may2024
-    ? "Okänt"
-    : sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
-  const sender = (
-    quote.sender.toLowerCase().includes("winroth")
-    && is23may2024
-  )
-    ? "Okänd"
-    : quote.sender;
+  const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
+  const formattedTime = sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
 
   const lengths: number[] = (new Array(50).fill(8500) as number[]).map((floor, i) => floor + i * 100);
   const paddingCandidates: {
@@ -180,7 +171,7 @@ async function main() {
   for (const targetWidth of lengths) {
     const datePad = computeWidthPadding(targetWidth - measureGGSans(formattedDate), "closest");
     const timePad = computeWidthPadding(targetWidth - measureGGSans(formattedTime), "closest");
-    const senderPad = computeWidthPadding(targetWidth - measureGGSans(sender), "closest");
+    const senderPad = computeWidthPadding(targetWidth - measureGGSans(quote.sender), "closest");
     let contextPad: ReturnType<typeof computeWidthPadding> | undefined = undefined;
     if (quote.context) {
       contextPad = computeWidthPadding(targetWidth - measureGGSans(quote.context), "closest");
@@ -202,9 +193,13 @@ async function main() {
     ...quote.context
       ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
       : {},
-    "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
-    "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
-    "sender": `skrevs av\t\t\t|| *${sender}* ${bestCandidate.senderPad.pad}||`,
+    ...!isMigratedQuote
+      ? {
+        "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
+        "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
+        "sender": `skrevs av\t\t\t|| *${quote.sender}* ${bestCandidate.senderPad.pad}||`,
+      }
+      : {},
     "quoteId": quote.id,
   };
 
@@ -214,12 +209,23 @@ async function main() {
     quizContent = quizContent.replace(regex, value.toString());
   }
 
-  // Remove line with {{context}} if no context is provided
-  if (!quote.context) {
+  // Remove lines with unknown placeholders
+  if (!quote.context || isMigratedQuote) {
     quizContent = quizContent
       .split("\n")
-      .filter(line => !line.includes("{{context}}"))
+      .filter(line =>
+        (!line.includes("{{context}}") || quote.context?.length)
+        && (!line.includes("{{date}}") || !isMigratedQuote)
+        && (!line.includes("{{time}}") || !isMigratedQuote)
+        && (!line.includes("{{sender}}") || !isMigratedQuote)
+      )
       .join("\n");
+  }
+
+  // If no hints (date, time, sender) persist, remove the "Ledtrådar" header as well
+  if (!quote.context && isMigratedQuote) {
+    quizContent = quizContent
+      .replace(/.*Ledtrådar.*(?:\n\r?){2}/, "");
   }
 
   // Build embed image URLs from externally hosted attachments
