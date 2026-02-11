@@ -5,6 +5,7 @@ Vem sa?
 Ledtrådar
 -#  {{context}}
 -#  {{date}}
+-#  {{time}}
 -#  {{sender}}
 
 -# *id: {{quoteId}}*

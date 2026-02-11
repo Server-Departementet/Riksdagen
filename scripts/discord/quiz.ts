@@ -108,7 +108,7 @@ async function main() {
     const correctVoters = await correctAnswer?.voters.fetch();
     const winningUsers = correctVoters ? Array.from(correctVoters.values()) : [];
 
-    let resultContent = fs.readFileSync("scripts/discord/quiz-result-template.md", "utf-8");
+    let resultContent = fs.readFileSync("scripts/discord/templates/quiz-result.md", "utf-8");
     const quizResultData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
@@ -164,6 +164,9 @@ async function main() {
   const formattedDate = is23may2024
     ? "Okänt"
     : sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
+  const formattedTime = is23may2024
+    ? "Okänt"
+    : sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
   const sender = (
     quote.sender.toLowerCase().includes("winroth")
     && is23may2024
@@ -172,44 +175,44 @@ async function main() {
     : quote.sender;
 
   const lengths: number[] = (new Array(50).fill(8500) as number[]).map((floor, i) => floor + i * 100);
-  const candidates: {
+  const paddingCandidates: {
     datePad: ReturnType<typeof computeWidthPadding>;
+    timePad: ReturnType<typeof computeWidthPadding>;
     senderPad: ReturnType<typeof computeWidthPadding>;
     contextPad?: ReturnType<typeof computeWidthPadding>;
   }[] = [];
   for (const targetWidth of lengths) {
     const datePad = computeWidthPadding(targetWidth - measureGGSans(formattedDate), "closest");
+    const timePad = computeWidthPadding(targetWidth - measureGGSans(formattedTime), "closest");
     const senderPad = computeWidthPadding(targetWidth - measureGGSans(sender), "closest");
     let contextPad: ReturnType<typeof computeWidthPadding> | undefined = undefined;
     if (quote.context) {
       contextPad = computeWidthPadding(targetWidth - measureGGSans(quote.context), "closest");
     }
-    candidates.push({ datePad, senderPad, contextPad, });
+    paddingCandidates.push({ datePad, senderPad, timePad, contextPad, });
   }
 
   // Choose candidate with minimal total error
-  candidates.sort((a, b) => {
+  paddingCandidates.sort((a, b) => {
     const aError = a.datePad.error - a.senderPad.error;
     const bError = b.datePad.error - b.senderPad.error;
     return Math.abs(aError) - Math.abs(bError);
   });
-  const bestCandidate = candidates[0];
-  const trailingDatePad = bestCandidate.datePad;
-  const trailingSenderPad = bestCandidate.senderPad;
-  const trailingContextPad = bestCandidate.contextPad;
+  const bestCandidate = paddingCandidates[0];
 
   const quizData = {
     "quizNumber": quizNumber,
     "quoteBody": quote.body,
     ...quote.context
-      ? { "context": `sammanhang\t|| *${quote.context}* ${trailingContextPad?.pad}||`, }
+      ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
       : {},
-    "date": `datum\t\t\t\t || *${formattedDate}* ${trailingDatePad.pad}||`,
-    "sender": `skrevs av\t\t\t|| *${sender}* ${trailingSenderPad.pad}||`,
+    "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
+    "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
+    "sender": `skrevs av\t\t\t|| *${sender}* ${bestCandidate.senderPad.pad}||`,
     "quoteId": quote.id,
   };
 
-  let quizContent = fs.readFileSync("scripts/discord/quiz-template.md", "utf-8");
+  let quizContent = fs.readFileSync("scripts/discord/templates/quiz-question.md", "utf-8");
   for (const [key, value] of Object.entries(quizData)) {
     const regex = new RegExp(`{{${key}}}`, "g");
     quizContent = quizContent.replace(regex, value.toString());
@@ -255,9 +258,22 @@ async function endPreviousPoll(message: Message) {
   }
   // End previous poll
   if (message.poll.expiresAt > new Date()) {
-    await message.poll.end();
-    // Poll ending can be really slow
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    let ended = false;
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      try {
+        await message.poll.end();
+        ended = true;
+        break;
+      }
+      catch (error) {
+        if (attempt === 9) {
+          console.warn("Failed to end poll after 10 seconds", error);
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    if (!ended) return;
   }
 }
 
