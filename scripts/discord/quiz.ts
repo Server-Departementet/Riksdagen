@@ -118,10 +118,141 @@ async function main() {
       const regex = new RegExp(`{{${key}}}`, "g");
       resultContent = resultContent.replace(regex, value.toString());
     }
-
-    if (!isDryRun)
-      await channel.send(resultContent);
+    await channel.send(resultContent);
     quizNumber += 1;
+
+
+    // If it's the last day of the month, also post a scoreboard
+    const isSaturday = new Date().getUTCDay() === 6;
+    if (isSaturday) {
+      const scores: Record<string, number> = {};
+      const quizResultRegex = /## citat quiz #(\d+) resultat/i;
+      const extractQuizNumber = (content: string): number | null => {
+        const match = quizResultRegex.exec(content);
+        return match ? Number(match[1]) : null;
+      };
+
+      // Look for previous scoreboard messages to seed scores, then add newer results.
+      const scoreboardMessages = latestMessages
+        .filter((msg) =>
+          msg.author.id === discordClient.user?.id
+          && msg.type === MessageType.Default
+          && msg.content.toLowerCase().startsWith("# citat quiz scoreboard #0-")
+        );
+
+      let lastScoreboardQuizNumber: number | null = null;
+
+      if (scoreboardMessages.size) {
+        console.info(`Found ${scoreboardMessages.size} previous scoreboard messages, using the latest one to compile scores`);
+
+        const latestScoreboard = scoreboardMessages.first();
+        if (!latestScoreboard) {
+          throw new Error("Unexpected error fetching last scoreboard message");
+        }
+        const scoreboardTitleMatch = /# citat quiz scoreboard #0-(\d+)/i.exec(latestScoreboard.content);
+        if (scoreboardTitleMatch) {
+          lastScoreboardQuizNumber = Number(scoreboardTitleMatch[1]);
+        }
+        const statsRegex = /-# \[(\d+) \/ (\d+)\] (\d+)% - (.*)/;
+        for (const line of latestScoreboard.content.split("\n")) {
+          const match = statsRegex.exec(line);
+          if (!match) continue;
+
+          const userName = match[4];
+          const score = Number(match[1]);
+          const user = Object.values(users).find(u => u.name === userName);
+          if (!user) {
+            console.warn(`Could not find user with name ${userName} from previous scoreboard, skipping`);
+            continue;
+          }
+          scores[user.id] = score;
+        }
+      }
+
+      const quizResultMessages = new Map<string, Message>();
+      const collectQuizResults = (messages: typeof latestMessages) => {
+        messages.forEach(msg => {
+          if (
+            msg.author.id === discordClient.user?.id
+            && msg.type === MessageType.Default
+            && msg.content.toLowerCase().startsWith("## citat quiz #")
+            && msg.content.split("\n")[0].toLowerCase().endsWith(" resultat")
+          ) {
+            quizResultMessages.set(msg.id, msg);
+          }
+        });
+      };
+
+      collectQuizResults(latestMessages);
+
+      const hasReachedScoreboard = () => {
+        const quizNumbers = [...quizResultMessages.values()]
+          .map(msg => extractQuizNumber(msg.content))
+          .filter((n): n is number => n !== null);
+        if (!quizNumbers.length) return false;
+        if (lastScoreboardQuizNumber === null) {
+          return quizNumbers.includes(0);
+        }
+        return quizNumbers.some(n => n <= lastScoreboardQuizNumber);
+      };
+
+      let beforeId = latestMessages.last()?.id;
+      const maxPages = 20;
+      let pages = 0;
+      while (!hasReachedScoreboard() && beforeId && pages < maxPages) {
+        if (pages >= maxPages) {
+          console.warn("Reached maximum number of pages while fetching quiz results, stopping to avoid infinite loop");
+          break;
+        }
+        const moreMessages = await channel.messages.fetch({ limit: 100, before: beforeId, });
+        if (!moreMessages.size) break;
+        collectQuizResults(moreMessages);
+        beforeId = moreMessages.last()?.id;
+        pages += 1;
+      }
+
+      const winnerRegex = /<@(\d+)>/g;
+      const countedQuizNumbers = new Set<number>();
+      const addScoresFromContent = (content: string) => {
+        const quizNum = extractQuizNumber(content);
+        if (quizNum === null) return;
+        if (lastScoreboardQuizNumber !== null && quizNum <= lastScoreboardQuizNumber) return;
+        if (countedQuizNumbers.has(quizNum)) {
+          console.warn(`Duplicate quiz result detected for quiz #${quizNum}, skipping to avoid double counting`);
+          return;
+        }
+        countedQuizNumbers.add(quizNum);
+        for (const match of content.matchAll(winnerRegex)) {
+          const userId = match[1];
+          if (!users[userId]) {
+            console.warn(`Could not find user with ID ${userId} from quiz result message, skipping`);
+            continue;
+          }
+          scores[userId] ??= 0;
+          scores[userId] += 1;
+        }
+      };
+
+      quizResultMessages.forEach(msg => addScoresFromContent(msg.content));
+      addScoresFromContent(resultContent);
+
+      let scoreboardContent = fs.readFileSync("scripts/discord/templates/quiz-scoreboard.md", "utf-8");
+      const scoreboardData = {
+        "latestFinishedQuizNumber": quizNumber - 1,
+        "scoreboard": Object.values(users)
+          .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+          .map(u => `-# [${scores[u.id] ?? 0} / ${quizNumber}] ${(((scores[u.id] ?? 0) / quizNumber) * 100).toFixed(0)}% - ${u.name}`) // quizNumber is zero-indexed so this should be the count
+          .join("\n"),
+      };
+      for (const [key, value] of Object.entries(scoreboardData)) {
+        const regex = new RegExp(`{{${key}}}`, "g");
+        scoreboardContent = scoreboardContent.replace(regex, value.toString());
+      }
+
+      if (!isDryRun) {
+        await channel.send(scoreboardContent);
+      }
+    }
   }
 
   // Remove used quotes from available quotes after having selected previous quote
