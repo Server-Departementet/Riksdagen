@@ -296,6 +296,7 @@ async function main() {
     && sentDate.getUTCDate() === 23
     && quote.sender.toLowerCase().includes("winroth")
   );
+  const shouldCensorMigratedQuote = isMigratedQuote && !quote.originalLink;
   const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
   const formattedTime = sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
 
@@ -331,7 +332,7 @@ async function main() {
     ...quote.context
       ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
       : {},
-    ...!isMigratedQuote
+    ...!shouldCensorMigratedQuote
       ? {
         "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
         "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
@@ -348,20 +349,20 @@ async function main() {
   }
 
   // Remove lines with unknown placeholders
-  if (!quote.context || isMigratedQuote) {
+  if (!quote.context || shouldCensorMigratedQuote) {
     quizContent = quizContent
       .split("\n")
       .filter(line =>
         (!line.includes("{{context}}") || quote.context?.length)
-        && (!line.includes("{{date}}") || !isMigratedQuote)
-        && (!line.includes("{{time}}") || !isMigratedQuote)
-        && (!line.includes("{{sender}}") || !isMigratedQuote)
+        && (!line.includes("{{date}}") || !shouldCensorMigratedQuote)
+        && (!line.includes("{{time}}") || !shouldCensorMigratedQuote)
+        && (!line.includes("{{sender}}") || !shouldCensorMigratedQuote)
       )
       .join("\n");
   }
 
   // If no hints (date, time, sender) persist, remove the "Ledtrådar" header as well
-  if (!quote.context && isMigratedQuote) {
+  if (!quote.context && shouldCensorMigratedQuote) {
     quizContent = quizContent
       .replace(/.*Ledtrådar.*(?:\n\r?){2}/, "");
   }
