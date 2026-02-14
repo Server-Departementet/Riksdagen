@@ -84,9 +84,12 @@ async function main() {
 function extractContext(quote: TrimmedMessage): Quote | null {
   const { meta: customMeta, content: cleanedContent } = splitCustomQuoteMeta(quote.content);
 
-  // TODO: Handle multi-line quotes
-  const isMultiLine = cleanedContent.includes("\n");
-  if (isMultiLine) return null;
+  const isMultiLine =
+    cleanedContent.includes("\n")
+    && cleanedContent.split("\n").every(line => line.trim().startsWith("\"") && line.trim().includes("-"));
+  if (isMultiLine) {
+    return null;
+  }
 
   const resolvedAuthorId = customMeta?.authorId ?? quote.authorId;
   const sender = users[resolvedAuthorId];
