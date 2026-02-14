@@ -27,6 +27,7 @@
     "start": "next start",
     "lint": "echo tsc app... && tsc --noEmit -p . && echo tsc scripts... && tsc --noEmit -p scripts/tsconfig.json && echo linting app... && eslint -c eslint.config.ts && echo linting scripts... && eslint scripts -c scripts/eslint.config.ts",
     "post-recent-plays": "tsx scripts/post-recent-plays.ts",
+    "quotes-test": "tsx --test scripts/discord/quote-utils.test.ts",
     "seed-colors": "tsx scripts/seed-colors.ts"
   },
   "dependencies": {

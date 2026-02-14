@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
+import { getTimestampFromDiscordLink, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
 import { nameVariants } from "./name-variants.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
@@ -39,17 +40,6 @@ const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));
 
-type CustomQuoteMeta = {
-  authorId?: string;
-  link?: string;
-};
-function isCustomQuoteMeta(obj: unknown): obj is CustomQuoteMeta {
-  if (typeof obj !== "object" || obj === null) return false;
-  if (!("authorId" in obj) && !("link" in obj)) return false;
-  if ("authorId" in obj && typeof obj.authorId !== "string") return false;
-  if ("link" in obj && typeof obj.link !== "string") return false;
-  return true;
-}
 
 main()
   .then(() => {
@@ -265,46 +255,6 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
   }
 }
 
-function splitCustomQuoteMeta(content: string): { meta?: CustomQuoteMeta; content: string } {
-  const match = /^\s*\[\[\s*([\s\S]*?)\s*\]\]\s*\n?/.exec(content);
-  if (!match) return { content };
-
-  const metaJson = match[1];
-  let meta: CustomQuoteMeta | undefined = undefined;
-
-  try {
-    const metaObject = JSON.parse(metaJson) as unknown;
-    if (!isCustomQuoteMeta(metaObject)) {
-      throw new Error("Parsed meta does not have the required structure: " + metaJson);
-    }
-    if (metaObject && typeof metaObject === "object") {
-      const maybeAuthorId = typeof metaObject.authorId === "string" ? metaObject.authorId : undefined;
-      const maybeLink = typeof metaObject.link === "string" ? metaObject.link : undefined;
-      meta = {
-        ...(maybeAuthorId ? { authorId: maybeAuthorId } : {}),
-        ...(maybeLink ? { link: maybeLink } : {}),
-      };
-    }
-  } catch (error) {
-    console.warn("Failed to parse custom quote metadata:", error);
-  }
-
-  return {
-    meta,
-    content: content.slice(match[0].length).trimStart(),
-  };
-}
-
-function stripCustomQuoteMeta(content: string): string {
-  return splitCustomQuoteMeta(content).content;
-}
-
-function getTimestampFromDiscordLink(link: string): number | null {
-  const snowflake = link.split("/").at(-1)?.trim();
-  if (!snowflake || !/^\d+$/.test(snowflake)) return null;
-
-  return Number((BigInt(snowflake) >> 22n) + 1420070400000n);
-}
 
 /** 
  * Crawls discord for quotes in the quote channel, returns and saves them to a file.
