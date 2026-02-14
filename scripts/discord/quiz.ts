@@ -110,6 +110,7 @@ async function main() {
       "quotee": previousQuote.quotee,
       "quoteBody": previousQuote.body,
       "link": previousQuote.link,
+      ...(previousQuote.originalLink ? { "originalLink": previousQuote.originalLink } : {}),
       "winners": winningUsers.length
         ? winningUsers.map(u => `<@${u.id}>`).join(" ") + " som gissade rätt"
         : "*ingen...*",
@@ -117,6 +118,12 @@ async function main() {
     for (const [key, value] of Object.entries(quizResultData)) {
       const regex = new RegExp(`{{${key}}}`, "g");
       resultContent = resultContent.replace(regex, value.toString());
+    }
+    if (!previousQuote.originalLink) {
+      resultContent = resultContent
+        .split("\n")
+        .filter(line => !line.includes("{{originalLink}}"))
+        .join("\n");
     }
     await channel.send(resultContent);
     quizNumber += 1;

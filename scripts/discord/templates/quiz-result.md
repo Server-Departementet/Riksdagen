@@ -4,6 +4,7 @@
 > "{{quoteBody}}"
 
 Originalet {{link}}
+Ursprungliga originalet {{originalLink}}
 
 Grattis till {{winners}}!
 
