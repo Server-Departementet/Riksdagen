@@ -7,6 +7,18 @@ import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types
 import { nameVariants } from "./name-variants.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
+// Example quote formats:
+// Normal
+//  "Du är inte Axel" - Vena till Axel
+
+// Added meta
+//  [[{"authorId":"01234567891011121314","link":"https://discord.com/someNums/someNums/snowflake"}]]
+//  "Du är inte Axel" - Vena till Axel
+
+// Multi-line quote
+//  "Påstående." - Winroth
+//  "Replik." - Vena
+
 const {
   DATABASE_URL,
   DISCORD_BOT_TOKEN,
@@ -26,6 +38,18 @@ const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));
+
+type CustomQuoteMeta = {
+  authorId?: string;
+  link?: string;
+};
+function isCustomQuoteMeta(obj: unknown): obj is CustomQuoteMeta {
+  if (typeof obj !== "object" || obj === null) return false;
+  if (!("authorId" in obj) && !("link" in obj)) return false;
+  if ("authorId" in obj && typeof obj.authorId !== "string") return false;
+  if ("link" in obj && typeof obj.link !== "string") return false;
+  return true;
+}
 
 main()
   .then(() => {
@@ -68,26 +92,29 @@ async function main() {
 }
 
 function extractContext(quote: TrimmedMessage): Quote | null {
+  const { meta: customMeta, content: cleanedContent } = splitCustomQuoteMeta(quote.content);
+
   // TODO: Handle multi-line quotes
-  const isMultiLine = quote.content.includes("\n");
+  const isMultiLine = cleanedContent.includes("\n");
   if (isMultiLine) return null;
 
-  const sender = users[quote.authorId];
+  const resolvedAuthorId = customMeta?.authorId ?? quote.authorId;
+  const sender = users[resolvedAuthorId];
   if (!sender?.name) {
-    throw new Error("Could not find user with ID " + quote.authorId);
+    throw new Error("Could not find user with ID " + resolvedAuthorId);
   }
 
   // Regex finds the "-" between the quote body and the quotee to split on
-  const brokenQuote = quote.content.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+  const brokenQuote = cleanedContent.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
   if (brokenQuote.length !== 2) {
-    console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + quote.content);
-    throw new Error("Failed to split quote into body and meta: " + quote.content);
+    console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + cleanedContent);
+    throw new Error("Failed to split quote into body and meta: " + cleanedContent);
   }
   let body = brokenQuote[0];
   const meta = brokenQuote[1];
 
   if (!body.endsWith("\"")) {
-    throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + quote.content + ")");
+    throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + cleanedContent + ")");
   }
 
   // Special case: Add quotes around body 
@@ -173,11 +200,16 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
   )?.[0];
 
+  const overriddenTimestamp = customMeta?.link
+    ? getTimestampFromDiscordLink(customMeta.link) ?? quote.createdTimestamp
+    : quote.createdTimestamp;
+
   return {
     id: quote.id,
-    authorId: quote.authorId,
-    createdTimestamp: quote.createdTimestamp,
+    authorId: resolvedAuthorId,
+    createdTimestamp: overriddenTimestamp,
     link: `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quote.id}`,
+    ...(customMeta?.link ? { originalLink: customMeta.link } : {}),
     sender: sender.name,
     body,
     quotee,
@@ -190,7 +222,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
 }
 
 function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
-  const openingChars = quotes.map(q => q.content.charAt(0));
+  const openingChars = quotes.map(q => stripCustomQuoteMeta(q.content).charAt(0));
   const openingCharCounts: Record<string, number> = {};
   for (const char of openingChars) {
     openingCharCounts[char] ??= 0;
@@ -201,7 +233,7 @@ function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
 
   const validQuoteChars = ["\"", "”", "“"];
   const invalidStartQuotes = quotes.filter(q =>
-    !validQuoteChars.includes(q.content.charAt(0))
+    !validQuoteChars.includes(stripCustomQuoteMeta(q.content).charAt(0))
   );
 
   if (invalidStartQuotes.length > 0) {
@@ -214,7 +246,7 @@ function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
 function duplicateAnalysis(quotes: TrimmedMessage[]): void {
   const duplicateMap: Record<string, TrimmedMessage[]> = {};
   for (const quote of quotes) {
-    const key = quote.content.toLowerCase();
+    const key = stripCustomQuoteMeta(quote.content).toLowerCase();
     duplicateMap[key] ??= [];
     duplicateMap[key].push(quote);
   }
@@ -231,6 +263,47 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
     fs.writeFileSync("scripts/discord/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
     console.info("Wrote duplicate quotes to scripts/discord/quotes_duplicates.json");
   }
+}
+
+function splitCustomQuoteMeta(content: string): { meta?: CustomQuoteMeta; content: string } {
+  const match = /^\s*\[\[\s*([\s\S]*?)\s*\]\]\s*\n?/.exec(content);
+  if (!match) return { content };
+
+  const metaJson = match[1];
+  let meta: CustomQuoteMeta | undefined = undefined;
+
+  try {
+    const metaObject = JSON.parse(metaJson) as unknown;
+    if (!isCustomQuoteMeta(metaObject)) {
+      throw new Error("Parsed meta does not have the required structure: " + metaJson);
+    }
+    if (metaObject && typeof metaObject === "object") {
+      const maybeAuthorId = typeof metaObject.authorId === "string" ? metaObject.authorId : undefined;
+      const maybeLink = typeof metaObject.link === "string" ? metaObject.link : undefined;
+      meta = {
+        ...(maybeAuthorId ? { authorId: maybeAuthorId } : {}),
+        ...(maybeLink ? { link: maybeLink } : {}),
+      };
+    }
+  } catch (error) {
+    console.warn("Failed to parse custom quote metadata:", error);
+  }
+
+  return {
+    meta,
+    content: content.slice(match[0].length).trimStart(),
+  };
+}
+
+function stripCustomQuoteMeta(content: string): string {
+  return splitCustomQuoteMeta(content).content;
+}
+
+function getTimestampFromDiscordLink(link: string): number | null {
+  const snowflake = link.split("/").at(-1)?.trim();
+  if (!snowflake || !/^\d+$/.test(snowflake)) return null;
+
+  return Number((BigInt(snowflake) >> 22n) + 1420070400000n);
 }
 
 /** 

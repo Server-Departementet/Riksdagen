@@ -13,6 +13,7 @@ export type Quote = {
   authorId: string;
   createdTimestamp: number;
   link: string;
+  originalLink?: string;
 
   sender: string;
   body: string;
