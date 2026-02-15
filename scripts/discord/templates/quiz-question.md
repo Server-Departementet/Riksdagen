@@ -1,6 +1,6 @@
 # Citat Quiz #{{quizNumber}}
 Vem sa?
-> "{{quoteBody}}"
+{{quoteBody}}
 
 Ledtrådar
 -#  {{context}}

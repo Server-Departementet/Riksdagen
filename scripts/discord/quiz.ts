@@ -6,6 +6,7 @@ import fs from "node:fs";
 import { Quote } from "./types.ts";
 import { ggSansWidths } from "./gg-sans-widths.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
+import { isMultiSpeakerQuote } from "./quote-utils.ts";
 
 const {
   DATABASE_URL,
@@ -69,6 +70,7 @@ async function main() {
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+    .filter(q => q.body.includes("\n"))
     .filter(q => q.quoteeId);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
@@ -108,7 +110,7 @@ async function main() {
     const quizResultData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
-      "quoteBody": previousQuote.body,
+      "quoteBody": previousQuote.body.split("\n").map(line => `> ${line}`).join("\n"),
       "link": previousQuote.link,
       ...(previousQuote.originalLink ? { "originalLink": previousQuote.originalLink } : {}),
       "winners": winningUsers.length
@@ -326,9 +328,18 @@ async function main() {
   });
   const bestCandidate = paddingCandidates[0];
 
+  const isMultiSpeaker = isMultiSpeakerQuote(quote.body);
+
   const quizData = {
     "quizNumber": quizNumber,
-    "quoteBody": quote.body,
+    "quoteBody": isMultiSpeaker
+      ? quote.body.split("\n")
+        .map(line => `> ${line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/)[0].trim() ?? line}`)
+        .reverse()
+        .map((l, i) => i === 0 ? l+=" - __      __" : l)
+        .reverse()
+        .join("\n")
+      : quote.body.split("\n").map(line => `> ${line}`).join("\n"),
     ...quote.context
       ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
       : {},

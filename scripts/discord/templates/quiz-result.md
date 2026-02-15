@@ -1,7 +1,7 @@
 ## Citat Quiz #{{quizNumber}} Resultat
 
 ## {{quotee}}
-> "{{quoteBody}}"
+{{quoteBody}}
 
 Originalet {{link}}
 Ursprungliga originalet {{originalLink}}
