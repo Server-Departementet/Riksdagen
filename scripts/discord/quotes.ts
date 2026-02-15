@@ -74,8 +74,8 @@ function extractContext(quote: TrimmedMessage): Quote | null {
 
   const resolvedAuthorId = customMeta?.authorId ?? quote.authorId;
   const sender = users[resolvedAuthorId] ?? { name: resolvedAuthorId };
-  if (!sender?.name) {
-    throw new Error("Could not find user with ID " + resolvedAuthorId);
+  if (typeof sender?.name !== "string") {
+    throw new Error("Could not find user with ID " + resolvedAuthorId + " for quote ID " + quote.id);
   }
 
   let body: string | null = null;
