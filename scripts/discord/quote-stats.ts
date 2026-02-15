@@ -38,12 +38,14 @@ main()
 
 async function main() {
   const statFolder = "scripts/discord/quote-stats";
-  const senderStatsPath = `${statFolder}/sender-stats.json`;
-  const quoteeStatsPath = `${statFolder}/quotee-stats.json`;
+  const senderStatsJSONPath = `${statFolder}/sender-stats.json`;
+  const quoteeStatsJSONPath = `${statFolder}/quotee-stats.json`;
+  const senderStatsMDPath = `${statFolder}/sender-stats.md`;
+  const quoteeStatsMDPath = `${statFolder}/quotee-stats.md`;
   if (!fs.existsSync(statFolder)) {
     fs.mkdirSync(statFolder);
   }
-  
+
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
@@ -64,6 +66,20 @@ async function main() {
     Object.entries(quoteeCounts).sort(([, countA], [, countB]) => countB - countA)
   );
 
-  fs.writeFileSync(senderStatsPath, JSON.stringify(sortedSenderCounts, null, 2), "utf-8");
-  fs.writeFileSync(quoteeStatsPath, JSON.stringify(sortedQuoteeCounts, null, 2), "utf-8");
+  fs.writeFileSync(senderStatsJSONPath, JSON.stringify(sortedSenderCounts, null, 2), "utf-8");
+  fs.writeFileSync(quoteeStatsJSONPath, JSON.stringify(sortedQuoteeCounts, null, 2), "utf-8");
+
+  // Format the stats as md and save to file
+  const senderHeader = `
+| Namn            | Antal skickade citat |
+| --------------- | -------------------- |`;
+  const quoteeHeader = `
+| Namn            | Antal citeringar     |
+| --------------- | -------------------- |`;
+
+  const senderRows = Object.entries(sortedSenderCounts).map(([name, count]) => `| ${name} | ${count} |`);
+  const quoteeRows = Object.entries(sortedQuoteeCounts).map(([name, count]) => `| ${name} | ${count} |`);
+
+  fs.writeFileSync(senderStatsMDPath, [senderHeader, ...senderRows].join("\n"), "utf-8");
+  fs.writeFileSync(quoteeStatsMDPath, [quoteeHeader, ...quoteeRows].join("\n"), "utf-8");
 }
