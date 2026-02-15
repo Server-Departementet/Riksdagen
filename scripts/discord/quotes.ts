@@ -8,18 +8,6 @@ import { getTimestampFromDiscordLink, isMultiSpeakerQuote, splitCustomQuoteMeta,
 import { nameVariants } from "./name-variants.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
-// Example quote formats:
-// Normal
-//  "Du är inte Axel" - Vena till Axel
-
-// Added meta
-//  [[{"authorId":"01234567891011121314","link":"https://discord.com/someNums/someNums/snowflake"}]]
-//  "Du är inte Axel" - Vena till Axel
-
-// Multi-line quote
-//  "Påstående." - Winroth
-//  "Replik." - Vena
-
 const {
   DATABASE_URL,
   DISCORD_BOT_TOKEN,
@@ -346,6 +334,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
       "1243110807135588443", // Trans guard :3
       "1327605624447438900", // Trans guard :3
       "1317076088484007979", // Trans guard :3
+      "1199024275714220072", // Trans guard :3
     ].includes(q.id)
     && !q.system // Pins and such
   );
