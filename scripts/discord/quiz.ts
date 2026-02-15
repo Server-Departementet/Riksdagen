@@ -70,7 +70,6 @@ async function main() {
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
-    .filter(q => q.body.includes("\n"))
     .filter(q => q.quoteeId);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
