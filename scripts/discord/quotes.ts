@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
-import { getTimestampFromDiscordLink, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
+import { getTimestampFromDiscordLink, isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
 import { nameVariants } from "./name-variants.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
@@ -84,30 +84,61 @@ async function main() {
 function extractContext(quote: TrimmedMessage): Quote | null {
   const { meta: customMeta, content: cleanedContent } = splitCustomQuoteMeta(quote.content);
 
-  const isMultiLine =
-    cleanedContent.includes("\n")
-    && cleanedContent.split("\n").every(line => line.trim().startsWith("\"") && line.trim().includes("-"));
-  if (isMultiLine) {
-    return null;
-  }
-
   const resolvedAuthorId = customMeta?.authorId ?? quote.authorId;
   const sender = users[resolvedAuthorId];
   if (!sender?.name) {
     throw new Error("Could not find user with ID " + resolvedAuthorId);
   }
 
-  // Regex finds the "-" between the quote body and the quotee to split on
-  const brokenQuote = cleanedContent.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
-  if (brokenQuote.length !== 2) {
-    console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + cleanedContent);
-    throw new Error("Failed to split quote into body and meta: " + cleanedContent);
-  }
-  let body = brokenQuote[0];
-  const meta = brokenQuote[1];
+  let body: string | null = null;
+  let meta: string | null = null;
 
-  if (!body.endsWith("\"")) {
-    throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + cleanedContent + ")");
+  const isMultiSpeaker = isMultiSpeakerQuote(cleanedContent);
+  if (isMultiSpeaker) {
+    // Body is all the lines with attribution and meta is the last line's meta
+    const lines = cleanedContent.split("\n").map(l => l.trim());
+    for (let i = 0; i < lines.length - 1; i++) {
+      const line = lines[i];
+      if (!line.startsWith("\"") || !line.includes("-")) {
+        throw new Error("Failed to parse multi-speaker quote line, missing quote or attribution: " + line + " (full content: " + cleanedContent + ")");
+      }
+
+      // If last line, split on the last "-" and give the right to the meta but still provide the entire line to the body like for all other lines
+      if (i === lines.length - 2) {
+        const lastLine = lines.at(-1);
+        if (!lastLine || !lastLine.startsWith("\"") || !lastLine.includes("-")) {
+          throw new Error("Failed to parse multi-speaker quote last line, missing quote or attribution: " + lastLine + " (full content: " + cleanedContent + ")");
+        }
+        const brokenQuote = line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+        if (brokenQuote.length !== 2) {
+          throw new Error("Failed to split multi-speaker quote line into body and meta: " + line + " (full content: " + cleanedContent + ")");
+        }
+        const [lineBody, lineMeta] = brokenQuote;
+        if (!lineBody.startsWith("\"") || !lineBody.endsWith("\"")) {
+          throw new Error("Failed to parse multi-speaker quote body, missing quote: " + lineBody + " (full content: " + cleanedContent + ")");
+        }
+        meta = lineMeta;
+      }
+      body = (body ? body + `\n${line}` : line);
+    }
+  }
+  else {
+    // Regex finds the "-" between the quote body and the quotee to split on
+    const brokenQuote = cleanedContent.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
+    if (brokenQuote.length !== 2) {
+      console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + cleanedContent);
+      throw new Error("Failed to split quote into body and meta: " + cleanedContent);
+    }
+    [body, meta] = brokenQuote;
+
+    if (!body.startsWith("\"") || !body.endsWith("\"")) {
+      throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + cleanedContent + ")");
+    }
+  }
+
+  if (!body || !meta) {
+    console.warn("Missing body or meta after parsing, skipping quote ID " + quote.id + ": " + cleanedContent);
+    return null;
   }
 
   // Special case: Add quotes around body 
@@ -116,9 +147,6 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   ].includes(quote.id)) {
     body = `"${body.trim()}"`;
   }
-
-  // Trim surrounding quotes
-  body = body.slice(1, -1).trim();
 
   const contextDividers = [
     ", ",
@@ -166,11 +194,21 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   ].includes(quote.id)) {
     context = context.replace(" han ", " hon ");
   }
+  if (body.toLowerCase().includes("han") && [
+    "1199023410513182720",
+    "1195078172182597672",
+    "1185231830190932033",
+    // 1186031426597027910 // TBD
+  ].includes(quote.id)) {
+    body = body.replace(/\bHan\b/, "Hon");
+  }
 
   // Quotee normalization
   const aliases: Record<string, string> = {
     "Viggo": "Vena",
+    "viggo": "vena",
     "Viggos": "Venas",
+    "viggos": "venas",
     "Viggos mor": "Venas mamma",
     "Viggos mamma": "Venas mamma",
     "Viggos pappa": "Venas pappa",

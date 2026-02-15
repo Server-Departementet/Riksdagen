@@ -51,3 +51,10 @@ export function getTimestampFromDiscordLink(link: string): number | null {
 
   return Number((BigInt(snowflake) >> 22n) + 1420070400000n);
 }
+
+export function isMultiSpeakerQuote(content: string): boolean {
+  const isMultiLine =
+    content.includes("\n")
+    && content.split("\n").every(line => line.trim().startsWith("\"") && line.trim().includes("-"));
+  return isMultiLine;
+}
