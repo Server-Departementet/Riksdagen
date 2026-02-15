@@ -53,9 +53,17 @@ async function main() {
   const quoteeCounts: Record<string, number> = {};
 
   for (const quote of availableQuotes) {
-    const sender = users[quote.authorId].name ?? quote.authorId;
+    const sender = (users[quote.authorId] ?? { name: quote.authorId }).name;
+    if (!sender) {
+      console.warn(`Could not find sender for quote with ID ${quote.id} and authorId ${quote.authorId}`);
+      continue;
+    }
     senderCounts[sender] = (senderCounts[sender] ?? 0) + 1;
-    const quotee = users[quote.quoteeId ?? quote.quotee]?.name ?? quote.quoteeId ?? quote.quotee;
+    const quotee = (users[quote.quoteeId ?? ""] ?? { name: quote.quotee }).name;
+    if (!quotee) {
+      console.warn(`Could not find quotee for quote with ID ${quote.id} and quoteeId ${quote.quoteeId}`);
+      continue;
+    }
     quoteeCounts[quotee] = (quoteeCounts[quotee] ?? 0) + 1;
   }
 
