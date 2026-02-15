@@ -38,9 +38,9 @@ export function splitCustomQuoteMeta(content: string): { meta?: CustomQuoteMeta;
       const maybeLink = typeof metaObject.link === "string" ? metaObject.link : undefined;
 
       meta = {
-        ...(maybeAuthorId ? { authorId: maybeAuthorId } : {}),
-        ...(maybeSender ? { sender: maybeSender } : {}),
-        ...(maybeLink ? {
+        ...(typeof maybeAuthorId === "string" ? { authorId: maybeAuthorId } : {}),
+        ...(typeof maybeSender === "string" ? { sender: maybeSender } : {}),
+        ...(typeof maybeLink === "string" ? {
           link: maybeLink,
           createdTimestamp: getTimestampFromDiscordLink(maybeLink) ?? undefined,
         } : {}),
