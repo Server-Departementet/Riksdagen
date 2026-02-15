@@ -200,6 +200,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     "Viggos mor": "Venas mamma",
     "Viggos mamma": "Venas mamma",
     "Viggos pappa": "Venas pappa",
+    "Jesper": "Jesper (TE4 individ)",
   };
 
   // Apply aliases to quotee, body, and context

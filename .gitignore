@@ -64,5 +64,6 @@ scripts/server-nicks.ts
 scripts/discord/quotes*.json
 scripts/discord/name-variants.ts
 scripts/discord/quote-attachments/
+scripts/discord/quote-stats
 public/quote-attachments/
 scripts/*.sql
