@@ -56,15 +56,16 @@ async function main() {
     const sender = (users[quote.authorId] ?? { name: quote.authorId }).name;
     if (!sender) {
       console.warn(`Could not find sender for quote with ID ${quote.id} and authorId ${quote.authorId}`);
-      continue;
+    } else {
+      senderCounts[sender] = (senderCounts[sender] ?? 0) + 1;
     }
-    senderCounts[sender] = (senderCounts[sender] ?? 0) + 1;
+
     const quotee = (users[quote.quoteeId ?? ""] ?? { name: quote.quotee }).name;
     if (!quotee) {
       console.warn(`Could not find quotee for quote with ID ${quote.id} and quoteeId ${quote.quoteeId}`);
-      continue;
+    } else {
+      quoteeCounts[quotee] = (quoteeCounts[quotee] ?? 0) + 1;
     }
-    quoteeCounts[quotee] = (quoteeCounts[quotee] ?? 0) + 1;
   }
 
   const sortedSenderCounts = Object.fromEntries(
@@ -78,16 +79,21 @@ async function main() {
   fs.writeFileSync(quoteeStatsJSONPath, JSON.stringify(sortedQuoteeCounts, null, 2), "utf-8");
 
   // Format the stats as md and save to file
-  const senderHeader = `
-| Namn            | Antal skickade citat |
-| --------------- | -------------------- |`;
-  const quoteeHeader = `
-| Namn            | Antal citeringar     |
-| --------------- | -------------------- |`;
+  const senderStatsMD = `
+# Statistik över skickade citat
 
-  const senderRows = Object.entries(sortedSenderCounts).map(([name, count]) => `| ${name} | ${count} |`);
-  const quoteeRows = Object.entries(sortedQuoteeCounts).map(([name, count]) => `| ${name} | ${count} |`);
+\`\`\`json
+${JSON.stringify(sortedSenderCounts, null, 2)}
+\`\`\`
+`;
+  const quoteeStatsMD = `
+# Statistik över citerade entiteter
 
-  fs.writeFileSync(senderStatsMDPath, [senderHeader, ...senderRows].join("\n"), "utf-8");
-  fs.writeFileSync(quoteeStatsMDPath, [quoteeHeader, ...quoteeRows].join("\n"), "utf-8");
+\`\`\`json
+${JSON.stringify(sortedQuoteeCounts, null, 2)}
+\`\`\`
+`;
+
+  fs.writeFileSync(senderStatsMDPath, senderStatsMD, "utf-8");
+  fs.writeFileSync(quoteeStatsMDPath, quoteeStatsMD, "utf-8");
 }
