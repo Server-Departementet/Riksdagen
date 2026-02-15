@@ -337,7 +337,7 @@ async function main() {
       : {},
     "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
     "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
-    "sender": `skrevs av\t\t\t|| *${quote.sender}* ${bestCandidate.senderPad.pad}||`,
+    "sender": `skrevs av\t\t\t|| *${quote.sender || "Okänt"}* ${bestCandidate.senderPad.pad}||`,
     "quoteId": quote.id,
   };
 
