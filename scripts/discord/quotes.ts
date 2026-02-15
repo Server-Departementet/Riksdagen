@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { PrismaClient } from "../../src/prisma/generated/client.js";
 import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
-import { getTimestampFromDiscordLink, isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
+import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
 import { nameVariants } from "./name-variants.ts";
 import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
 
@@ -73,7 +73,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   const { meta: customMeta, content: cleanedContent } = splitCustomQuoteMeta(quote.content);
 
   const resolvedAuthorId = customMeta?.authorId ?? quote.authorId;
-  const sender = users[resolvedAuthorId];
+  const sender = users[resolvedAuthorId] ?? { name: resolvedAuthorId };
   if (!sender?.name) {
     throw new Error("Could not find user with ID " + resolvedAuthorId);
   }
@@ -220,14 +220,10 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
   )?.[0];
 
-  const overriddenTimestamp = customMeta?.link
-    ? getTimestampFromDiscordLink(customMeta.link) ?? quote.createdTimestamp
-    : quote.createdTimestamp;
-
   return {
     id: quote.id,
     authorId: resolvedAuthorId,
-    createdTimestamp: overriddenTimestamp,
+    createdTimestamp: customMeta?.createdTimestamp ?? quote.createdTimestamp,
     link: `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quote.id}`,
     ...(customMeta?.link ? { originalLink: customMeta.link } : {}),
     sender: sender.name,

@@ -1,13 +1,22 @@
-export type CustomQuoteMeta = {
-  authorId?: string;
-  link?: string;
-};
+import { Quote } from "./types.ts";
+
+export type CustomQuoteMeta = Partial<Pick<Quote, "authorId" | "link" | "sender" | "createdTimestamp">>;
 
 export function isCustomQuoteMeta(obj: unknown): obj is CustomQuoteMeta {
   if (typeof obj !== "object" || obj === null) return false;
-  if (!("authorId" in obj) && !("link" in obj)) return false;
+
+  if (
+    !("authorId" in obj)
+    && !("link" in obj)
+    && !("sender" in obj)
+    && !("createdTimestamp" in obj)
+  ) return false;
+
   if ("authorId" in obj && typeof obj.authorId !== "string") return false;
   if ("link" in obj && typeof obj.link !== "string") return false;
+  if ("sender" in obj && typeof obj.sender !== "string") return false;
+  if ("createdTimestamp" in obj && typeof obj.createdTimestamp !== "number") return false;
+
   return true;
 }
 
@@ -25,13 +34,20 @@ export function splitCustomQuoteMeta(content: string): { meta?: CustomQuoteMeta;
     }
     if (metaObject && typeof metaObject === "object") {
       const maybeAuthorId = typeof metaObject.authorId === "string" ? metaObject.authorId : undefined;
+      const maybeSender = typeof metaObject.sender === "string" ? metaObject.sender : undefined;
       const maybeLink = typeof metaObject.link === "string" ? metaObject.link : undefined;
+
       meta = {
         ...(maybeAuthorId ? { authorId: maybeAuthorId } : {}),
-        ...(maybeLink ? { link: maybeLink } : {}),
+        ...(maybeSender ? { sender: maybeSender } : {}),
+        ...(maybeLink ? {
+          link: maybeLink,
+          createdTimestamp: getTimestampFromDiscordLink(maybeLink) ?? undefined,
+        } : {}),
       };
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.warn("Failed to parse custom quote metadata:", error);
   }
 

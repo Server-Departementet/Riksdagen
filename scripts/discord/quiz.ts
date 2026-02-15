@@ -291,13 +291,6 @@ async function main() {
    * Make new quiz
    */
   const sentDate = new Date(quote.createdTimestamp);
-  const isMigratedQuote = (
-    sentDate.getUTCFullYear() === 2024
-    && sentDate.getUTCMonth() === 4
-    && sentDate.getUTCDate() === 23
-    && quote.sender.toLowerCase().includes("winroth")
-  );
-  const shouldCensorMigratedQuote = isMigratedQuote && !quote.originalLink;
   const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
   const formattedTime = sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
 
@@ -335,20 +328,16 @@ async function main() {
       ? quote.body.split("\n")
         .map(line => `> ${line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/)[0].trim() ?? line}`)
         .reverse()
-        .map((l, i) => i === 0 ? l+=" - __      __" : l)
+        .map((l, i) => i === 0 ? l += " - __      __" : l)
         .reverse()
         .join("\n")
       : quote.body.split("\n").map(line => `> ${line}`).join("\n"),
     ...quote.context
       ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
       : {},
-    ...!shouldCensorMigratedQuote
-      ? {
-        "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
-        "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
-        "sender": `skrevs av\t\t\t|| *${quote.sender}* ${bestCandidate.senderPad.pad}||`,
-      }
-      : {},
+    "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
+    "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
+    "sender": `skrevs av\t\t\t|| *${quote.sender}* ${bestCandidate.senderPad.pad}||`,
     "quoteId": quote.id,
   };
 
@@ -359,20 +348,17 @@ async function main() {
   }
 
   // Remove lines with unknown placeholders
-  if (!quote.context || shouldCensorMigratedQuote) {
+  if (!quote.context) {
     quizContent = quizContent
       .split("\n")
       .filter(line =>
         (!line.includes("{{context}}") || quote.context?.length)
-        && (!line.includes("{{date}}") || !shouldCensorMigratedQuote)
-        && (!line.includes("{{time}}") || !shouldCensorMigratedQuote)
-        && (!line.includes("{{sender}}") || !shouldCensorMigratedQuote)
       )
       .join("\n");
   }
 
   // If no hints (date, time, sender) persist, remove the "Ledtrådar" header as well
-  if (!quote.context && shouldCensorMigratedQuote) {
+  if (!quote.context) {
     quizContent = quizContent
       .replace(/.*Ledtrådar.*(?:\n\r?){2}/, "");
   }
