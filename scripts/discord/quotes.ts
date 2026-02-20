@@ -186,9 +186,14 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     "1199023410513182720",
     "1195078172182597672",
     "1185231830190932033",
-    // 1186031426597027910 // TBD
   ].includes(quote.id)) {
     body = body.replace(/\bHan\b/, "Hon");
+  }
+  // The 🐔 clause
+  if (body.toLowerCase().includes("han") && [
+    "1186031426597027910",
+  ].includes(quote.id)) {
+    body = body.replace(/\bHan\b/, "Hen");
   }
 
   // Quotee normalization
@@ -201,6 +206,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     "Viggos mamma": "Venas mamma",
     "Viggos pappa": "Venas pappa",
     "Jesper": "Jesper (TE4 individ)",
+    ...sender.name.toLowerCase() === "agnes" ? { "min föreläsare": "Agnes föreläsare" } : {},
   };
 
   // Apply aliases to quotee, body, and context
