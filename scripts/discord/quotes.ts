@@ -85,18 +85,14 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   if (isMultiSpeaker) {
     // Body is all the lines with attribution and meta is the last line's meta
     const lines = cleanedContent.split("\n").map(l => l.trim());
-    for (let i = 0; i < lines.length - 1; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!line.startsWith("\"") || !line.includes("-")) {
         throw new Error("Failed to parse multi-speaker quote line, missing quote or attribution: " + line + " (full content: " + cleanedContent + ")");
       }
 
       // If last line, split on the last "-" and give the right to the meta but still provide the entire line to the body like for all other lines
-      if (i === lines.length - 2) {
-        const lastLine = lines.at(-1);
-        if (!lastLine || !lastLine.startsWith("\"") || !lastLine.includes("-")) {
-          throw new Error("Failed to parse multi-speaker quote last line, missing quote or attribution: " + lastLine + " (full content: " + cleanedContent + ")");
-        }
+      if (i === lines.length - 1) {
         const brokenQuote = line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/).map(s => s.trim());
         if (brokenQuote.length !== 2) {
           throw new Error("Failed to split multi-speaker quote line into body and meta: " + line + " (full content: " + cleanedContent + ")");
