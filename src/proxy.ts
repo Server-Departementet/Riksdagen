@@ -3,7 +3,7 @@ import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
 const isMinisterRoute = createRouteMatcher([
   "/spotify(.*)",
-  "/statistik(.*)",
+  "/citat(.*)",
 ]);
 
 export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
@@ -34,7 +34,7 @@ export const config = {
 
     // Protected routes
     "/spotify",
-    "/statistik",
+    "/citat",
   ],
 };
 
