@@ -23,6 +23,20 @@ if (!QUIZ_CHANNEL_ID) throw new Error("QUIZ_CHANNEL_ID is not set in environment
 if (!CANONICAL_URL) throw new Error("CANONICAL_URL is not set in environment variables");
 
 const isDryRun = process.argv.includes("--dry-run");
+const forcedQuoteId = (() => {
+  const idArgIndex = process.argv.indexOf("--id");
+  if (idArgIndex === -1) return null;
+
+  const idValue = process.argv[idArgIndex + 1];
+  if (!idValue) {
+    throw new Error("Missing value for --id argument");
+  }
+  if (!/^\d+$/.test(idValue)) {
+    throw new Error(`Invalid --id value: ${idValue}. Expected a numeric quote ID`);
+  }
+
+  return idValue;
+})();
 let pollCleanupPromise: Promise<void> | null = null;
 
 const discordClient = new DiscordClient({
@@ -71,6 +85,7 @@ async function main() {
 
   const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId);
+  const allQuotes = [...availableQuotes];
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   let quizNumber = 0;
@@ -275,13 +290,26 @@ async function main() {
   /* 
    * Select quote for new quiz 
    */
-  const allQuotees = [...new Set(availableQuotes.map(q => q.quoteeId))];
-  const randomQuotee = allQuotees[Math.floor(Math.random() * allQuotees.length)];
-  const quotesSelection = availableQuotes.filter(q => q.quoteeId === randomQuotee);
-  const quote = quotesSelection[Math.floor(Math.random() * quotesSelection.length)];
+  let quote: Quote;
+  if (forcedQuoteId) {
+    const forcedQuote = allQuotes.find(q => q.id === forcedQuoteId);
+    if (!forcedQuote) {
+      throw new Error(`Could not find quote with ID ${forcedQuoteId}`);
+    }
+    quote = forcedQuote;
+    console.info(`Forcing quote ID ${forcedQuoteId} via --id override`);
+  }
+  else {
+    const allQuotees = [...new Set(availableQuotes.map(q => q.quoteeId))];
+    const randomQuotee = allQuotees[Math.floor(Math.random() * allQuotees.length)];
+    const quotesSelection = availableQuotes.filter(q => q.quoteeId === randomQuotee);
+    quote = quotesSelection[Math.floor(Math.random() * quotesSelection.length)];
+  }
 
   // Save quote id to file to avoid repeating quotes
-  usedQuotes.push(quote.id);
+  if (!usedQuotes.includes(quote.id)) {
+    usedQuotes.push(quote.id);
+  }
   fs.writeFileSync(usedQuotesPath, JSON.stringify(usedQuotes, null, 2), "utf-8");
 
   console.info(`Selected quote ID ${quote.id} for Quiz #${quizNumber}`);
