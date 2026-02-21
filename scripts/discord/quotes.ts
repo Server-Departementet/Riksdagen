@@ -209,6 +209,12 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   if (aliases[quotee]) {
     quotee = aliases[quotee];
   }
+  if (Object.keys(aliases).some(alias => quotee.includes(alias))) {
+    for (const [alias, realName] of Object.entries(aliases)) {
+      const regex = new RegExp(`\\b${alias}\\b`, "g");
+      quotee = quotee.replace(regex, realName);
+    }
+  }
   if (context) {
     for (const [alias, realName] of Object.entries(aliases)) {
       const regex = new RegExp(`\\b${alias}\\b`, "g");
