@@ -2,7 +2,7 @@
 cd /root/Riksdagen
 
 git fetch --all
-git checkout origin/spotify-rewrite --force
+git checkout origin/main --force
 
 # Make /deploy-code executable
 chmod +x deploy-code/*
