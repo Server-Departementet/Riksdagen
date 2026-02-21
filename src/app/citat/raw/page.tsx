@@ -1,16 +1,8 @@
 import { Quote } from "@/app/citat/types";
 import fs from "node:fs";
 
-const {
-  QUOTE_DIR,
-} = process.env;
-
-if (!QUOTE_DIR) {
-  throw new Error("QUOTE_DIR environment variable is not set");
-}
-
 export default function RawQuotePage() {
-  const quotes: Quote[] = JSON.parse(fs.readFileSync(`${QUOTE_DIR}/quotes.json`, "utf-8"));
+  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8"));
 
   return <main>
     <h2 className="mt-2 mb-1">Råa citat</h2>
