@@ -33,8 +33,8 @@ export const config = {
     '/(api|trpc)(.*)',
 
     // Protected routes
-    "/spotify",
-    "/citat",
+    "/spotify(.*)",
+    "/citat(.*)",
   ],
 };
 
