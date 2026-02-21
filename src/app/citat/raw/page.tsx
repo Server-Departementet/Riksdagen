@@ -6,6 +6,7 @@ export default function RawQuotePage() {
 
   return <main>
     <h2 className="mt-2 mb-1">Råa citat</h2>
+
     <ul>
       {quotes.map(q => (
         <li key={q.id} className="*:ms-3">
@@ -17,6 +18,5 @@ export default function RawQuotePage() {
         </li>
       ))}
     </ul>
-
   </main>;
 }
