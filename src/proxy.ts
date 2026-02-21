@@ -1,13 +1,16 @@
 import { clerkMiddleware, ClerkMiddlewareAuth, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
-const isSpotifyRoute = createRouteMatcher(["/spotify(.*)"]);
+const isMinisterRoute = createRouteMatcher([
+  "/spotify(.*)",
+  "/statistik(.*)",
+]);
 
 export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
   const response = NextResponse.next();
 
   // Spotify
-  if (isSpotifyRoute(req)) {
+  if (isMinisterRoute(req)) {
     const user = await auth();
 
     if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
@@ -29,8 +32,9 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
 
-    // Spotify page
+    // Protected routes
     "/spotify",
+    "/statistik",
   ],
 };
 
