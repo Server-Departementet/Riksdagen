@@ -11,7 +11,7 @@ export default function RawQuotePage() {
       {quotes.map(q => (
         <li key={q.id} className="*:ms-3">
           <a href={q.link} className="global">Länk</a>
-          <span>{new Date(q.createdTimestamp).toLocaleString()}</span>
+          <span>{new Date(q.createdTimestamp).toLocaleString("sv-SE")}</span>
           <span>
             {q.body} - {q.quotee}
           </span>
