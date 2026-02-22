@@ -36,6 +36,8 @@ main()
     await prisma.$disconnect();
   });
 
+// Nice to catch
+// eslint-disable-next-line @typescript-eslint/require-await
 async function main() {
   const statFolder = "scripts/discord/quote-stats";
   const senderStatsJSONPath = `${statFolder}/sender-stats.json`;
