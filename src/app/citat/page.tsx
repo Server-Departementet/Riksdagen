@@ -30,7 +30,7 @@ export default function QuoteStatsPage() {
             discord&nbsp;
             <ExternalLinkIcon className="size-3 inline mb-0.5" />
           </a>
-          <span className="min-w-fit">{new Date(q.createdTimestamp).toLocaleString()}</span>
+          <span className="min-w-fit">{new Date(q.createdTimestamp).toLocaleString("se")}</span>
           {isMultiSpeakerQuote(q.body)
             ? <p className="whitespace-pre-wrap">
               {q.body}
