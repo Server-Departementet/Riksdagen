@@ -89,8 +89,9 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/ministrar">Våra ministrar</SidebarLink>
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
+              <ProtectedLink href="/citat" role="minister">Citat-Statistik</ProtectedLink>
               <ExternalLink href="https://fil.riksdagen.net/">Fil-Departementet</ExternalLink>
-              <ExternalLink href="https://vr-radio.tailad6f63.ts.net/">Venas Radio</ExternalLink>
+              <ExternalLink href="https://vr.venastrom.se/">Venas Radio</ExternalLink>
             </Sidebar>
           </div>
         </header>
