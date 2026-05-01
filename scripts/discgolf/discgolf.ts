@@ -151,7 +151,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   }
 
   logInfo("Fetching messages", { userId: targetUser.id, readChannelId: readChannel.id, limit: 100, interactionId: interaction.id });
-  const allMessages = (await readChannel.messages.fetch({ limit: 100 }));
+  const allMessages = (await readChannel.messages.fetch({ limit: 100 })).filter(m => !m.author.bot);
   logInfo("Messages fetched", { count: allMessages.size, interactionId: interaction.id });
 
   const courseMessage = allMessages.filter(m =>
