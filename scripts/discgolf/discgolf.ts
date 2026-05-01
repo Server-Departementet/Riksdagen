@@ -1,5 +1,5 @@
 import "dotenv/config";
-import type { ChatInputCommandInteraction, MessageComponentInteraction } from "discord.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 import { Client as DiscordClient, Events, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 // Logger utility
@@ -83,7 +83,7 @@ discordClient.on(Events.InteractionCreate, (interaction) => {
     guildId: interaction.guildId,
   });
 
-  directCommand(interaction)
+  dispatchCommands(interaction)
     .catch((err: unknown) => {
       logError("Error handling command", err, {
         commandName: interaction.commandName,
@@ -98,11 +98,8 @@ discordClient.on(Events.InteractionCreate, (interaction) => {
     });
 });
 
-async function directCommand(interaction: ChatInputCommandInteraction) {
+async function dispatchCommands(interaction: ChatInputCommandInteraction) {
   switch (interaction.commandName) {
-    case "ping":
-      await interaction.reply("Pong!");
-      return;
     case "räkna":
       await räkna(interaction);
       return;
@@ -159,14 +156,15 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     interactionId: interaction.id,
   });
 
-  const yourMessages = allMessages.filter(
-    m => m.author.id === sender.id
-      && m.createdTimestamp > courseMessage.createdTimestamp,
+  const yourMessages = allMessages.filter(m =>
+    m.author.id === sender.id
+    && m.createdTimestamp > courseMessage.createdTimestamp,
   );
 
   logInfo("Filtered user messages after course", { count: yourMessages.size, interactionId: interaction.id });
 
   const parsedCourseMessage = `Senaste banan tolkas som ${courseMessage.content} (${new Date(courseMessage.createdTimestamp).toISOString()}) (du har skickat ${yourMessages.size} meddelande sen dess)`;
+  logInfo("Parsed course message", { parsedCourseMessage, interactionId: interaction.id });
   await interaction.reply({ content: parsedCourseMessage, ephemeral: true });
 
   const score: Record<string, number> = {};
@@ -178,7 +176,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
         interactionId: interaction.id,
       });
       interaction.followUp({ content: `Något gick fel i att tolka poängen, hittade oväntat ett till banmeddelande: "${message.content}" (${new Date(message.createdTimestamp).toISOString()})`, ephemeral: true }).catch(console.error);
-      continue;
+      throw new Error("Unexpected course message found in score messages");
     }
 
     // Contains any non-numbers?
@@ -223,88 +221,26 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     score[course] = parsedPoint;
   }
 
-  const scoreLines = Object.entries(score).map(([course, point]) => `${course}: ${point}`);
-  if (scoreLines.length === 0) {
-    logWarn("No score lines found", { userId: sender.id, interactionId: interaction.id });
-    await interaction.followUp({ content: "Hittade inga poängmeddelanden efter banmeddelandet.", ephemeral: true });
-    return;
-  }
-  const totalPoints = Object.values(score).reduce((a, b) => a + b, 0);
-  logInfo("Score calculation complete", { courseCount: scoreLines.length, totalPoints, interactionId: interaction.id });
-
-  await interaction.editReply({ content: `${parsedCourseMessage}\nDina poäng (hål, kast):\n${scoreLines.join("\n")}\nTotalt: ${totalPoints}` });
-
-  // Formatted compact score
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
+  const totalPoints = Object.values(score).reduce((a, b) => a + b, 0);
   const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${sender.id}> totalt: ${totalPoints}`;
 
-  // Prompt about sending it as a message in the write channel
-  await interaction.followUp({
-    content: `Skicka resultatet?\n${blockQuote(scoreMessage)}`,
-    components: [
-      {
-        type: 1,
-        components: [
-          { type: 2, label: "Ja", style: 1, customId: "send_score_yes" },
-          { type: 2, label: "Nej", style: 2, customId: "send_score_no" },
-        ],
-      },
-    ],
-    ephemeral: true,
+  logInfo("Sending score to write channel", {
+    writeChannelId: writeChannel.id,
+    userId: sender.id,
+    totalPoints,
+    interactionId: interaction.id,
   });
-
-  const filter = (i: MessageComponentInteraction) => i.customId === "send_score_yes" || i.customId === "send_score_no";
-  const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 60000, max: 1 });
-  collector?.on("collect", (i: MessageComponentInteraction) => {
-    (async () => {
-      logInfo("Button interaction received", {
-        customId: i.customId,
-        userId: i.user.id,
-        interactionId: interaction.id,
-        buttonInteractionId: i.id,
-      });
-
-      if (i.customId === "send_score_yes") {
-        if (!("send" in writeChannel)) {
-          logError("Write channel is not text-based", undefined, { interactionId: interaction.id });
-          await i.update({ content: "Write channel is not text-based.", components: [] });
-          return;
-        }
-        logInfo("Sending score to write channel", {
-          writeChannelId: writeChannel.id,
-          userId: sender.id,
-          totalPoints,
-          interactionId: interaction.id,
-        });
-        await i.update({ content: "Skickar...", components: [] });
-        const sentMessage = await writeChannel.send(scoreMessage);
-        logInfo("Score message sent successfully", {
-          messageId: sentMessage.id,
-          channelId: writeChannel.id,
-          interactionId: interaction.id,
-        });
-      }
-      else {
-        logInfo("User declined sending score", { userId: sender.id, interactionId: interaction.id });
-        await i.update({ content: "Skickar inte.", components: [] });
-      }
-    })()
-      .catch((err: unknown) => {
-        logError("Error handling button interaction", err, { interactionId: interaction.id, buttonId: i.id });
-        i.update({ content: "There was an error while processing your request.", components: [] }).catch(console.error);
-      });
-  });
-  collector?.on("end", (_collected, reason) => {
-    (async () => {
-      if (reason === "time") {
-        logWarn("Button collector timed out", { interactionId: interaction.id });
-        await interaction.followUp({ content: "ERROR: Timed out sending score message.", ephemeral: true }).catch(console.error);
-      }
-    })()
-      .catch((err: unknown) => {
-        logError("Error handling collector end", err, { interactionId: interaction.id });
-        interaction.followUp({ content: "There was an error while processing your request.", ephemeral: true }).catch(console.error);
-      });
+  if (!("send" in writeChannel)) {
+    logError("Write channel is not text-based", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
+    await interaction.followUp({ content: "Write channel is not text-based.", ephemeral: true });
+    return;
+  }
+  const sentMessage = await writeChannel.send(scoreMessage);
+  logInfo("Score message sent successfully", {
+    messageId: sentMessage.id,
+    channelId: writeChannel.id,
+    interactionId: interaction.id,
   });
 }
 
@@ -312,8 +248,4 @@ function isCourseMessage(content: string): boolean {
   const isOnlyString = /^[a-zA-ZåäöÅÄÖ]+$/.test(content);
   const lengthOk = content.length > 3 && content.length <= 20;
   return isOnlyString && lengthOk;
-}
-
-function blockQuote(text: string): string {
-  return text.split("\n").map(line => `> ${line}`).join("\n");
 }
