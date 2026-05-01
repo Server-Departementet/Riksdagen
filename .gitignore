@@ -47,11 +47,14 @@ next-env.d.ts
 
 # Prisma
 src/prisma/generated/
+prisma/generated/
 
 standalone/
 
 prisma/*usermap.json
 prisma/trackPlaysDump.json
+scripts/*usermap.json
+scripts/trackPlaysDump.json
 
 cache/
 
