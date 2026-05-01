@@ -1,6 +1,6 @@
 import ministersDB from "@/../ministers.json" with { type: "json"};
 import Link from "next/link";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Statsskick",

@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { ArrowDownNarrowWide, ArrowDownWideNarrow } from "lucide-react";
+import type {
+  SpotifySortDirection,
+  SpotifySortValue} from "@/lib/spotify-sort";
 import {
   DEFAULT_SPOTIFY_SORT_DIRECTION,
   DEFAULT_SPOTIFY_SORT_VALUE,
   SPOTIFY_SORT_OPTIONS,
-  SpotifySortDirection,
-  SpotifySortValue,
 } from "@/lib/spotify-sort";
 
 export function FilterPanel({
@@ -100,7 +101,7 @@ export function FilterPanel({
                   }
                 }}
               />
-            </label>
+            </label>,
           )}
         </div>
       </div>

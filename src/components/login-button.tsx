@@ -21,7 +21,7 @@ export function ClerkLogin(
   }: {
     className?: string,
     nameSide?: NameSide,
-  }
+  },
 ) {
   return (
     <div className={`flex flex-row items-center justify-center ${className}`}>
@@ -47,9 +47,9 @@ export function ClerkLogin(
           elements: {
             userButtonBox: `!me-0 ${nameSide === "right" ? "!gap-2" : ""}`,
             userButtonOuterIdentifier: (nameSide === "right" ? "order-1" : ""),
-          }
+          },
         }} />
       </SignedIn>
     </div>
-  )
+  );
 }

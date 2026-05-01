@@ -17,7 +17,7 @@ export function SidebarLink(
     children: React.ReactNode
     linkTarget?: "_blank" | "_self" | "_parent" | "_top"
     className?: string
-  }
+  },
 ) {
   const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!e.target) return;
@@ -50,7 +50,7 @@ export function ExternalLink(
     href: string,
     children: React.ReactNode
     className?: string
-  }
+  },
 ) {
 
   return (
@@ -64,10 +64,10 @@ export function ExternalLink(
 /** Sidebar children are the links shown in the nav */
 export function Sidebar(
   {
-    children
+    children,
   }: {
     children: React.ReactNode
-  }
+  },
 ) {
   const [isOpen, setIsOpen] = useState(false);
 

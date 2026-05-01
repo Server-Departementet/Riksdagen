@@ -10,5 +10,5 @@ export default async function Page() {
         <StatsskickPage />
       </section>
     </main>
-  )
+  );
 }

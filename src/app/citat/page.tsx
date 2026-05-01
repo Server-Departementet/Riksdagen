@@ -1,4 +1,4 @@
-import { Quote } from "@/app/citat/types";
+import type { Quote } from "@/app/citat/types";
 import { ExternalLinkIcon } from "lucide-react";
 import fs from "node:fs";
 

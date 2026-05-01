@@ -28,5 +28,5 @@ export default function Custom404() {
         <Image src={CrownSVG} height={230} width={230} alt="" />
       </div>
     </main>
-  )
+  );
 }

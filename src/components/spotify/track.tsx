@@ -6,14 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Fragment, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode} from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { getMergedTrackVariants } from "@/functions/spotify/get-merged-track-variants";
 import { getTrackListenerStats } from "@/functions/spotify/get-track-listener-stats";
 import type { TrackListenerStat } from "@/functions/spotify/get-track-listener-stats";
-import { Album, Artist, Track } from "@/lib/prisma/generated";
-import { TrackWithCompany } from "@/types/types";
+import type { Album, Artist, Track } from "@/lib/prisma/generated";
+import type { TrackWithCompany } from "@/types/types";
 import { Layers3Icon } from "lucide-react";
 
 export function TrackList({
@@ -79,7 +80,7 @@ export function TrackList({
         trackData={trackDataBatches[trackISRC] ?? null}
         lineNumber={index + 1}
         filterUserIds={normalizedFilterUserIds}
-      />
+      />,
     ), [allTrackISRCs, trackDataBatches, normalizedFilterUserIds]);
 
   // Fetch track data when loadedBatchCount changes
@@ -87,7 +88,7 @@ export function TrackList({
     async function fetchTrackData() {
       const trackISRCToFetch = trackISRCBatches
         .flat()
-        .filter(trackISRC => !(trackDataBatches && trackDataBatches[trackISRC]));
+        .filter(trackISRC => !(trackDataBatches?.[trackISRC]));
 
       if (trackISRCToFetch.length === 0) return;
       const trackDataArray = await getTrackDataBatch(trackISRCToFetch, {
@@ -367,7 +368,7 @@ function TrackElement({
                 {artist.name}
               </Link>
               {i < artists.length - 1 && <span>,&nbsp;</span>}
-            </Fragment>
+            </Fragment>,
           )}
           &nbsp;&nbsp;&middot;&nbsp;&nbsp;
           <Link href={album?.url ?? "#"} target="_blank" rel="noopener noreferrer">
@@ -418,7 +419,7 @@ function TrackElement({
                       ))}
                     </ul>
                   ) : null}
-                  {!isListenerStatsLoading && !listenerStatsError && listenerStats && listenerStats.length === 0 && (
+                  {!isListenerStatsLoading && !listenerStatsError && listenerStats?.length === 0 && (
                     <p className="text-sm text-muted-foreground">Ingen vald minister har lyssnat ännu.</p>
                   )}
                 </PopoverContent>
