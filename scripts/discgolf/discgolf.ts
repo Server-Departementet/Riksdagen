@@ -75,9 +75,9 @@ discordClient.once(Events.ClientReady, (client) => {
 discordClient.on(Events.InteractionCreate, (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  logInfo("Chat input command received", { 
-    commandName: interaction.commandName, 
-    userId: interaction.user.id, 
+  logInfo("Chat input command received", {
+    commandName: interaction.commandName,
+    userId: interaction.user.id,
     username: interaction.user.username,
     interactionId: interaction.id,
     guildId: interaction.guildId,
@@ -85,7 +85,7 @@ discordClient.on(Events.InteractionCreate, (interaction) => {
 
   directCommand(interaction)
     .catch((err: unknown) => {
-      logError("Error handling command", err, { 
+      logError("Error handling command", err, {
         commandName: interaction.commandName,
         userId: interaction.user.id,
         interactionId: interaction.id,
@@ -143,8 +143,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   logInfo("Messages fetched", { count: allMessages.size, interactionId: interaction.id });
 
   const courseMessage = allMessages.filter(m =>
-    m.author.id === sender.id
-    && isCourseMessage(m.content),
+    isCourseMessage(m.content),
   ).first();
 
   if (!courseMessage) {
@@ -153,9 +152,9 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  logInfo("Course message found", { 
-    messageId: courseMessage.id, 
-    content: courseMessage.content, 
+  logInfo("Course message found", {
+    messageId: courseMessage.id,
+    content: courseMessage.content,
     timestamp: courseMessage.createdTimestamp,
     interactionId: interaction.id,
   });
@@ -173,8 +172,8 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   const score: Record<string, number> = {};
   for (const message of yourMessages.values()) {
     if (isCourseMessage(message.content)) {
-      logWarn("Unexpected course message found in score messages", { 
-        messageId: message.id, 
+      logWarn("Unexpected course message found in score messages", {
+        messageId: message.id,
         content: message.content,
         interactionId: interaction.id,
       });
@@ -199,8 +198,8 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     const [course, point] = message.content.split(" ").map(s => s.trim());
 
     if (!course || !point) {
-      logWarn("Could not parse course or point from message", { 
-        messageId: message.id, 
+      logWarn("Could not parse course or point from message", {
+        messageId: message.id,
         content: message.content,
         interactionId: interaction.id,
       });
@@ -210,8 +209,8 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
     const parsedPoint = parseInt(point, 10);
     if (isNaN(parsedPoint)) {
-      logWarn("Could not parse point as number", { 
-        messageId: message.id, 
+      logWarn("Could not parse point as number", {
+        messageId: message.id,
         content: message.content,
         pointString: point,
         interactionId: interaction.id,
@@ -258,7 +257,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 60000, max: 1 });
   collector?.on("collect", (i: MessageComponentInteraction) => {
     (async () => {
-      logInfo("Button interaction received", { 
+      logInfo("Button interaction received", {
         customId: i.customId,
         userId: i.user.id,
         interactionId: interaction.id,
@@ -271,7 +270,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
           await i.update({ content: "Write channel is not text-based.", components: [] });
           return;
         }
-        logInfo("Sending score to write channel", { 
+        logInfo("Sending score to write channel", {
           writeChannelId: writeChannel.id,
           userId: sender.id,
           totalPoints,
@@ -279,7 +278,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
         });
         await i.update({ content: "Skickar...", components: [] });
         const sentMessage = await writeChannel.send(scoreMessage);
-        logInfo("Score message sent successfully", { 
+        logInfo("Score message sent successfully", {
           messageId: sentMessage.id,
           channelId: writeChannel.id,
           interactionId: interaction.id,
