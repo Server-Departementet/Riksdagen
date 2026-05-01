@@ -1,6 +1,10 @@
 import "dotenv/config";
-import type { ChatInputCommandInteraction } from "discord.js";
+import type { ChatInputCommandInteraction, Message } from "discord.js";
 import { Client as DiscordClient, Events, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+
+const COURSE_NAME_MIN_LENGTH = 3;
+const COURSE_NAME_MAX_LENGTH = 20;
+const SINGLE_HOLE_MAX_SCORE = 20; // Par on Domarringen is 27
 
 // Logger utility
 function log(level: "INFO" | "WARN" | "ERROR", message: string, data?: Record<string, unknown>) {
@@ -48,11 +52,8 @@ const commands = [
   new SlashCommandBuilder()
     .setName("räkna")
     .setDescription("Räknar poäng från senaste banan")
-    .addUserOption((option) =>
-      option
-        .setName("den_utsatte")
-        .setDescription("Personen vars poäng ska räknas, default är du själv"),
-    ),
+    .addUserOption((option) => option.setName("den_utsatte").setDescription("Personen vars poäng ska räknas, default är du själv"))
+    .addBooleanOption((option) => option.setName("alla").setDescription("Räkna för alla medlemmar (skickar endast meddelanden för de som har poäng).")),
 ].map((command) => command.toJSON());
 
 async function registerCommands() {
@@ -170,6 +171,37 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     interactionId: interaction.id,
   });
 
+  const doAllMembers = interaction.options.getBoolean("alla") ?? false;
+  if (doAllMembers) {
+    logInfo("Running 'alla' flow (aggregated)", { interactionId: interaction.id });
+    const guild = interaction.guild ?? await discordClient.guilds.fetch(DISCGOLF_GUILD_ID);
+    await guild.members.fetch();
+    const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
+    const lines: string[] = [];
+    for (const member of guild.members.cache.values()) {
+      if (member.user.bot) continue;
+      const { points } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
+      if (points === 0) continue;
+      lines.push(`<@${member.id}> - totalt ${points}`);
+    }
+
+    if (lines.length === 0) {
+      await interaction.reply({ content: `Inga resultat hittades att skicka för kursen ${courseMessage.content}.`, ephemeral: true });
+      return;
+    }
+
+    const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}`;
+    if (!("send" in writeChannel)) {
+      logError("Write channel not text-based during 'alla' run", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
+      await interaction.reply({ content: "Write channel is not text-based.", ephemeral: true });
+      return;
+    }
+    const sent = await writeChannel.send(out);
+    logInfo("Sent aggregated score message (alla)", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
+    await interaction.reply({ content: `Alla-kör färdig. Skickade ett meddelande med ${lines.length} resultat.`, ephemeral: true });
+    return;
+  }
+
   const yourMessages = allMessages.filter(m =>
     m.author.id === targetUser.id
     && m.createdTimestamp > courseMessage.createdTimestamp,
@@ -187,68 +219,14 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   logInfo("Parsed course message", { parsedCourseMessage, interactionId: interaction.id });
   await interaction.reply({ content: parsedCourseMessage, ephemeral: true });
 
-  const score: Record<string, number> = {};
-  for (const message of yourMessages.values()) {
-    if (isCourseMessage(message.content)) {
-      logWarn("Unexpected course message found in score messages", {
-        messageId: message.id,
-        content: message.content,
-        interactionId: interaction.id,
-      });
-      interaction.followUp({ content: `Något gick fel i att tolka poängen, hittade oväntat ett till banmeddelande: "${message.content}" (${new Date(message.createdTimestamp).toISOString()})`, ephemeral: true }).catch(console.error);
-      throw new Error("Unexpected course message found in score messages");
-    }
-
-    // Contains any non-numbers?
-    const nonNumberRegex = /[^0-9\s]/;
-    if (nonNumberRegex.test(message.content)) {
-      logInfo("Skipping message with non-numbers", { messageId: message.id, content: message.content, interactionId: interaction.id });
-      continue;
-    }
-
-    // If only numbers, if last one is a number and is larger than 20, then probably not a score message
-    const asNumber = Number(message.content.trim());
-    if (!isNaN(asNumber) && asNumber > 20) {
-      logInfo("Skipping message with large number (probably not score)", { messageId: message.id, value: asNumber, interactionId: interaction.id });
-      continue;
-    }
-
-    const [course, point] = message.content.split(" ").map(s => s.trim());
-
-    if (!course || !point) {
-      logWarn("Could not parse course or point from message", {
-        messageId: message.id,
-        content: message.content,
-        interactionId: interaction.id,
-      });
-      interaction.followUp({ content: `Kunde inte tolka poängen i ditt meddelande: "${message.content}" (${new Date(message.createdTimestamp).toISOString()})`, ephemeral: true }).catch(console.error);
-      continue;
-    }
-
-    const parsedPoint = parseInt(point, 10);
-    if (isNaN(parsedPoint)) {
-      logWarn("Could not parse point as number", {
-        messageId: message.id,
-        content: message.content,
-        pointString: point,
-        interactionId: interaction.id,
-      });
-      interaction.followUp({ content: `Kunde inte tolka poängen i ditt meddelande: "${message.content}" (${new Date(message.createdTimestamp).toISOString()})`, ephemeral: true }).catch(console.error);
-      continue;
-    }
-
-    logInfo("Score parsed successfully", { messageId: message.id, course, point: parsedPoint, interactionId: interaction.id });
-    score[course] = parsedPoint;
-  }
-
+  const { points } = getUserScore(sender.id, yourMessages.toJSON(), courseMessage);
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
-  const totalPoints = Object.values(score).reduce((a, b) => a + b, 0);
-  const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${targetUser.id}> totalt: ${totalPoints}`;
+  const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${targetUser.id}> totalt: ${points}`;
 
   logInfo("Sending score to write channel", {
     writeChannelId: writeChannel.id,
     userId: targetUser.id,
-    totalPoints,
+    totalPoints: points,
     interactionId: interaction.id,
   });
   if (!("send" in writeChannel)) {
@@ -266,6 +244,36 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
 function isCourseMessage(content: string): boolean {
   const isOnlyString = /^[a-zA-ZåäöÅÄÖ]+$/.test(content);
-  const lengthOk = content.length > 3 && content.length <= 20;
+  const lengthOk = content.length >= COURSE_NAME_MIN_LENGTH
+    && content.length <= COURSE_NAME_MAX_LENGTH;
   return isOnlyString && lengthOk;
+}
+
+function getUserScore(userId: string, messages: Message[], courseMessage: Message): {
+  points: number;
+  score: Record<string, number>;
+} {
+  const score: Record<string, number> = {};
+  for (const message of messages) {
+    if (message.author.id !== userId) continue;
+    if (message.createdTimestamp <= courseMessage.createdTimestamp) continue;
+    if (isCourseMessage(message.content)) continue;
+
+    const nonNumberRegex = /[^0-9\s]/;
+    if (nonNumberRegex.test(message.content)) continue;
+
+    const asNumber = Number(message.content.trim());
+    if (!isNaN(asNumber) && asNumber > SINGLE_HOLE_MAX_SCORE) continue;
+
+    const [course, point] = message.content.split(" ").map(s => s.trim());
+    if (!course || !point) continue;
+
+    const parsedPoint = parseInt(point, 10);
+    if (isNaN(parsedPoint)) continue;
+
+    score[course] = parsedPoint;
+  }
+
+  const points = Object.values(score).reduce((a, b) => a + b, 0);
+  return { points, score };
 }
