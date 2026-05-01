@@ -27,8 +27,9 @@
     "start": "next start",
     "lint": "tsc --noEmit -p ./tsconfig.json && eslint -c ./eslint.config.ts --cache --concurrency auto",
     "post-recent-plays": "tsx scripts/post-recent-plays.ts",
-    "quotes-test": "tsx --test scripts/discord/quote-utils.test.ts",
-    "seed-colors": "tsx scripts/seed-colors.ts"
+    "quotes-test": "tsx --test scripts/quotes/quote-utils.test.ts",
+    "seed-colors": "tsx scripts/seed-colors.ts",
+    "discgolf": "tsx scripts/discgolf/discgolf.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.3",
