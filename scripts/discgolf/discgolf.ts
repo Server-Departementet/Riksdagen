@@ -47,7 +47,12 @@ const discordClient = new DiscordClient({
 const commands = [
   new SlashCommandBuilder()
     .setName("räkna")
-    .setDescription("Räknar din poäng från senaste banan"),
+    .setDescription("Räknar poäng från senaste banan")
+    .addUserOption((option) =>
+      option
+        .setName("den_utsatte")
+        .setDescription("Personen vars poäng ska räknas, default är du själv"),
+    ),
 ].map((command) => command.toJSON());
 
 async function registerCommands() {
@@ -122,6 +127,15 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     return;
   }
 
+  const targetUser = interaction.options.getUser("den_utsatte") ?? sender;
+  logInfo("Target user resolved", {
+    senderId: sender.id,
+    senderUsername: sender.username,
+    targetUserId: targetUser.id,
+    targetUsername: targetUser.username,
+    interactionId: interaction.id,
+  });
+
   const readChannel = await discordClient.channels.fetch(DISCGOLF_READ_CHANNEL_ID);
   if (!readChannel?.isTextBased()) {
     logError("Read channel not found or is not text-based", undefined, { channelId: DISCGOLF_READ_CHANNEL_ID, interactionId: interaction.id });
@@ -135,7 +149,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  logInfo("Fetching messages", { userId: sender.id, readChannelId: readChannel.id, limit: 100, interactionId: interaction.id });
+  logInfo("Fetching messages", { userId: targetUser.id, readChannelId: readChannel.id, limit: 100, interactionId: interaction.id });
   const allMessages = (await readChannel.messages.fetch({ limit: 100 }));
   logInfo("Messages fetched", { count: allMessages.size, interactionId: interaction.id });
 
@@ -144,8 +158,8 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   ).first();
 
   if (!courseMessage) {
-    logWarn("No course message found", { userId: sender.id, interactionId: interaction.id });
-    await interaction.reply({ content: "No course message found from you in the last 100 messages.", ephemeral: true });
+    logWarn("No course message found", { userId: targetUser.id, interactionId: interaction.id });
+    await interaction.reply({ content: `Hittade ingen bana i dem senaste 100 meddelandena.`, ephemeral: true });
     return;
   }
 
@@ -157,13 +171,19 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   });
 
   const yourMessages = allMessages.filter(m =>
-    m.author.id === sender.id
+    m.author.id === targetUser.id
     && m.createdTimestamp > courseMessage.createdTimestamp,
   );
 
+  if (yourMessages.size === 0) {
+    logWarn("No messages found from target user after course message", { userId: targetUser.id, interactionId: interaction.id });
+    await interaction.reply({ content: `Inga meddelanden hittades för <@${targetUser.id}> efter ${courseMessage.content}.`, ephemeral: true });
+    return;
+  }
+
   logInfo("Filtered user messages after course", { count: yourMessages.size, interactionId: interaction.id });
 
-  const parsedCourseMessage = `Senaste banan tolkas som ${courseMessage.content} (${new Date(courseMessage.createdTimestamp).toISOString()}) (du har skickat ${yourMessages.size} meddelande sen dess)`;
+  const parsedCourseMessage = `Senaste banan tolkas som ${courseMessage.content} (${new Date(courseMessage.createdTimestamp).toISOString()}) (${targetUser.username} har skickat ${yourMessages.size} meddelande sen dess)`;
   logInfo("Parsed course message", { parsedCourseMessage, interactionId: interaction.id });
   await interaction.reply({ content: parsedCourseMessage, ephemeral: true });
 
@@ -223,11 +243,11 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
   const totalPoints = Object.values(score).reduce((a, b) => a + b, 0);
-  const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${sender.id}> totalt: ${totalPoints}`;
+  const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${targetUser.id}> totalt: ${totalPoints}`;
 
   logInfo("Sending score to write channel", {
     writeChannelId: writeChannel.id,
-    userId: sender.id,
+    userId: targetUser.id,
     totalPoints,
     interactionId: interaction.id,
   });
