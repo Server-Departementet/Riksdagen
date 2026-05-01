@@ -5,7 +5,7 @@ cd /root/Riksdagen
 export CI=true
 
 # Build
-npm i -g yarn
+corepack enable
 yarn install --frozen-lockfile
 yarn prisma generate
 CI=true yarn build
