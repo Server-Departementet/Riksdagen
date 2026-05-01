@@ -6,7 +6,7 @@ export CI=true
 
 # Build
 corepack enable
-yarn install --immutable --immutable-cache --check-cache
+yarn install --immutable --immutable-cache
 yarn prisma generate
 CI=true yarn build
 yarn cache clean
