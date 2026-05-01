@@ -1,7 +1,7 @@
 import * as Icon from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
+import CrownSVG from "@/../public/icons/crown.svg" with { type: "image/svg+xml" };
 
 export default function Custom404() {
   return (

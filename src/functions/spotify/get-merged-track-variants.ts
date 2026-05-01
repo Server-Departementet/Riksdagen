@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { TrackWithCompany } from "@/types";
+import { TrackWithCompany } from "@/types/types";
 import { TrackDataFilters } from "./get-track-data";
 
 const sortTracksByRelevance = (a: TrackWithCompany, b: TrackWithCompany) => {

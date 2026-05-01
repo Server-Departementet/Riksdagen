@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { SidebarLink } from "@/components/sidebar/sidebar";
-import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
+import CrownSVG from "@/../public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 
 export function ProtectedLink(

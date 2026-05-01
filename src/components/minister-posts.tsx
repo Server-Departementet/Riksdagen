@@ -1,8 +1,8 @@
 import Link from "next/link";
-import ministersDB from "@root/ministers.json" with { type: "json"};
+import ministersDB from "@/../ministers.json" with { type: "json"};
 import md from "@/lib/markdown";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Minister } from "@/types";
+import { Minister } from "@/types/types";
 import { InfoIcon } from "lucide-react";
 
 export async function MinistersList({ className = "" }: { className?: string }) {

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { TrackWithCompany } from "@/types";
+import { TrackWithCompany } from "@/types/types";
 
 export type TrackDataFilters = {
   userIds?: string[];

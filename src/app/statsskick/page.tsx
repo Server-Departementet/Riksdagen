@@ -1,4 +1,4 @@
-import ministersDB from "@root/ministers.json" with { type: "json"};
+import ministersDB from "@/../ministers.json" with { type: "json"};
 import Link from "next/link";
 import { Metadata } from "next";
 

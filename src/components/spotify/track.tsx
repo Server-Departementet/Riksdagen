@@ -1,7 +1,7 @@
 "use client";
 
-import CrownSVG from "@root/public/icons/crown.svg" with { type: "image/svg+xml" };
-import SpotifyIconSVG from "@root/public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
+import CrownSVG from "@/../public/icons/crown.svg" with { type: "image/svg+xml" };
+import SpotifyIconSVG from "@/../public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { getMergedTrackVariants } from "@/functions/spotify/get-merged-track-var
 import { getTrackListenerStats } from "@/functions/spotify/get-track-listener-stats";
 import type { TrackListenerStat } from "@/functions/spotify/get-track-listener-stats";
 import { Album, Artist, Track } from "@/prisma/generated";
-import { TrackWithCompany } from "@/types";
+import { TrackWithCompany } from "@/types/types";
 import { Layers3Icon } from "lucide-react";
 
 export function TrackList({
