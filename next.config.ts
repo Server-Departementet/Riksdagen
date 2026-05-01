@@ -1,5 +1,3 @@
-// @ts-check
-
 import type { NextConfig } from "next";
 import { env } from "node:process";
 

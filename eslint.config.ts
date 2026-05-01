@@ -118,5 +118,6 @@ export default defineConfig([
     "build/**/*",
     "ignore/**/*",
     "next-env.d.ts",
+    "src/components/ui/**/*",
   ]),
 ]);

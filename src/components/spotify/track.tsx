@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { ReactNode} from "react";
+import type { ReactNode } from "react";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { convertSecondsToTimeUnits, truncateNumber } from "@/functions/number-formatters";
 import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
@@ -332,7 +332,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={CrownSVG} alt="Låtbild"
+          src={typeof CrownSVG === "string" ? CrownSVG : ""} alt="Låtbild"
         />
       </>
       : <>
@@ -340,7 +340,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={album?.image ?? CrownSVG} alt="Låtbild"
+          src={album?.image ?? (typeof CrownSVG === "string" ? CrownSVG : "")} alt="Låtbild"
         />
 
         {/* Track Title */}
@@ -525,7 +525,7 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
         <Image
           width={21} height={21}
           className="size-5.25"
-          src={SpotifyIconSVG} alt="Spotify"
+          src={typeof SpotifyIconSVG === "string" ? SpotifyIconSVG : ""} alt="Spotify"
         />
 
         {/* Hides on smaller screens for space savings */}

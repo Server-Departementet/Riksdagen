@@ -27,7 +27,7 @@ export function ProtectedLink(
   return (
     <SidebarLink href={href} className={className}>
       {children}
-      <Image src={CrownSVG} alt="(skyddad)" />
+      <Image src={typeof CrownSVG === "string" ? CrownSVG : ""} alt="(skyddad)" />
     </SidebarLink>
   );
 }

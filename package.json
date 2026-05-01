@@ -23,7 +23,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "yarn next build",
+    "build": "yarn lint && yarn next build",
     "start": "next start",
     "lint": "tsc --noEmit -p ./tsconfig.json && eslint -c ./eslint.config.ts --cache --concurrency auto",
     "post-recent-plays": "tsx scripts/post-recent-plays.ts",

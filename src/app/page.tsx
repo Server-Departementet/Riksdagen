@@ -1,6 +1,6 @@
 import { StatsskickPage } from "./statsskick/page";
 
-export default async function Page() {
+export default function Page() {
   return (
     <main>
       <h1 className="mt-14">Välkommen till Riksdagen</h1>

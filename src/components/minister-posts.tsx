@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import type { Minister } from "@/types/types";
 import { InfoIcon } from "lucide-react";
 
-export async function MinistersList({ className = "" }: { className?: string }) {
+export function MinistersList({ className = "" }: { className?: string }) {
   return (
     <section className={`flex flex-col items-center mt-10 mb-5 w-full ${className}`} >
       {/* Title */}

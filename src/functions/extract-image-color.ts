@@ -7,7 +7,7 @@ if (!fs.existsSync(colorCachePath)) {
   fs.mkdirSync("./cache", { recursive: true });
   fs.writeFileSync(colorCachePath, JSON.stringify({}), "utf-8");
 }
-const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8"));
+const colorCache: Record<string, string> = JSON.parse(fs.readFileSync(colorCachePath, "utf-8")) as Record<string, string>;
 process.on("beforeExit", () => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"));
 setInterval(() => fs.writeFileSync(colorCachePath, JSON.stringify(colorCache), "utf-8"), 5 * 60 * 1000);
 
@@ -29,7 +29,7 @@ export async function extractImageColor(url: string): Promise<string | undefined
   if (colorCache[url]) return colorCache[url];
 
   // Calculate color
-  let color: string | undefined = undefined;
+  let color: string | undefined;
   try {
     const v = new Vibrant(url, { quality: 100, useWorker: true });
     color = (await v.getPalette())?.LightVibrant?.hex;
