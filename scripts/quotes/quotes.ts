@@ -8,7 +8,7 @@ import type { Quote, TrimmedMessage } from "./types";
 import { attachmentDir, getAttachmentPath } from "./types";
 import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils";
 import { nameVariants } from "../quiz/name-variants";
-import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter";
+import { makeMariaDBAdapter } from "@/lib/prisma";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 const DATABASE_URL = process.env.DATABASE_URL;
