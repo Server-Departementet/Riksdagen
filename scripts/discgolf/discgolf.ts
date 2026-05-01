@@ -1,6 +1,6 @@
 import "dotenv/config";
 import type { ChatInputCommandInteraction, Message } from "discord.js";
-import { Client as DiscordClient, Events, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { Client as DiscordClient, Events, GatewayIntentBits, MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const COURSE_NAME_MIN_LENGTH = 3;
 const COURSE_NAME_MAX_LENGTH = 20;
@@ -97,9 +97,9 @@ discordClient.on(Events.InteractionCreate, (interaction) => {
         interactionId: interaction.id,
       });
       if (interaction.replied || interaction.deferred) {
-        interaction.followUp({ content: "There was an error while executing this command!", ephemeral: true }).catch(console.error);
+        interaction.followUp({ content: "There was an error while executing this command!", flags: MessageFlags.Ephemeral }).catch(console.error);
       } else {
-        interaction.reply({ content: "There was an error while executing this command!", ephemeral: true }).catch(console.error);
+        interaction.reply({ content: "There was an error while executing this command!", flags: MessageFlags.Ephemeral }).catch(console.error);
       }
     });
 });
@@ -111,7 +111,7 @@ async function dispatchCommands(interaction: ChatInputCommandInteraction) {
       return;
     default:
       logWarn("Unknown command", { commandName: interaction.commandName });
-      await interaction.reply({ content: "Unknown command.", ephemeral: true });
+      await interaction.reply({ content: "Unknown command.", flags: MessageFlags.Ephemeral });
   }
 }
 
@@ -124,7 +124,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
   if (!sender) {
     logError("Could not determine sender", undefined, { interactionId: interaction.id });
-    await interaction.reply({ content: "Could not determine sender.", ephemeral: true });
+    await interaction.reply({ content: "Could not determine sender.", flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -140,13 +140,13 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   const readChannel = await discordClient.channels.fetch(DISCGOLF_READ_CHANNEL_ID);
   if (!readChannel?.isTextBased()) {
     logError("Read channel not found or is not text-based", undefined, { channelId: DISCGOLF_READ_CHANNEL_ID, interactionId: interaction.id });
-    await interaction.reply({ content: "Read channel not found or is not text-based.", ephemeral: true });
+    await interaction.reply({ content: "Read channel not found or is not text-based.", flags: MessageFlags.Ephemeral });
     return;
   }
   const writeChannel = await discordClient.channels.fetch(DISCGOLF_WRITE_CHANNEL_ID);
   if (!writeChannel?.isTextBased()) {
     logError("Write channel not found or is not text-based", undefined, { channelId: DISCGOLF_WRITE_CHANNEL_ID, interactionId: interaction.id });
-    await interaction.reply({ content: "Write channel not found or is not text-based.", ephemeral: true });
+    await interaction.reply({ content: "Write channel not found or is not text-based.", flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -160,7 +160,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
   if (!courseMessage) {
     logWarn("No course message found", { userId: targetUser.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Hittade ingen bana i dem senaste 100 meddelandena.`, ephemeral: true });
+    await interaction.reply({ content: `Hittade ingen bana i dem senaste 100 meddelandena.`, flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -186,19 +186,19 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     }
 
     if (lines.length === 0) {
-      await interaction.reply({ content: `Inga resultat hittades att skicka för kursen ${courseMessage.content}.`, ephemeral: true });
+      await interaction.reply({ content: `Inga resultat hittades att skicka för kursen ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
       return;
     }
 
     const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}`;
     if (!("send" in writeChannel)) {
       logError("Write channel not text-based during 'alla' run", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
-      await interaction.reply({ content: "Write channel is not text-based.", ephemeral: true });
+      await interaction.reply({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
       return;
     }
     const sent = await writeChannel.send(out);
     logInfo("Sent aggregated score message (alla)", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Alla-kör färdig. Skickade ett meddelande med ${lines.length} resultat.`, ephemeral: true });
+    await interaction.reply({ content: `Alla-kör färdig. Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -209,7 +209,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
   if (yourMessages.size === 0) {
     logWarn("No messages found from target user after course message", { userId: targetUser.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Inga meddelanden hittades för <@${targetUser.id}> efter ${courseMessage.content}.`, ephemeral: true });
+    await interaction.reply({ content: `Inga meddelanden hittades för <@${targetUser.id}> efter ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -217,7 +217,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 
   const parsedCourseMessage = `Senaste banan tolkas som ${courseMessage.content} (${new Date(courseMessage.createdTimestamp).toISOString()}) (${targetUser.username} har skickat ${yourMessages.size} meddelande sen dess)`;
   logInfo("Parsed course message", { parsedCourseMessage, interactionId: interaction.id });
-  await interaction.reply({ content: parsedCourseMessage, ephemeral: true });
+  await interaction.reply({ content: parsedCourseMessage, flags: MessageFlags.Ephemeral });
 
   const { points } = getUserScore(sender.id, yourMessages.toJSON(), courseMessage);
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
@@ -231,7 +231,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   });
   if (!("send" in writeChannel)) {
     logError("Write channel is not text-based", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
-    await interaction.followUp({ content: "Write channel is not text-based.", ephemeral: true });
+    await interaction.followUp({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
     return;
   }
   const sentMessage = await writeChannel.send(scoreMessage);
@@ -254,6 +254,7 @@ function getUserScore(userId: string, messages: Message[], courseMessage: Messag
   score: Record<string, number>;
 } {
   const score: Record<string, number> = {};
+  logInfo("Calculating score for user", { userId, courseMessageId: courseMessage.id, course: courseMessage.content });
   for (const message of messages) {
     if (message.author.id !== userId) continue;
     if (message.createdTimestamp <= courseMessage.createdTimestamp) continue;
@@ -266,14 +267,22 @@ function getUserScore(userId: string, messages: Message[], courseMessage: Messag
     if (!isNaN(asNumber) && asNumber > SINGLE_HOLE_MAX_SCORE) continue;
 
     const [course, point] = message.content.split(" ").map(s => s.trim());
-    if (!course || !point) continue;
+    if (!course || !point) {
+      logWarn("Skipping message (could not split into course and point)", { messageId: message.id, content: message.content });
+      continue;
+    }
 
     const parsedPoint = parseInt(point, 10);
-    if (isNaN(parsedPoint)) continue;
+    if (isNaN(parsedPoint)) {
+      logWarn("Skipping message (point not a number)", { messageId: message.id, pointStr: point });
+      continue;
+    }
 
     score[course] = parsedPoint;
+    logInfo("Parsed score line", { messageId: message.id, course, parsedPoint });
   }
 
   const points = Object.values(score).reduce((a, b) => a + b, 0);
+  logInfo("Finished calculating user score", { userId, totalPoints: points, entries: score });
   return { points, score };
 }
