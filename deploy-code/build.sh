@@ -6,7 +6,7 @@ export CI=true
 
 # Build
 corepack enable
-yarn install --frozen-lockfile
+yarn install --immutable
 yarn prisma generate
 CI=true yarn build
 yarn cache clean
