@@ -39,7 +39,7 @@ main()
 // Nice to catch
 // eslint-disable-next-line @typescript-eslint/require-await
 async function main() {
-  const statFolder = "scripts/discord/quote-stats";
+  const statFolder = "scripts/quotes/quote-stats";
   const senderStatsJSONPath = `${statFolder}/sender-stats.json`;
   const quoteeStatsJSONPath = `${statFolder}/quotee-stats.json`;
   const senderStatsMDPath = `${statFolder}/sender-stats.md`;
@@ -48,7 +48,7 @@ async function main() {
     fs.mkdirSync(statFolder);
   }
 
-  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[]);
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[]);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   const senderCounts: Record<string, number> = {};

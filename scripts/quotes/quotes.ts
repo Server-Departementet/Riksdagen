@@ -64,7 +64,7 @@ async function main() {
   const quotesWithContext: Quote[] = quotes.map(extractContext).filter(q => q !== null);
 
   // Save normalized quotes
-  fs.writeFileSync("scripts/discord/quotes.json", JSON.stringify(quotesWithContext, null, 2));
+  fs.writeFileSync("scripts/quotes/quotes.json", JSON.stringify(quotesWithContext, null, 2));
   console.info(`Saved ${quotesWithContext.length} normalized quotes to file.`);
 }
 
@@ -268,8 +268,8 @@ function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
 
   if (invalidStartQuotes.length > 0) {
     console.warn(`Quotes not starting with a quote character ${invalidStartQuotes.length}, [${invalidStartQuotes.map(q => q.id).join(", ")}]`);
-    fs.writeFileSync("scripts/discord/quotes_invalid_quote_char.json", JSON.stringify(invalidStartQuotes, null, 2));
-    console.info("Wrote non-quoted quotes to scripts/discord/non_quoted_quotes.json");
+    fs.writeFileSync("scripts/quotes/quotes_invalid_quote_char.json", JSON.stringify(invalidStartQuotes, null, 2));
+    console.info("Wrote non-quoted quotes to scripts/quotes/non_quoted_quotes.json");
   }
 }
 
@@ -290,8 +290,8 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
       }
       console.groupEnd();
     }
-    fs.writeFileSync("scripts/discord/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
-    console.info("Wrote duplicate quotes to scripts/discord/quotes_duplicates.json");
+    fs.writeFileSync("scripts/quotes/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
+    console.info("Wrote duplicate quotes to scripts/quotes/quotes_duplicates.json");
   }
 }
 
@@ -302,8 +302,8 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
 async function crawlQuotes(): Promise<TrimmedMessage[]> {
   // If cache exists, load from it
   const forceFetch = argv.includes("--fetch");
-  if (!forceFetch && fs.existsSync("scripts/discord/quotes_cache.json")) {
-    const data = fs.readFileSync("scripts/discord/quotes_cache.json", "utf-8");
+  if (!forceFetch && fs.existsSync("scripts/quotes/quotes_cache.json")) {
+    const data = fs.readFileSync("scripts/quotes/quotes_cache.json", "utf-8");
     const parsedQuotes = JSON.parse(data) as TrimmedMessage[];
     console.info(`Loaded ${parsedQuotes.length} quotes from cache file.`);
     return parsedQuotes;
@@ -360,7 +360,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
     ...q.attachments?.size ? { attachmentUrls: Array.from(q.attachments.values()).map(a => a.url) } : {},
   }));
 
-  fs.writeFileSync("scripts/discord/quotes_cache.json", JSON.stringify(trimmed, null, 2));
+  fs.writeFileSync("scripts/quotes/quotes_cache.json", JSON.stringify(trimmed, null, 2));
 
   return trimmed;
 }

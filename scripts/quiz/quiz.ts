@@ -76,11 +76,11 @@ async function main() {
     throw new Error("Quiz channel is not a text-based channel");
   }
 
-  const usedQuotesPath = "scripts/discord/quotes_used.json";
+  const usedQuotesPath = "scripts/quotes/quotes_used.json";
   if (!fs.existsSync(usedQuotesPath)) fs.writeFileSync(usedQuotesPath, "[]", "utf-8");
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
-  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId);
   const allQuotes = [...availableQuotes];
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
@@ -130,7 +130,7 @@ async function main() {
     const correctVoters = await correctAnswer.voters.fetch();
     const winningUsers = correctVoters ? Array.from(correctVoters.values()) : [];
 
-    let resultContent = fs.readFileSync("scripts/discord/templates/quiz-result.md", "utf-8");
+    let resultContent = fs.readFileSync("scripts/quiz/templates/quiz-result.md", "utf-8");
     const quizResultData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
@@ -269,7 +269,7 @@ async function main() {
       quizResultMessages.forEach(msg => addScoresFromContent(msg.content));
       addScoresFromContent(resultContent);
 
-      let scoreboardContent = fs.readFileSync("scripts/discord/templates/quiz-scoreboard.md", "utf-8");
+      let scoreboardContent = fs.readFileSync("scripts/quiz/templates/quiz-scoreboard.md", "utf-8");
       const scoreboardData = {
         "latestFinishedQuizNumber": quizNumber - 1,
         "scoreboard": Object.values(users)
@@ -383,7 +383,7 @@ async function main() {
     "quoteId": quote.id,
   };
 
-  let quizContent = fs.readFileSync("scripts/discord/templates/quiz-question.md", "utf-8");
+  let quizContent = fs.readFileSync("scripts/quiz/templates/quiz-question.md", "utf-8");
   for (const [key, value] of Object.entries(quizData)) {
     const regex = new RegExp(`{{${key}}}`, "g");
     quizContent = quizContent.replace(regex, value.toString());

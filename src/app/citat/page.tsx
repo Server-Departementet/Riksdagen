@@ -10,7 +10,7 @@ function isMultiSpeakerQuote(content: string): boolean {
 }
 
 export default function QuoteStatsPage() {
-  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[];
+  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[];
 
   return <main>
     <h1 className="mt-4">Citatstatistik</h1>

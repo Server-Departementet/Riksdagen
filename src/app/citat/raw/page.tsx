@@ -10,7 +10,7 @@ function isMultiSpeakerQuote(content: string): boolean {
 }
 
 export default function RawQuotePage() {
-  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[];
+  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[];
 
   return <main>
     <h2 className="mt-2 mb-1">Råa citat</h2>
