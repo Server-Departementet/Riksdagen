@@ -68,6 +68,10 @@ scripts/discord/quotes*.json
 scripts/discord/name-variants.ts
 scripts/discord/quote-attachments/
 scripts/discord/quote-stats/
+scripts/quotes/quotes*.json
+scripts/quiz/name-variants.ts
+scripts/quotes/quote-attachments/
+scripts/quotes/quote-stats/
 public/quote-attachments/
 scripts/*.sql
 

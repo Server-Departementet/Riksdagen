@@ -3,10 +3,10 @@ import type { Channel, Message } from "discord.js";
 import { Client as DiscordClient, GatewayIntentBits, MessageType, PollLayoutType } from "discord.js";
 import { PrismaClient } from "@/lib/prisma/generated";
 import fs from "node:fs";
-import type { Quote } from "./types";
+import type { Quote } from "../quotes/types";
 import { ggSansWidths } from "./gg-sans-widths";
 import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter";
-import { isMultiSpeakerQuote } from "./quote-utils";
+import { isMultiSpeakerQuote } from "../quotes/quote-utils";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 const DATABASE_URL = process.env.DATABASE_URL;
