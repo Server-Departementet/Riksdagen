@@ -1,10 +1,10 @@
 import "dotenv/config";
 import { env } from "node:process";
-import { Client as DiscordClient, GatewayIntentBits, } from "discord.js";
-import { PrismaClient } from "../../src/prisma/generated/index.js";
+import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
+import { makeMariaDBAdapter } from "@/lib/prisma";
+import { PrismaClient } from "@/lib/prisma/generated";
 import fs from "node:fs";
-import { Quote } from "./types.ts";
-import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter.ts";
+import type { Quote } from "./types";
 
 const {
   DATABASE_URL,
@@ -27,8 +27,8 @@ main()
     console.info("Script finished successfully");
     process.exitCode = 0;
   })
-  .catch((error) => {
-    console.error("Script failed with error:", error);
+  .catch((err: unknown) => {
+    console.error("Script failed with error:", err);
     process.exitCode = 1;
   })
   .finally(async () => {
@@ -48,7 +48,7 @@ async function main() {
     fs.mkdirSync(statFolder);
   }
 
-  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[]);
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   const senderCounts: Record<string, number> = {};
@@ -71,10 +71,10 @@ async function main() {
   }
 
   const sortedSenderCounts = Object.fromEntries(
-    Object.entries(senderCounts).sort(([, countA], [, countB]) => countB - countA)
+    Object.entries(senderCounts).sort(([, countA], [, countB]) => countB - countA),
   );
   const sortedQuoteeCounts = Object.fromEntries(
-    Object.entries(quoteeCounts).sort(([, countA], [, countB]) => countB - countA)
+    Object.entries(quoteeCounts).sort(([, countA], [, countB]) => countB - countA),
   );
 
   fs.writeFileSync(senderStatsJSONPath, JSON.stringify(sortedSenderCounts, null, 2), "utf-8");

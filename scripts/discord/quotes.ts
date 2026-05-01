@@ -1,24 +1,23 @@
 import "dotenv/config";
-import { argv, env } from "node:process";
+import { argv } from "node:process";
 import fs from "node:fs";
-import { PrismaClient } from "../../src/prisma/generated/client.js";
-import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js";
-import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
-import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
-import { nameVariants } from "./name-variants.ts";
-import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter.ts";
+import { PrismaClient } from "@/lib/prisma/generated";
+import type { Message } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
+import type { Quote, TrimmedMessage } from "./types";
+import { attachmentDir, getAttachmentPath } from "./types";
+import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils";
+import { nameVariants } from "./name-variants";
+import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter";
 
-const {
-  DATABASE_URL,
-  DISCORD_BOT_TOKEN,
-  REGERINGEN_GUILD_ID,
-  QUOTE_CHANNEL_ID,
-} = env;
-
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
-if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
-if (!QUOTE_CHANNEL_ID) throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!process.env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+if (!process.env.REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+const REGERINGEN_GUILD_ID = process.env.REGERINGEN_GUILD_ID;
+if (!process.env.QUOTE_CHANNEL_ID) throw new Error("QUOTE_CHANNEL_ID is not set in environment variables");
+const QUOTE_CHANNEL_ID = process.env.QUOTE_CHANNEL_ID;
 
 const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
@@ -34,8 +33,8 @@ main()
     console.info("Script completed successfully.");
     process.exitCode = 0;
   })
-  .catch((error) => {
-    console.error("An error occurred during script execution:", error);
+  .catch((err: unknown) => {
+    console.error("An error occurred during script execution:", err);
     process.exitCode = 1;
   })
   .finally(async () => {
@@ -58,8 +57,8 @@ async function main() {
   duplicateAnalysis(quotes);
 
   downloadAttachments(quotes)
-    .catch((error) => {
-      console.error("An error occurred while downloading attachments:", error);
+    .catch((err: unknown) => {
+      console.error("An error occurred while downloading attachments:", err);
     });
 
   const quotesWithContext: Quote[] = quotes.map(extractContext).filter(q => q !== null);
@@ -87,6 +86,8 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     const lines = cleanedContent.split("\n").map(l => l.trim());
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      if (!line) continue; // Skip empty lines
+
       if (!line.startsWith("\"") || !line.includes("-")) {
         throw new Error("Failed to parse multi-speaker quote line, missing quote or attribution: " + line + " (full content: " + cleanedContent + ")");
       }
@@ -98,10 +99,10 @@ function extractContext(quote: TrimmedMessage): Quote | null {
           throw new Error("Failed to split multi-speaker quote line into body and meta: " + line + " (full content: " + cleanedContent + ")");
         }
         const [lineBody, lineMeta] = brokenQuote;
-        if (!lineBody.startsWith("\"") || !lineBody.endsWith("\"")) {
+        if (!lineBody || !lineBody.startsWith("\"") || !lineBody.endsWith("\"")) {
           throw new Error("Failed to parse multi-speaker quote body, missing quote: " + lineBody + " (full content: " + cleanedContent + ")");
         }
-        meta = lineMeta;
+        meta = lineMeta ?? null;
       }
       body = (body ? body + `\n${line}` : line);
     }
@@ -113,9 +114,9 @@ function extractContext(quote: TrimmedMessage): Quote | null {
       console.warn("Could not parse quote content, skipping quote ID " + quote.id + ": " + cleanedContent);
       throw new Error("Failed to split quote into body and meta: " + cleanedContent);
     }
-    [body, meta] = brokenQuote;
+    [body, meta] = [brokenQuote[0] ?? null, brokenQuote[1] ?? null];
 
-    if (!body.startsWith("\"") || !body.endsWith("\"")) {
+    if (!body || !body.startsWith("\"") || !body.endsWith("\"")) {
       throw new Error("Failed to parse quote body, missing quote: " + body + " (full content: " + cleanedContent + ")");
     }
   }
@@ -163,11 +164,15 @@ function extractContext(quote: TrimmedMessage): Quote | null {
 
   // Define quotee and context via divider
   if (!context && dividableBy) {
-    [quotee, context] = meta.split(dividableBy).map((s, i) => i === 0
+    const [q, c] = meta.split(dividableBy).map((s, i) => i === 0
       ? s.trim()
       // Kind ugly way to exempt , from being re-added to the context
-      : (dividableBy === ", " ? s : dividableBy + s).trim()
+      : (dividableBy === ", " ? s : dividableBy + s).trim(),
     );
+    if (!q) {
+      throw new Error("Failed to parse quotee from meta: " + meta + " (full content: " + cleanedContent + ")");
+    }
+    [quotee, context] = [q, c];
   }
 
   // The trans clause
@@ -206,8 +211,9 @@ function extractContext(quote: TrimmedMessage): Quote | null {
   };
 
   // Apply aliases to quotee, body, and context
-  if (aliases[quotee]) {
-    quotee = aliases[quotee];
+  const alias = aliases[quotee];
+  if (alias) {
+    quotee = alias;
   }
   if (Object.keys(aliases).some(alias => quotee.includes(alias))) {
     for (const [alias, realName] of Object.entries(aliases)) {
@@ -221,18 +227,18 @@ function extractContext(quote: TrimmedMessage): Quote | null {
       context = context.replace(regex, realName);
     }
   }
-  body = body.replace(new RegExp(`\\b(${Object.keys(aliases).join("|")})\\b`, "g"), (match) => aliases[match]);
+  body = body.replace(new RegExp(`\\b(${Object.keys(aliases).join("|")})\\b`, "g"), (match) => aliases[match] as string);
 
   // For our purposes we want to link quotees to user IDs where possible for easier use later
   const quoteeId = Object.entries(nameVariants).find(([, variants]) =>
-    variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase())
+    variants.map(v => v.toLowerCase()).includes(quotee.toLowerCase()),
   )?.[0];
 
   return {
     id: quote.id,
     authorId: resolvedAuthorId,
     createdTimestamp: customMeta?.createdTimestamp ?? quote.createdTimestamp,
-    link: `https://discord.com/channels/${env.REGERINGEN_GUILD_ID}/${env.QUOTE_CHANNEL_ID}/${quote.id}`,
+    link: `https://discord.com/channels/${REGERINGEN_GUILD_ID}/${QUOTE_CHANNEL_ID}/${quote.id}`,
     ...(customMeta?.link ? { originalLink: customMeta.link } : {}),
     sender: sender.name,
     body,
@@ -240,7 +246,7 @@ function extractContext(quote: TrimmedMessage): Quote | null {
     ...(quoteeId ? { quoteeId } : {}),
     ...(context ? { context: context.trim() } : {}),
     ...(quote.attachmentUrls ? {
-      attachments: quote.attachmentUrls.map(a => getAttachmentPath(quote, a))
+      attachments: quote.attachmentUrls.map(a => getAttachmentPath(quote, a)),
     } : {}),
   };
 }
@@ -257,7 +263,7 @@ function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
 
   const validQuoteChars = ["\"", "”", "“"];
   const invalidStartQuotes = quotes.filter(q =>
-    !validQuoteChars.includes(stripCustomQuoteMeta(q.content).charAt(0))
+    !validQuoteChars.includes(stripCustomQuoteMeta(q.content).charAt(0)),
   );
 
   if (invalidStartQuotes.length > 0) {
@@ -303,14 +309,14 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
     return parsedQuotes;
   }
 
-  await discordClient.login(env.DISCORD_BOT_TOKEN);
-  const guild = await discordClient.guilds.fetch(env.REGERINGEN_GUILD_ID!);
+  await discordClient.login(DISCORD_BOT_TOKEN);
+  const guild = await discordClient.guilds.fetch(REGERINGEN_GUILD_ID);
   if (!guild) {
-    throw new Error("Could not find guild with ID " + env.REGERINGEN_GUILD_ID);
+    throw new Error("Could not find guild with ID " + REGERINGEN_GUILD_ID);
   }
-  const quoteChannel = await guild.channels.fetch(env.QUOTE_CHANNEL_ID!);
+  const quoteChannel = await guild.channels.fetch(QUOTE_CHANNEL_ID);
   if (!quoteChannel?.isTextBased()) {
-    throw new Error("Could not find text channel with ID " + env.QUOTE_CHANNEL_ID);
+    throw new Error("Could not find text channel with ID " + QUOTE_CHANNEL_ID);
   }
 
   const quotes: Message[] = [];
@@ -326,7 +332,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
       before: lastId,
     })).values());
     if (messages.length === 0) break;
-    lastId = messages.at(-1)!.id;
+    lastId = messages.at(-1)?.id;
     quotes.push(...messages);
     console.info(`Fetched ${quotes.length} messages so far...`);
   }
@@ -341,7 +347,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
       "1317076088484007979", // Trans guard :3
       "1199024275714220072", // Trans guard :3
     ].includes(q.id)
-    && !q.system // Pins and such
+    && !q.system, // Pins and such
   );
 
   console.info(`Fetched a total of ${filteredQuotes.length} messages.`);
@@ -351,7 +357,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
     authorId: q.author.id,
     content: q.content,
     createdTimestamp: q.createdTimestamp,
-    ...q.attachments?.size ? { attachmentUrls: Array.from(q.attachments.values()).map(a => a.url), } : {},
+    ...q.attachments?.size ? { attachmentUrls: Array.from(q.attachments.values()).map(a => a.url) } : {},
   }));
 
   fs.writeFileSync("scripts/discord/quotes_cache.json", JSON.stringify(trimmed, null, 2));

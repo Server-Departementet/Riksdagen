@@ -4,7 +4,7 @@ import {
   getTimestampFromDiscordLink,
   splitCustomQuoteMeta,
   stripCustomQuoteMeta,
-} from "./quote-utils.ts";
+} from "./quote-utils";
 
 await test("splitCustomQuoteMeta parses leading metadata", () => {
   const content = `[[{"authorId":"123","link":"https://discord.com/channels/1/2/175928847299117063"}]]\n"Hi" - Vena`;

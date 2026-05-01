@@ -12,7 +12,7 @@ import { getTrackDataBatch } from "@/functions/spotify/get-track-data";
 import { getMergedTrackVariants } from "@/functions/spotify/get-merged-track-variants";
 import { getTrackListenerStats } from "@/functions/spotify/get-track-listener-stats";
 import type { TrackListenerStat } from "@/functions/spotify/get-track-listener-stats";
-import { Album, Artist, Track } from "@/prisma/generated";
+import { Album, Artist, Track } from "@/lib/prisma/generated";
 import { TrackWithCompany } from "@/types/types";
 import { Layers3Icon } from "lucide-react";
 

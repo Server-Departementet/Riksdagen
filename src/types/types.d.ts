@@ -1,4 +1,4 @@
-import type { Track } from "@/prisma/generated";
+import type { Track } from "@/lib/prisma/generated";
 
 export type Minister = {
   holder: string;

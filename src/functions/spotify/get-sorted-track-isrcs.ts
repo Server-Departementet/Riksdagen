@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma/prisma";
 import { buildTrackSearchWhere } from "@/lib/track-search";
-import { SpotifySortDirection, SpotifySortValue } from "@/lib/spotify-sort";
+import type { SpotifySortDirection, SpotifySortValue } from "@/lib/spotify-sort";
 
 export type GetSortedTrackISRCsOptions = {
   userIds: string[];
@@ -84,7 +84,8 @@ export async function getSortedTrackISRCs({
       });
     }
 
-    const record = aggregates.get(isrc)!;
+    const record = aggregates.get(isrc);
+    if (!record) continue;
     record.totalCount += playCount;
     record.totalListenTimeMs += playCount * track.duration;
     record.variants.push({ track, playCount });
@@ -108,7 +109,10 @@ export async function getSortedTrackISRCs({
         return a.track.id.localeCompare(b.track.id);
       })[0];
 
-    const canonicalTrack = canonicalVariant.track;
+    const canonicalTrack = canonicalVariant?.track;
+    if (!canonicalTrack) {
+      throw new Error(`No canonical track found for ISRC ${isrc}`);
+    }
 
     return {
       isrc,
@@ -122,7 +126,7 @@ export async function getSortedTrackISRCs({
   });
 
   sortable.sort((a, b) => {
-    let comparison = 0;
+    let comparison;
     switch (sortOption) {
       case "listen-count":
         comparison = a.listenCount - b.listenCount;
