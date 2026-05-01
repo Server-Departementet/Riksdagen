@@ -176,7 +176,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     }
 
     if (lines.length === 0) {
-      await interaction.reply({ content: `Inga resultat hittades att skicka för kursen ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: `Inga resultat hittades att skicka för banan ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -188,7 +188,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     }
     const sent = await writeChannel.send(out);
     logInfo("Sent aggregated score message (alla)", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Alla-kör färdig. Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: `Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
     return;
   }
 
