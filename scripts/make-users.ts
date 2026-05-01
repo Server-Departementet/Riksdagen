@@ -3,7 +3,7 @@ import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient, User } from "../src/prisma/generated/client.js";
 import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
-import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.js";
+import { makeMariaDBAdapter } from "../src/lib/prisma/mariadb-adapter.js";
 
 const {
   DATABASE_URL,

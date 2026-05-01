@@ -1,7 +1,7 @@
 import { isMinister } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
 import { TrackList } from "@/components/spotify/track";
 import { Track } from "@/prisma/generated";

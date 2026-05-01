@@ -2,7 +2,7 @@ import "dotenv/config";
 import { env } from "node:process";
 import { PrismaClient } from "../src/prisma/generated/client.js";
 import { extractImageColor } from "../src/functions/extract-image-color.ts";
-import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../src/lib/prisma/mariadb-adapter.ts";
 
 const {
   DATABASE_URL,

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma";
 import { buildTrackSearchWhere } from "@/lib/track-search";
 import { SpotifySortDirection, SpotifySortValue } from "@/lib/spotify-sort";
 

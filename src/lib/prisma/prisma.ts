@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { PrismaClient } from "@/prisma/generated";
-import { makeMariaDBAdapter } from "./mariadb-adapter";
+import { PrismaClient } from "@/lib/prisma/generated";
+import { makeMariaDBAdapter } from "@/lib/prisma";
 import { env } from "node:process";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -12,6 +12,9 @@ export const prisma = globalForPrisma.prisma || new PrismaClient(makeMariaDBAdap
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-process.on("beforeExit", async () => {
-  await prisma.$disconnect();
+process.on("beforeExit", () => {
+  prisma.$disconnect()
+    .catch((err: unknown) => {
+      console.error("Error disconnecting Prisma Client:", err);
+    });
 });

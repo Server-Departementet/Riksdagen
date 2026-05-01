@@ -4,7 +4,7 @@ import { Client as DiscordClient, GatewayIntentBits, } from "discord.js";
 import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
-import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter.ts";
 
 const {
   DATABASE_URL,

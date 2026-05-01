@@ -5,7 +5,7 @@ import { PrismaClient } from "../../src/prisma/generated/index.js";
 import fs from "node:fs";
 import { Quote } from "./types.ts";
 import { ggSansWidths } from "./gg-sans-widths.ts";
-import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter.ts";
 import { isMultiSpeakerQuote } from "./quote-utils.ts";
 
 const {

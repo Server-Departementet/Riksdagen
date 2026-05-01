@@ -3,7 +3,7 @@ import { extractImageColor } from "../src/functions/extract-image-color.ts";
 import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
 import { createClerkClient } from "@clerk/backend";
 import { env } from "node:process";
-import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../src/lib/prisma/mariadb-adapter.ts";
 
 const {
   CLERK_SECRET_KEY,

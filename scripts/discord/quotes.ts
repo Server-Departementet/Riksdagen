@@ -6,7 +6,7 @@ import { Client as DiscordClient, GatewayIntentBits, Message } from "discord.js"
 import { attachmentDir, getAttachmentPath, Quote, TrimmedMessage } from "./types.ts";
 import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils.ts";
 import { nameVariants } from "./name-variants.ts";
-import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter.ts";
 
 const {
   DATABASE_URL,
