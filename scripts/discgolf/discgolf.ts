@@ -52,8 +52,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("räkna")
     .setDescription("Räknar poäng från senaste banan")
-    .addUserOption((option) => option.setName("den_utsatte").setDescription("Personen vars poäng ska räknas, default är du själv"))
-    .addBooleanOption((option) => option.setName("alla").setDescription("Räkna för alla medlemmar (skickar endast meddelanden för de som har poäng).")),
+    .addUserOption((option) => option.setName("den_utsatte").setDescription("Personen vars poäng ska räknas. Lämna tom för att räkna alla.")),
 ].map((command) => command.toJSON());
 
 async function registerCommands() {
@@ -128,15 +127,6 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const targetUser = interaction.options.getUser("den_utsatte") ?? sender;
-  logInfo("Target user resolved", {
-    senderId: sender.id,
-    senderUsername: sender.username,
-    targetUserId: targetUser.id,
-    targetUsername: targetUser.username,
-    interactionId: interaction.id,
-  });
-
   const readChannel = await discordClient.channels.fetch(DISCGOLF_READ_CHANNEL_ID);
   if (!readChannel?.isTextBased()) {
     logError("Read channel not found or is not text-based", undefined, { channelId: DISCGOLF_READ_CHANNEL_ID, interactionId: interaction.id });
@@ -150,7 +140,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  logInfo("Fetching messages", { userId: targetUser.id, readChannelId: readChannel.id, limit: 100, interactionId: interaction.id });
+  logInfo("Fetching messages", { userId: sender.id, readChannelId: readChannel.id, limit: 100, interactionId: interaction.id });
   const allMessages = (await readChannel.messages.fetch({ limit: 100 })).filter(m => !m.author.bot);
   logInfo("Messages fetched", { count: allMessages.size, interactionId: interaction.id });
 
@@ -159,7 +149,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   ).first();
 
   if (!courseMessage) {
-    logWarn("No course message found", { userId: targetUser.id, interactionId: interaction.id });
+    logWarn("No course message found", { userId: sender.id, interactionId: interaction.id });
     await interaction.reply({ content: `Hittade ingen bana i dem senaste 100 meddelandena.`, flags: MessageFlags.Ephemeral });
     return;
   }
@@ -171,7 +161,7 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     interactionId: interaction.id,
   });
 
-  const doAllMembers = interaction.options.getBoolean("alla") ?? false;
+  const doAllMembers = interaction.options.getUser("den_utsatte") === null;
   if (doAllMembers) {
     logInfo("Running 'alla' flow (aggregated)", { interactionId: interaction.id });
     const guild = interaction.guild ?? await discordClient.guilds.fetch(DISCGOLF_GUILD_ID);
@@ -201,6 +191,15 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     await interaction.reply({ content: `Alla-kör färdig. Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
     return;
   }
+
+  const targetUser = interaction.options.getUser("den_utsatte") ?? sender;
+  logInfo("Target user resolved", {
+    senderId: sender.id,
+    senderUsername: sender.username,
+    targetUserId: targetUser.id,
+    targetUsername: targetUser.username,
+    interactionId: interaction.id,
+  });
 
   const yourMessages = allMessages.filter(m =>
     m.author.id === targetUser.id
