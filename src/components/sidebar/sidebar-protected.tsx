@@ -2,7 +2,6 @@
 
 import { useUser } from "@clerk/nextjs";
 import { SidebarLink } from "@/components/sidebar/sidebar";
-import CrownSVG from "@/../public/icons/crown.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 
 export function ProtectedLink(
@@ -27,7 +26,7 @@ export function ProtectedLink(
   return (
     <SidebarLink href={href} className={className}>
       {children}
-      <Image src={typeof CrownSVG === "string" ? CrownSVG : ""} alt="(skyddad)" />
+      <Image src={"icons/crown.svg"} alt="(skyddad)" width={24} height={24} />
     </SidebarLink>
   );
 }

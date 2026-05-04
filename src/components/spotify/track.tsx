@@ -1,7 +1,5 @@
 "use client";
 
-import CrownSVG from "@/../public/icons/crown.svg" with { type: "image/svg+xml" };
-import SpotifyIconSVG from "@/../public/icons/spotify/Primary_Logo_Green_RGB.svg" with { type: "image/svg+xml" };
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -332,7 +330,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={typeof CrownSVG === "string" ? CrownSVG : ""} alt="Låtbild"
+          src={"icons/crown.svg"} alt="Låtbild"
         />
       </>
       : <>
@@ -340,7 +338,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={album?.image ?? (typeof CrownSVG === "string" ? CrownSVG : "")} alt="Låtbild"
+          src={album?.image ?? "icons/crown.svg"} alt="Låtbild"
         />
 
         {/* Track Title */}
@@ -525,7 +523,7 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
         <Image
           width={21} height={21}
           className="size-5.25"
-          src={typeof SpotifyIconSVG === "string" ? SpotifyIconSVG : ""} alt="Spotify"
+          src={"icons/spotify/Primary_Logo_Green_RGB.svg"} alt="Spotify"
         />
 
         {/* Hides on smaller screens for space savings */}
