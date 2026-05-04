@@ -67,3 +67,5 @@ scripts/discord/quote-attachments/
 scripts/discord/quote-stats/
 public/quote-attachments/
 scripts/*.sql
+
+prisma/generated/
