@@ -1,5 +1,3 @@
-// @ts-check
-
 import "dotenv/config";
 import type { PrismaConfig } from "prisma/config";
 import { env } from "prisma/config";

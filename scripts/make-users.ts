@@ -1,20 +1,17 @@
-import { idGroups } from "./complete-usermap.ts";
+import { idGroups } from "./complete-usermap";
 import "dotenv/config";
-import { env } from "node:process";
-import { PrismaClient, User } from "../src/prisma/generated/client.js";
+import type { User } from "@/lib/prisma/generated";
+import { PrismaClient } from "@/lib/prisma/generated";
 import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
-import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.js";
-
-const {
-  DATABASE_URL,
-  DISCORD_BOT_TOKEN,
-  REGERINGEN_GUILD_ID,
-} = env;
+import { makeMariaDBAdapter } from "@/lib/prisma";
 
 if (!idGroups || typeof idGroups !== "object") throw new Error("Missing scripts/complete-usermap.ts or invalid idGroups data.");
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
-if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!process.env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+if (!process.env.REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+const REGERINGEN_GUILD_ID = process.env.REGERINGEN_GUILD_ID;
 
 
 makeUsers()
@@ -22,15 +19,15 @@ makeUsers()
     console.log("Finished making users.");
     process.exitCode = 0;
   })
-  .catch((error) => {
-    console.error("Error making users:", error);
+  .catch((err: unknown) => {
+    console.error("Error making users:", err);
     process.exitCode = 1;
   })
   .then(() => process.exit())
   .catch(() => process.exit());
 
 async function makeUsers() {
-  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL!));
+  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 
   /* 
    * Get users nicknames on Discord via bot
@@ -38,14 +35,14 @@ async function makeUsers() {
   const serverNicks: Record<string, string> = {};
 
   const discordClient = new DiscordClient({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
-  await discordClient.login(env.DISCORD_BOT_TOKEN);
+  await discordClient.login(DISCORD_BOT_TOKEN);
   async function onDiscordReady(client: DiscordClient) {
     if (!client.user) {
       throw new Error("Discord client user is not defined after ready");
     }
     console.info(`Logged in as ${client.user.tag}`);
 
-    const guild = await client.guilds.fetch(env.REGERINGEN_GUILD_ID!);
+    const guild = await client.guilds.fetch(REGERINGEN_GUILD_ID);
     const members = await guild.members.fetch();
     const ministers = members.filter(m => m.roles.cache.has("1167471191133528175")); // Minister role id
     console.info(`Fetched ${members.size} members, of which ${ministers.size} are ministers.`);
@@ -55,14 +52,14 @@ async function makeUsers() {
     }
 
     await client.destroy()
-      .catch((error) => {
-        console.error("Error destroying Discord client:", error);
+      .catch((err: unknown) => {
+        console.error("Error destroying Discord client:", err);
       });
   }
   await new Promise<void>((resolve, reject) => {
     discordClient.once("clientReady", () => {
-      onDiscordReady(discordClient).then(resolve).catch((e) => {
-        const error = e instanceof Error ? e : new Error(String(e));
+      onDiscordReady(discordClient).then(resolve).catch((err: unknown) => {
+        const error = err instanceof Error ? err : new Error(String(err));
         console.error("Error in onDiscordReady:", error);
         reject(error);
       });
@@ -96,7 +93,11 @@ async function makeUsers() {
   const userMigrationMap: Record<string, User> = {};
   for (const oldUser of oldUsers) {
     const matchingNewUser = allUsers.find(u => u.clerkDevId === oldUser.id || u.clerkProdId === oldUser.id);
-    userMigrationMap[oldUser.id] = matchingNewUser!;
+    if (!matchingNewUser) {
+      console.warn(`Could not find matching new user for old user with ID ${oldUser.id}`);
+      continue;
+    }
+    userMigrationMap[oldUser.id] = matchingNewUser;
   }
   for (const [oldUserId, newUser] of Object.entries(userMigrationMap)) {
     await prisma.trackPlay.updateMany({

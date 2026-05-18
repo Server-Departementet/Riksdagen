@@ -1,38 +1,37 @@
 import "dotenv/config";
-import { extractImageColor } from "../src/functions/extract-image-color.ts";
-import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
+import { extractImageColor } from "@/functions/extract-image-color";
+import type { Prisma } from "@/lib/prisma/generated";
+import { PrismaClient } from "@/lib/prisma/generated";
 import { createClerkClient } from "@clerk/backend";
-import { env } from "node:process";
-import { makeMariaDBAdapter } from "../src/lib/mariadb-adapter.ts";
+import { makeMariaDBAdapter } from "../src/lib/prisma/mariadb-adapter";
+import type SpotifyApi from "spotify-web-api-node";
+import type { UsersRecentlyPlayedTracksResponse } from "./types";
 
-const {
-  CLERK_SECRET_KEY,
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-  DATABASE_URL,
-} = env;
-
-if (!CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY is not set in environment variables");
-if (!NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+if (!process.env.CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY is not set in environment variables");
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
+if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
+const NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+const DATABASE_URL = process.env.DATABASE_URL;
 
 addRecentTrackPlays()
   .then(() => {
     console.log("Finished adding recent track plays.");
     process.exit(0);
   })
-  .catch((error) => {
-    console.error("Error adding recent track plays:", error);
+  .catch((err: unknown) => {
+    console.error("Error adding recent track plays:", err);
     process.exit(1);
   });
 
 async function addRecentTrackPlays() {
   console.info("Starting recent track plays import.");
   const clerkClient = createClerkClient({
-    publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
-    secretKey: CLERK_SECRET_KEY!,
+    publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    secretKey: CLERK_SECRET_KEY,
   });
 
-  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL!));
+  const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 
   try {
     console.info("Fetching Clerk users.");
@@ -53,7 +52,11 @@ async function addRecentTrackPlays() {
       if (tokenResponse.data.length > 1) {
         console.warn(`Multiple Spotify tokens found for user: ${clerkUser.firstName}. Only using the first one.`);
       }
-      const spotifyToken = tokenResponse.data[0].token;
+      const spotifyToken = tokenResponse.data?.[0]?.token;
+      if (!spotifyToken) {
+        console.warn(`Spotify token is empty for user: ${clerkUser.firstName}. Skipping.`);
+        continue;
+      }
       console.info(`Spotify token resolved for ${clerkUser.firstName ?? "[Unknown user]"}.`);
 
       /* 
@@ -62,10 +65,10 @@ async function addRecentTrackPlays() {
       const dbUser = await prisma.user.findFirst({
         where: {
           OR: [
-            { clerkDevId: clerkUser.id, },
-            { clerkProdId: clerkUser.id, },
+            { clerkDevId: clerkUser.id },
+            { clerkProdId: clerkUser.id },
             // It should only be one of the above but in migration clerk ids may have been dumped as User.id  TODO remove
-            { id: clerkUser.id, },
+            { id: clerkUser.id },
           ],
         },
       });
@@ -87,9 +90,9 @@ async function addRecentTrackPlays() {
       /* 
        * Prepare data for upserting to database
        */
-      const existingArtistIds = await prisma.artist.findMany({ select: { id: true }, });
+      const existingArtistIds = await prisma.artist.findMany({ select: { id: true } });
       const missingArtistsSimple = recentlyPlayedTracks.items
-        .flatMap((item) => item.track.artists)
+        .flatMap((item) => item.track.artists as SpotifyApi.ArtistObjectSimplified[])
         .filter((artist) => !existingArtistIds.find((a) => a.id === artist.id));
       console.info(`Missing artists to fetch: ${missingArtistsSimple.length}.`);
       const artists = await getSpotifyArtists(missingArtistsSimple, spotifyToken);
@@ -121,7 +124,7 @@ async function addRecentTrackPlays() {
         await prisma.genre.createMany({
           skipDuplicates: true,
           data: [
-            ...genres.map((genre) => ({ name: genre }))
+            ...genres.map((genre) => ({ name: genre })),
           ] satisfies Prisma.GenreCreateManyInput[],
         });
 
@@ -228,6 +231,7 @@ async function addRecentTrackPlays() {
         await prisma.trackPlay.createMany({
           skipDuplicates: true,
           data: recentlyPlayedTracks.items.map((item) => ({
+
             playedAt: new Date(item.played_at),
             userId: dbUser.id,
             trackId: item.track.id,
@@ -235,8 +239,8 @@ async function addRecentTrackPlays() {
         });
         console.info(`Inserted ${recentlyPlayedTracks.items.length} track plays (duplicates skipped).`);
       })
-        .catch((error) => {
-          console.error(`Error upserting data for user ${clerkUser.firstName}:`, error);
+        .catch((err: unknown) => {
+          console.error(`Error upserting data for user ${clerkUser.firstName}:`, err);
         });
     }
   } finally {
@@ -271,7 +275,7 @@ async function getSpotifyArtists(artistsSimple: SpotifyApi.ArtistObjectSimplifie
   return artistDetails;
 }
 
-async function getRecentlyPlayedTracks(token: string, username: string): Promise<SpotifyApi.UsersRecentlyPlayedTracksResponse | null> {
+async function getRecentlyPlayedTracks(token: string, username: string): Promise<UsersRecentlyPlayedTracksResponse | null> {
   const recentlyPlayedTracksResponse = await fetch("https://api.spotify.com/v1/me/player/recently-played?limit=50", {
     method: "GET",
     headers: {
@@ -282,7 +286,7 @@ async function getRecentlyPlayedTracks(token: string, username: string): Promise
     console.error(`Error for user ${username}: Status ${recentlyPlayedTracksResponse.status} Response: ${await recentlyPlayedTracksResponse.text()}`);
     return null;
   }
-  const recentlyPlayedTracks = await recentlyPlayedTracksResponse.json() as SpotifyApi.UsersRecentlyPlayedTracksResponse;
+  const recentlyPlayedTracks = await recentlyPlayedTracksResponse.json() as UsersRecentlyPlayedTracksResponse;
   if (!recentlyPlayedTracks.items || recentlyPlayedTracks.items.length === 0) {
     console.warn(`No recently played tracks found for user: ${username}`);
     return null;

@@ -1,37 +1,47 @@
-// @ts-check
-
 import "dotenv/config";
-import { Prisma, PrismaClient } from "../src/prisma/generated/client.js";
-import { execSync } from "node:child_process";
+import type { Prisma } from "@/lib/prisma/generated";
+import { PrismaClient } from "@/lib/prisma/generated";
 import { createClerkClient } from "@clerk/backend";
-import { env } from "node:process";
-import { makeMariaDBAdapter } from "@/lib/mariadb-adapter.js";
+import { execSync } from "node:child_process";
+import { makeMariaDBAdapter } from "@/lib/prisma";
+import type SpotifyApi from "spotify-web-api-node";
 
 const {
   DATABASE_URL,
   REMOTE_DB_URL,
-} = env;
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  CLERK_SECRET_KEY,
+} = process.env;
 if (!DATABASE_URL) throw new Error("DATABASE_URL environment variable is not set");
 if (!REMOTE_DB_URL) throw new Error("REMOTE_DB_URL environment variable is not set");
+if (!NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable is not set");
+if (!CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY environment variable is not set");
 
 const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 const remotePrisma = new PrismaClient(makeMariaDBAdapter(REMOTE_DB_URL));
 
 const clerkClient = createClerkClient({
-  publishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
-  secretKey: env.CLERK_SECRET_KEY!,
+  publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  secretKey: CLERK_SECRET_KEY,
 });
 const users = await clerkClient.users.getUserList();
 const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
 
-const tokenResponse = await clerkClient.users.getUserOauthAccessToken(ministers[0].id, "spotify");
+const firstMinister = ministers[0];
+if (!firstMinister) {
+  throw new Error("No minister user found in Clerk");
+}
+const tokenResponse = await clerkClient.users.getUserOauthAccessToken(firstMinister.id, "spotify");
 if (!tokenResponse.data.length) {
-  throw new Error(`No Spotify token found for user: ${ministers[0].firstName}`);
+  throw new Error(`No Spotify token found for user: ${firstMinister.firstName}`);
 }
 if (tokenResponse.data.length > 1) {
-  throw new Error(`Multiple Spotify tokens found for user: ${ministers[0].firstName}`);
+  throw new Error(`Multiple Spotify tokens found for user: ${firstMinister.firstName}`);
 }
-const spotifyToken = tokenResponse.data[0].token;
+const spotifyToken = tokenResponse.data[0]?.token;
+if (!spotifyToken) {
+  throw new Error(`Spotify token is empty for user: ${firstMinister.firstName}`);
+}
 
 const toPositiveInteger = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);
@@ -39,8 +49,8 @@ const toPositiveInteger = (value: string | undefined, fallback: number) => {
 };
 
 const TRANSACTION_TIMEOUT_MS = 240_000;
-const SPOTIFY_FETCH_CONCURRENCY = toPositiveInteger(env.SEED_SPOTIFY_FETCH_CONCURRENCY, 5);
-const DB_WRITE_CONCURRENCY = toPositiveInteger(env.SEED_DB_WRITE_CONCURRENCY, 25);
+const SPOTIFY_FETCH_CONCURRENCY = toPositiveInteger(process.env.SEED_SPOTIFY_FETCH_CONCURRENCY, 5);
+const DB_WRITE_CONCURRENCY = toPositiveInteger(process.env.SEED_DB_WRITE_CONCURRENCY, 25);
 
 const chunkArray = <T>(items: T[], size: number): T[][] => {
   if (size <= 0) throw new Error("Chunk size must be greater than zero");
@@ -64,7 +74,9 @@ const runWithConcurrency = async <T>(
     async () => {
       while (currentIndex < items.length) {
         const index = currentIndex++;
-        await handler(items[index]!, index);
+        const current = items[index];
+        if (!current) continue;
+        await handler(current, index);
       }
     },
   );
@@ -253,8 +265,8 @@ const seedArtists = async () => {
       tracks: {
         select: {
           id: true,
-        }
-      }
+        },
+      },
     },
   });
 
@@ -343,8 +355,8 @@ main()
     console.debug("Seeding completed successfully.");
     process.exitCode = 0;
   })
-  .catch(error => {
-    console.error("Error during seeding:", error);
+  .catch((err: unknown) => {
+    console.error("Error during seeding:", err);
     process.exitCode = 1;
   })
   .finally(async () => {

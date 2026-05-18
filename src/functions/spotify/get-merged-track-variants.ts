@@ -1,8 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { TrackWithCompany } from "@/types";
-import { TrackDataFilters } from "./get-track-data";
+import { prisma } from "@/lib/prisma/prisma";
+import type { TrackWithCompany } from "@/types/types";
+import type { TrackDataFilters } from "./get-track-data";
 
 const sortTracksByRelevance = (a: TrackWithCompany, b: TrackWithCompany) => {
   const playDiff = b._count.TrackPlays - a._count.TrackPlays;

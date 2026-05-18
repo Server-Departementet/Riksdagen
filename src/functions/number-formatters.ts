@@ -31,13 +31,13 @@ export function convertSecondsToTimeUnits(seconds: number): Record<TimeUnitNames
   let remaining = Math.floor(seconds);
 
   const units: { name: TimeUnitNames; sec: number }[] = [
-    { name: "year", sec: 31536000, },
-    { name: "month", sec: 2592000, },
-    { name: "week", sec: 604800, },
-    { name: "day", sec: 86400, },
-    { name: "hour", sec: 3600, },
-    { name: "minute", sec: 60, },
-    { name: "second", sec: 1, },
+    { name: "year", sec: 31536000 },
+    { name: "month", sec: 2592000 },
+    { name: "week", sec: 604800 },
+    { name: "day", sec: 86400 },
+    { name: "hour", sec: 3600 },
+    { name: "minute", sec: 60 },
+    { name: "second", sec: 1 },
   ];
 
   const output: { name: TimeUnitNames; value: number | null; }[] = [];
@@ -45,11 +45,11 @@ export function convertSecondsToTimeUnits(seconds: number): Record<TimeUnitNames
   for (const unit of units) {
     const value = Math.floor(remaining / unit.sec);
     if (value > 0) {
-      output.push({ name: unit.name, value, });
+      output.push({ name: unit.name, value });
       remaining %= unit.sec;
     }
     else {
-      output.push({ name: unit.name, value: null, });
+      output.push({ name: unit.name, value: null });
     }
   }
 
@@ -62,6 +62,6 @@ export function convertSecondsToTimeUnits(seconds: number): Record<TimeUnitNames
           unit: unit.name,
           unitDisplay: "narrow",
         }).format(unit.value),
-    ]
+    ],
   )) as Record<TimeUnitNames, string | null>;
 }

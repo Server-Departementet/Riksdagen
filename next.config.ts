@@ -1,5 +1,3 @@
-// @ts-check
-
 import type { NextConfig } from "next";
 import { env } from "node:process";
 
@@ -15,7 +13,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  ...env.CI ? { output: "standalone", } : {},
+  ...env.CI ? { output: "standalone" } : {},
 };
 
 export default nextConfig;

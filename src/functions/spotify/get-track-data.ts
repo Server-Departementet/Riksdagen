@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { TrackWithCompany } from "@/types";
+import { prisma } from "@/lib/prisma/prisma";
+import type { TrackWithCompany } from "@/types";
 
 export type TrackDataFilters = {
   userIds?: string[];
@@ -99,7 +99,7 @@ export async function getTrackDataBatch(ISRCs: string[], filters?: TrackDataFilt
       ...canonicalTrack,
       _count: { TrackPlays: totalTrackPlays },
       mergedVariantCount,
-    });
+    } as TrackWithCompany);
   }
 
   return uniqueISRCs

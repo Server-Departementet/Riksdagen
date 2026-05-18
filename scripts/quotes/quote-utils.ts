@@ -1,4 +1,4 @@
-import { Quote } from "./types.ts";
+import type { Quote } from "./types";
 
 export type CustomQuoteMeta = Partial<Pick<Quote, "authorId" | "link" | "sender" | "createdTimestamp">>;
 
@@ -28,6 +28,7 @@ export function splitCustomQuoteMeta(content: string): { meta?: CustomQuoteMeta;
   let meta: CustomQuoteMeta | undefined = undefined;
 
   try {
+    if (!metaJson) throw new Error("Meta JSON is empty");
     const metaObject = JSON.parse(metaJson) as unknown;
     if (!isCustomQuoteMeta(metaObject)) {
       throw new Error("Parsed meta does not have the required structure: " + metaJson);

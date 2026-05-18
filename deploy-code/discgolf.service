@@ -1,0 +1,15 @@
+[Unit]
+Description=Discord Discgolf Bot
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/Riksdagen/
+ExecStart=/bin/bash -c "source /root/.nvm/nvm.sh && chmod +x deploy-code/* && deploy-code/discgolf-start.sh"
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

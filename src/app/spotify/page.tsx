@@ -1,17 +1,19 @@
 import { isMinister } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
 import { TrackList } from "@/components/spotify/track";
-import { Track } from "@/prisma/generated";
+import type { Track } from "@/lib/prisma/generated";
 import { getSortedTrackISRCs } from "@/functions/spotify/get-sorted-track-isrcs";
+import type {
+  SpotifySortDirection,
+  SpotifySortValue,
+} from "@/lib/spotify-sort";
 import {
   DEFAULT_SPOTIFY_SORT_DIRECTION,
   DEFAULT_SPOTIFY_SORT_VALUE,
   isSpotifySortValue,
-  SpotifySortDirection,
-  SpotifySortValue,
 } from "@/lib/spotify-sort";
 
 type FilterParams = {
@@ -110,17 +112,17 @@ async function getUsers(trackSearchQuery?: string): Promise<{
       id: true,
       name: true,
       trackPlays: {
-        select: { trackId: true, track: { select: { ISRC: true, } } },
+        select: { trackId: true, track: { select: { ISRC: true } } },
         where: {
           OR: [
             {
-              track: { name: { contains: trackSearchQuery ?? "", }, },
+              track: { name: { contains: trackSearchQuery ?? "" } },
             },
             {
-              track: { album: { name: { contains: trackSearchQuery ?? "", }, }, },
+              track: { album: { name: { contains: trackSearchQuery ?? "" } } },
             },
             {
-              track: { artists: { some: { name: { contains: trackSearchQuery ?? "", }, }, }, },
+              track: { artists: { some: { name: { contains: trackSearchQuery ?? "" } } } },
             },
             {
               trackId: trackSearchQuery,

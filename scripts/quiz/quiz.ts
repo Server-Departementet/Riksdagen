@@ -1,26 +1,23 @@
 import "dotenv/config";
-import { env } from "node:process";
-import { Channel, Client as DiscordClient, GatewayIntentBits, Message, MessageType, PollLayoutType, } from "discord.js";
-import { PrismaClient } from "../../src/prisma/generated/index.js";
+import type { Channel, Message } from "discord.js";
+import { Client as DiscordClient, GatewayIntentBits, MessageType, PollLayoutType } from "discord.js";
+import { PrismaClient } from "@/lib/prisma/generated";
 import fs from "node:fs";
-import { Quote } from "./types.ts";
-import { ggSansWidths } from "./gg-sans-widths.ts";
-import { makeMariaDBAdapter } from "../../src/lib/mariadb-adapter.ts";
-import { isMultiSpeakerQuote } from "./quote-utils.ts";
+import type { Quote } from "../quotes/types";
+import { ggSansWidths } from "./gg-sans-widths";
+import { makeMariaDBAdapter } from "../../src/lib/prisma/mariadb-adapter";
+import { isMultiSpeakerQuote } from "../quotes/quote-utils";
 
-const {
-  DATABASE_URL,
-  DISCORD_BOT_TOKEN,
-  REGERINGEN_GUILD_ID,
-  QUIZ_CHANNEL_ID,
-  CANONICAL_URL,
-} = env;
-
-if (!DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
-if (!DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
-if (!REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
-if (!QUIZ_CHANNEL_ID) throw new Error("QUIZ_CHANNEL_ID is not set in environment variables");
-if (!CANONICAL_URL) throw new Error("CANONICAL_URL is not set in environment variables");
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!process.env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+if (!process.env.REGERINGEN_GUILD_ID) throw new Error("REGERINGEN_GUILD_ID is not set in environment variables");
+const REGERINGEN_GUILD_ID = process.env.REGERINGEN_GUILD_ID;
+if (!process.env.QUIZ_CHANNEL_ID) throw new Error("QUIZ_CHANNEL_ID is not set in environment variables");
+const QUIZ_CHANNEL_ID = process.env.QUIZ_CHANNEL_ID;
+if (!process.env.CANONICAL_URL) throw new Error("CANONICAL_URL is not set in environment variables");
+const CANONICAL_URL = process.env.CANONICAL_URL;
 
 const isDryRun = process.argv.includes("--dry-run");
 const forcedQuoteId = (() => {
@@ -52,8 +49,8 @@ main()
     console.info("Script finished successfully");
     process.exitCode = 0;
   })
-  .catch((error) => {
-    console.error("Script failed with error:", error);
+  .catch((err: unknown) => {
+    console.error("Script failed with error:", err);
     process.exitCode = 1;
   })
   .finally(async () => {
@@ -65,13 +62,13 @@ main()
   });
 
 async function main() {
-  await discordClient.login(env.DISCORD_BOT_TOKEN);
+  await discordClient.login(DISCORD_BOT_TOKEN);
 
-  const guild = await discordClient.guilds.fetch(env.REGERINGEN_GUILD_ID!);
+  const guild = await discordClient.guilds.fetch(REGERINGEN_GUILD_ID);
   if (!guild) {
     throw new Error("Could not fetch guild");
   }
-  const channel = await guild.channels.fetch(env.QUIZ_CHANNEL_ID!);
+  const channel = await guild.channels.fetch(QUIZ_CHANNEL_ID);
   if (!channel) {
     throw new Error("Could not fetch quiz channel");
   }
@@ -79,23 +76,23 @@ async function main() {
     throw new Error("Quiz channel is not a text-based channel");
   }
 
-  const usedQuotesPath = "scripts/discord/quotes_used.json";
+  const usedQuotesPath = "scripts/quotes/quotes_used.json";
   if (!fs.existsSync(usedQuotesPath)) fs.writeFileSync(usedQuotesPath, "[]", "utf-8");
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
-  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/discord/quotes.json", "utf-8")) as Quote[])
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId);
   const allQuotes = [...availableQuotes];
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);
 
   let quizNumber = 0;
-  const latestMessages = await channel.messages.fetch({ limit: 100, });
+  const latestMessages = await channel.messages.fetch({ limit: 100 });
   const lastQuiz = latestMessages
     .find((msg) =>
       msg.author.id === discordClient.user?.id
       && msg.type === MessageType.Default
       && msg.poll
-      && msg.content.toLowerCase().startsWith("# citat quiz #")
+      && msg.content.toLowerCase().startsWith("# citat quiz #"),
     );
   if (lastQuiz) {
     // Get the quiz number
@@ -115,12 +112,25 @@ async function main() {
     /*
      * Compile and send quiz results
      */
-    const answers = lastQuiz.poll!.answers;
-    const correctAnswer = answers.find(answer => answer.text === users[previousQuote.quoteeId!].name);
-    const correctVoters = await correctAnswer?.voters.fetch();
+    if (!lastQuiz.poll) {
+      console.info("No poll found on last quiz message, skipping results compilation");
+      return;
+    }
+    const previousQuoteeID = previousQuote.quoteeId;
+    if (!previousQuoteeID) {
+      console.info("Previous quote has no quoteeId, skipping results compilation");
+      return;
+    }
+    const answers = lastQuiz.poll.answers;
+    const correctAnswer = answers.find(answer => answer.text === users[previousQuoteeID]?.name);
+    if (!correctAnswer) {
+      console.info("Could not find correct answer among poll answers, skipping results compilation");
+      return;
+    }
+    const correctVoters = await correctAnswer.voters.fetch();
     const winningUsers = correctVoters ? Array.from(correctVoters.values()) : [];
 
-    let resultContent = fs.readFileSync("scripts/discord/templates/quiz-result.md", "utf-8");
+    let resultContent = fs.readFileSync("scripts/quiz/templates/quiz-result.md", "utf-8");
     const quizResultData = {
       "quizNumber": quizNumber,
       "quotee": previousQuote.quotee,
@@ -160,7 +170,7 @@ async function main() {
         .filter((msg) =>
           msg.author.id === discordClient.user?.id
           && msg.type === MessageType.Default
-          && msg.content.toLowerCase().startsWith("# citat quiz scoreboard #0-")
+          && msg.content.toLowerCase().startsWith("# citat quiz scoreboard #0-"),
         );
 
       let lastScoreboardQuizNumber: number | null = null;
@@ -199,7 +209,7 @@ async function main() {
             msg.author.id === discordClient.user?.id
             && msg.type === MessageType.Default
             && msg.content.toLowerCase().startsWith("## citat quiz #")
-            && msg.content.split("\n")[0].toLowerCase().endsWith(" resultat")
+            && (msg.content.split("\n")[0]?.toLowerCase()?.endsWith(" resultat") ?? false)
           ) {
             quizResultMessages.set(msg.id, msg);
           }
@@ -227,7 +237,7 @@ async function main() {
           console.warn("Reached maximum number of pages while fetching quiz results, stopping to avoid infinite loop");
           break;
         }
-        const moreMessages = await channel.messages.fetch({ limit: 100, before: beforeId, });
+        const moreMessages = await channel.messages.fetch({ limit: 100, before: beforeId });
         if (!moreMessages.size) break;
         collectQuizResults(moreMessages);
         beforeId = moreMessages.last()?.id;
@@ -247,7 +257,7 @@ async function main() {
         countedQuizNumbers.add(quizNum);
         for (const match of content.matchAll(winnerRegex)) {
           const userId = match[1];
-          if (!users[userId]) {
+          if (!userId || !users[userId]) {
             console.warn(`Could not find user with ID ${userId} from quiz result message, skipping`);
             continue;
           }
@@ -259,7 +269,7 @@ async function main() {
       quizResultMessages.forEach(msg => addScoresFromContent(msg.content));
       addScoresFromContent(resultContent);
 
-      let scoreboardContent = fs.readFileSync("scripts/discord/templates/quiz-scoreboard.md", "utf-8");
+      let scoreboardContent = fs.readFileSync("scripts/quiz/templates/quiz-scoreboard.md", "utf-8");
       const scoreboardData = {
         "latestFinishedQuizNumber": quizNumber - 1,
         "scoreboard": Object.values(users)
@@ -303,7 +313,11 @@ async function main() {
     const allQuotees = [...new Set(availableQuotes.map(q => q.quoteeId))];
     const randomQuotee = allQuotees[Math.floor(Math.random() * allQuotees.length)];
     const quotesSelection = availableQuotes.filter(q => q.quoteeId === randomQuotee);
-    quote = quotesSelection[Math.floor(Math.random() * quotesSelection.length)];
+    const newQuote = quotesSelection[Math.floor(Math.random() * quotesSelection.length)];
+    if (!newQuote) {
+      throw new Error("Unexpected error selecting quote for quiz");
+    }
+    quote = newQuote;
   }
 
   // Save quote id to file to avoid repeating quotes
@@ -319,8 +333,8 @@ async function main() {
    * Make new quiz
    */
   const sentDate = new Date(quote.createdTimestamp);
-  const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric", });
-  const formattedTime = sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", });
+  const formattedDate = sentDate.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+  const formattedTime = sentDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
   const lengths: number[] = (new Array(50).fill(8500) as number[]).map((floor, i) => floor + i * 100);
   const paddingCandidates: {
@@ -337,7 +351,7 @@ async function main() {
     if (quote.context) {
       contextPad = computeWidthPadding(targetWidth - measureGGSans(quote.context), "closest");
     }
-    paddingCandidates.push({ datePad, senderPad, timePad, contextPad, });
+    paddingCandidates.push({ datePad, senderPad, timePad, contextPad });
   }
 
   // Choose candidate with minimal total error
@@ -354,22 +368,22 @@ async function main() {
     "quizNumber": quizNumber,
     "quoteBody": isMultiSpeaker
       ? quote.body.split("\n")
-        .map(line => `> ${line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/)[0].trim() ?? line}`)
+        .map(line => `> ${line.split(/(?<="[^"]+?"\s*)-(?=\s*\w+)/)[0]?.trim() ?? line}`)
         .reverse()
-        .map((l, i) => i === 0 ? l += " - __      __" : l)
+        .map((l, i) => i === 0 ? (l += " - __      __") || l : l) // This is a fucked ternary but I think it works?
         .reverse()
         .join("\n")
       : quote.body.split("\n").map(line => `> ${line}`).join("\n"),
     ...quote.context
-      ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate.contextPad?.pad}||`, }
+      ? { "context": `sammanhang\t|| *${quote.context}* ${bestCandidate?.contextPad?.pad}||` }
       : {},
-    "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate.datePad.pad}||`,
-    "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate.timePad.pad}||`,
-    "sender": `skrevs av\t\t\t|| *${quote.sender || "Okänt"}* ${bestCandidate.senderPad.pad}||`,
+    "date": `datum\t\t\t\t || *${formattedDate}* ${bestCandidate?.datePad.pad}||`,
+    "time": `tid\t\t\t\t\t\t || *${formattedTime}* ${bestCandidate?.timePad.pad}||`,
+    "sender": `skrevs av\t\t\t|| *${quote.sender || "Okänt"}* ${bestCandidate?.senderPad.pad}||`,
     "quoteId": quote.id,
   };
 
-  let quizContent = fs.readFileSync("scripts/discord/templates/quiz-question.md", "utf-8");
+  let quizContent = fs.readFileSync("scripts/quiz/templates/quiz-question.md", "utf-8");
   for (const [key, value] of Object.entries(quizData)) {
     const regex = new RegExp(`{{${key}}}`, "g");
     quizContent = quizContent.replace(regex, value.toString());
@@ -380,7 +394,7 @@ async function main() {
     quizContent = quizContent
       .split("\n")
       .filter(line =>
-        (!line.includes("{{context}}") || quote.context?.length)
+        (!line.includes("{{context}}") || quote.context?.length),
       )
       .join("\n");
   }
@@ -394,7 +408,7 @@ async function main() {
   // Build embed image URLs from externally hosted attachments
   let embeds: { image: { url: string } }[] | undefined = undefined;
   if (quote.attachments?.length) {
-    embeds = quote.attachments.map((p: string) => ({ image: { url: new URL(p.replace("public/", ""), env.CANONICAL_URL).href } }));
+    embeds = quote.attachments.map((p: string) => ({ image: { url: new URL(p.replace("public/", ""), CANONICAL_URL).href } }));
   }
 
   const pollPayload = {
@@ -443,10 +457,10 @@ function endPreviousPoll(pollMessage: Message, channel: Channel): Promise<void> 
             timedOut = true;
             break;
           }
-          const pollResultMessages = (await channel.messages.fetch({ limit: 20, }))
+          const pollResultMessages = (await channel.messages.fetch({ limit: 20 }))
             .filter(msg =>
               msg.author.id === discordClient.user?.id
-              && msg.type === MessageType.PollResult
+              && msg.type === MessageType.PollResult,
             );
           const foundCount = pollResultMessages.size;
           await Promise.all(pollResultMessages.map(msg => msg.delete()));

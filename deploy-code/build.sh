@@ -5,8 +5,8 @@ cd /root/Riksdagen
 export CI=true
 
 # Build
-npm i -g yarn
-yarn install --frozen-lockfile
+corepack enable
+yarn install --immutable --immutable-cache
 yarn prisma generate
 CI=true yarn build
 yarn cache clean

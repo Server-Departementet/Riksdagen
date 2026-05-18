@@ -22,7 +22,7 @@ QUIZ_CHANNEL_ID=""
 - Seeding
   - `scripts/complete-usermap.ts`
 - Quiz
-  - `scripts/discord/name-variants`
+  - `scripts/quiz/name-variants`
 
 Contact a contributor for these files.
 
@@ -80,9 +80,9 @@ yarn lint
 ## Discord bot
 
 ```bash
-# Scrape quotes channel, saves to scripts/discord/quotes.json
-yarn tsx scripts/discord/quotes.ts
+# Scrape quotes channel, saves to scripts/quotes/quotes.json
+yarn tsx scripts/quotes/quotes.ts
 
 # Run the quiz (used by cron and manually when developing)
-yarn tsx scripts/discord/quiz.ts # --dry-run # does not send messages
+yarn tsx scripts/quiz/quiz.ts # --dry-run # does not send messages
 ```

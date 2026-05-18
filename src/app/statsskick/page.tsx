@@ -1,13 +1,13 @@
-import ministersDB from "@root/ministers.json" with { type: "json"};
+import ministersDB from "@/../ministers.json" with { type: "json"};
 import Link from "next/link";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Statsskick",
   description: "Information om vårt statsskick och hur vi organiserar oss.",
 };
 
-export default async function Page() {
+export default function Page() {
   return (
     <main className="pt-20">
       {StatsskickPage()}
@@ -15,7 +15,7 @@ export default async function Page() {
   );
 }
 
-export async function StatsskickPage() {
+export function StatsskickPage() {
   return (
     <>
       <h1>

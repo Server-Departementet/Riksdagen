@@ -15,7 +15,7 @@ export function ProtectedLink(
     children: React.ReactNode;
     className?: string;
     role?: string;
-  }
+  },
 ) {
   const { isLoaded, isSignedIn, user } = useUser();
 

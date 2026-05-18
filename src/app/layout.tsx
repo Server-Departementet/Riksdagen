@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: {
+export default function RootLayout({ children }: {
   children: React.ReactNode
 }) {
   return (<ClerkProvider>
@@ -105,5 +105,5 @@ export default async function RootLayout({ children }: {
         </footer>
       </body>
     </html>
-  </ClerkProvider>)
+  </ClerkProvider>);
 }
