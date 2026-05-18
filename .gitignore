@@ -9,6 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.eslintcache
 
 # testing
 /coverage
@@ -19,10 +20,14 @@
 
 # production
 /build
+/standalone
+/cache
+/public/quote-attachments
 
 # misc
 .DS_Store
 *.pem
+/ignore
 
 # debug
 npm-debug.log*
@@ -33,53 +38,45 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# vercel
 .vercel
+.vscode
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-.vscode
-
 # clerk configuration (can include secrets)
 /.clerk/
 
 # Prisma
-src/prisma/generated/
-prisma/generated/
+/prisma/generated
+/src/prisma/generated
 
-standalone/
+# Scripts secrets
+/scripts/user-aliases.json
+/scripts/usermap.json
 
+# Scripts generated
+/scripts/quotes/cache/
+/scripts/quotes/out/
+/scripts/quotes/stats/
+
+# Legacy
+dump.tar.gz
+dump.zip
+dump/
 prisma/*usermap.json
 prisma/trackPlaysDump.json
 scripts/*usermap.json
-scripts/trackPlaysDump.json
-
-cache/
-
-dump/
-dump.tar.gz
-dump.zip
-
 scripts/complete-usermap.ts
-scripts/server-nicks.ts
-scripts/discord/quotes*.json
 scripts/discord/name-variants.ts
 scripts/discord/quote-attachments/
 scripts/discord/quote-stats/
-scripts/quotes/quotes*.json
+scripts/discord/quotes*.json
 scripts/quiz/name-variants.ts
 scripts/quotes/quote-attachments/
-scripts/quotes/quote-stats/
 scripts/quotes/quote-cache/
-scripts/quotes/out/
-scripts/quotes/stats/
-scripts/quotes/cache/
-public/quote-attachments/
-scripts/*.sql
-scripts/user-aliases.json
-
-prisma/generated/
-.eslintcache
-ignore/
+scripts/quotes/quote-stats/
+scripts/quotes/quotes*.json
+scripts/server-nicks.ts
+scripts/trackPlaysDump.json
