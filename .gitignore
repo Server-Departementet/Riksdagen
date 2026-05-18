@@ -57,6 +57,7 @@ next-env.d.ts
 /scripts/usermap.json
 
 # Scripts generated
+/scripts/quiz/cache/
 /scripts/quotes/cache/
 /scripts/quotes/out/
 /scripts/quotes/stats/
