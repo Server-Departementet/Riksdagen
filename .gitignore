@@ -60,23 +60,7 @@ next-env.d.ts
 /scripts/quotes/cache/
 /scripts/quotes/out/
 /scripts/quotes/stats/
+/scripts/quotes/quotes_used.json
 
-# Legacy
-dump.tar.gz
-dump.zip
-dump/
-prisma/*usermap.json
-prisma/trackPlaysDump.json
-scripts/*usermap.json
-scripts/complete-usermap.ts
-scripts/discord/name-variants.ts
-scripts/discord/quote-attachments/
-scripts/discord/quote-stats/
-scripts/discord/quotes*.json
-scripts/quiz/name-variants.ts
-scripts/quotes/quote-attachments/
-scripts/quotes/quote-cache/
-scripts/quotes/quote-stats/
-scripts/quotes/quotes*.json
-scripts/server-nicks.ts
-scripts/trackPlaysDump.json
+# Dump
+/dump/
