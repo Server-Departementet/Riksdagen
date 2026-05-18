@@ -72,8 +72,14 @@ scripts/quotes/quotes*.json
 scripts/quiz/name-variants.ts
 scripts/quotes/quote-attachments/
 scripts/quotes/quote-stats/
+scripts/quotes/quote-cache/
+scripts/quotes/out/
+scripts/quotes/stats/
+scripts/quotes/cache/
 public/quote-attachments/
 scripts/*.sql
+scripts/user-aliases.json
 
 prisma/generated/
 .eslintcache
+ignore/

@@ -1,14 +1,19 @@
 import "dotenv/config";
 import { argv } from "node:process";
+import type { Quote, TrimmedMessage } from "./types";
+import type { Message } from "discord.js";
 import fs from "node:fs";
 import { PrismaClient } from "@/lib/prisma/generated";
-import type { Message } from "discord.js";
-import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
-import type { Quote, TrimmedMessage } from "./types";
-import { attachmentDir, getAttachmentPath } from "./types";
-import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils";
-import { nameVariants } from "../quiz/name-variants";
+import aliases from "../user-aliases.json" with { type: "json" };
 import { makeMariaDBAdapter } from "@/lib/prisma";
+import { isMultiSpeakerQuote, splitCustomQuoteMeta, stripCustomQuoteMeta } from "./quote-utils";
+import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
+import { attachmentDir, getAttachmentPath } from "./types";
+
+const nameVariants: Record<string, string[]> = aliases as Record<string, string[]>;
+if (Object.keys(nameVariants).length === 0) {
+  throw new Error("No name variants found in aliases file");
+}
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -64,7 +69,7 @@ async function main() {
   const quotesWithContext: Quote[] = quotes.map(extractContext).filter(q => q !== null);
 
   // Save normalized quotes
-  fs.writeFileSync("scripts/quotes/quotes.json", JSON.stringify(quotesWithContext, null, 2));
+  fs.writeFileSync("scripts/quotes/out/quotes.json", JSON.stringify(quotesWithContext, null, 2));
   console.info(`Saved ${quotesWithContext.length} normalized quotes to file.`);
 }
 
@@ -268,8 +273,8 @@ function openingQuoteCharAnalysis(quotes: TrimmedMessage[]): void {
 
   if (invalidStartQuotes.length > 0) {
     console.warn(`Quotes not starting with a quote character ${invalidStartQuotes.length}, [${invalidStartQuotes.map(q => q.id).join(", ")}]`);
-    fs.writeFileSync("scripts/quotes/quotes_invalid_quote_char.json", JSON.stringify(invalidStartQuotes, null, 2));
-    console.info("Wrote non-quoted quotes to scripts/quotes/non_quoted_quotes.json");
+    fs.writeFileSync("scripts/quotes/out/quotes_invalid_quote_char.json", JSON.stringify(invalidStartQuotes, null, 2));
+    console.info("Wrote non-quoted quotes to scripts/quotes/out/non_quoted_quotes.json");
   }
 }
 
@@ -290,8 +295,8 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
       }
       console.groupEnd();
     }
-    fs.writeFileSync("scripts/quotes/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
-    console.info("Wrote duplicate quotes to scripts/quotes/quotes_duplicates.json");
+    fs.writeFileSync("scripts/quotes/out/quotes_duplicates.json", JSON.stringify(duplicates, null, 2));
+    console.info("Wrote duplicate quotes to scripts/quotes/out/quotes_duplicates.json");
   }
 }
 
@@ -302,8 +307,8 @@ function duplicateAnalysis(quotes: TrimmedMessage[]): void {
 async function crawlQuotes(): Promise<TrimmedMessage[]> {
   // If cache exists, load from it
   const forceFetch = argv.includes("--fetch");
-  if (!forceFetch && fs.existsSync("scripts/quotes/quotes_cache.json")) {
-    const data = fs.readFileSync("scripts/quotes/quotes_cache.json", "utf-8");
+  if (!forceFetch && fs.existsSync("scripts/quotes/cache/quotes_cache.json")) {
+    const data = fs.readFileSync("scripts/quotes/cache/quotes_cache.json", "utf-8");
     const parsedQuotes = JSON.parse(data) as TrimmedMessage[];
     console.info(`Loaded ${parsedQuotes.length} quotes from cache file.`);
     return parsedQuotes;
@@ -360,7 +365,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
     ...q.attachments?.size ? { attachmentUrls: Array.from(q.attachments.values()).map(a => a.url) } : {},
   }));
 
-  fs.writeFileSync("scripts/quotes/quotes_cache.json", JSON.stringify(trimmed, null, 2));
+  fs.writeFileSync("scripts/quotes/cache/quotes_cache.json", JSON.stringify(trimmed, null, 2));
 
   return trimmed;
 }
