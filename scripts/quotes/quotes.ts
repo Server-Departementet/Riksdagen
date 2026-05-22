@@ -351,6 +351,7 @@ async function crawlQuotes(): Promise<TrimmedMessage[]> {
       "1327605624447438900", // Trans guard :3
       "1317076088484007979", // Trans guard :3
       "1199024275714220072", // Trans guard :3
+      "1289616885851099136", // Trans guard :3
     ].includes(q.id)
     && !q.system, // Pins and such
   );
