@@ -181,18 +181,22 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   const guild = interaction.guild ?? await discordClient.guilds.fetch(DISCGOLF_GUILD_ID);
   await guild.members.fetch();
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
-  const lines: string[] = [];
+  const results: { memberId: string; points: number }[] = [];
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
     const { points } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
     if (points === 0) continue;
-    lines.push(`<@${member.id}> - totalt ${points}`);
+    results.push({ memberId: member.id, points });
   }
 
-  if (lines.length === 0) {
+  if (results.length === 0) {
     await interaction.reply({ content: `Inga resultat hittades att skicka för banan ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
     return;
   }
+
+  // Lowest score first (best in disc golf)
+  results.sort((a, b) => a.points - b.points);
+  const lines = results.map(({ memberId, points }) => `<@${memberId}> - totalt ${points}`);
 
   const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}`;
   if (!("send" in writeChannel)) {
