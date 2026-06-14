@@ -26,7 +26,7 @@ const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
 const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
-const users = Object.fromEntries((
+const _users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));
 
