@@ -80,7 +80,7 @@ async function main() {
   if (!fs.existsSync(usedQuotesPath)) fs.writeFileSync(usedQuotesPath, "[]", "utf-8");
   const usedQuotes: string[] = JSON.parse(fs.readFileSync(usedQuotesPath, "utf-8")) as string[];
 
-  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/quotes/quotes.json", "utf-8")) as Quote[])
+  const availableQuotes = (JSON.parse(fs.readFileSync("scripts/quotes/out/quotes.json", "utf-8")) as Quote[])
     .filter(q => q.quoteeId);
   const allQuotes = [...availableQuotes];
   console.info(`Loaded ${availableQuotes.length} available quotes for quiz`);

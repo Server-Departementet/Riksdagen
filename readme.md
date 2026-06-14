@@ -19,10 +19,7 @@ QUIZ_CHANNEL_ID=""
 ```
 
 ### Required files
-- Seeding
-  - `scripts/complete-usermap.ts`
-- Quiz
-  - `scripts/quiz/name-variants`
+Read `scripts/secrets.md` for more info on required files.
 
 Contact a contributor for these files.
 
@@ -80,7 +77,7 @@ yarn lint
 ## Discord bot
 
 ```bash
-# Scrape quotes channel, saves to scripts/quotes/quotes.json
+# Scrape quotes channel, saves to scripts/quotes/out/quotes.json
 yarn tsx scripts/quotes/quotes.ts
 
 # Run the quiz (used by cron and manually when developing)

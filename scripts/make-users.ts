@@ -1,11 +1,18 @@
-import { idGroups } from "./complete-usermap";
 import "dotenv/config";
+import usermap from "./usermap.json" with { type: "json" };
 import type { User } from "@/lib/prisma/generated";
 import { PrismaClient } from "@/lib/prisma/generated";
 import { Client as DiscordClient, GatewayIntentBits } from "discord.js";
 import { makeMariaDBAdapter } from "@/lib/prisma";
 
+const idGroups = usermap as {
+  debugName: string;
+  discordId: string;
+  clerkProd: string;
+  clerkDev: string;
+}[];
 if (!idGroups || typeof idGroups !== "object") throw new Error("Missing scripts/complete-usermap.ts or invalid idGroups data.");
+
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!process.env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN is not set in environment variables");
