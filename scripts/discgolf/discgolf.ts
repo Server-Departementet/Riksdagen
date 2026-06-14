@@ -3,8 +3,8 @@ import type { ChatInputCommandInteraction, Message } from "discord.js";
 import { Client as DiscordClient, Events, GatewayIntentBits, MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const COURSE_NAME_MIN_LENGTH = 3;
-const COURSE_NAME_MAX_LENGTH = 20;
-const SINGLE_HOLE_MAX_SCORE = 20; // Par on Domarringen is 27
+const COURSE_NAME_MAX_LENGTH = 30;
+const SINGLE_HOLE_MAX_SCORE = 30; // Par on Domarringen is 27
 
 // Logger utility
 function log(level: "INFO" | "WARN" | "ERROR", message: string, data?: Record<string, unknown>) {
@@ -206,10 +206,20 @@ async function räkna(interaction: ChatInputCommandInteraction) {
 }
 
 function isCourseMessage(content: string): boolean {
-  const isOnlyString = /^[a-zA-ZåäöÅÄÖ]+$/.test(content);
-  const lengthOk = content.length >= COURSE_NAME_MIN_LENGTH
-    && content.length <= COURSE_NAME_MAX_LENGTH;
-  return isOnlyString && lengthOk;
+  const trimmed = content.trim();
+
+  const lengthOk = trimmed.length >= COURSE_NAME_MIN_LENGTH
+    && trimmed.length <= COURSE_NAME_MAX_LENGTH;
+  if (!lengthOk) return false;
+
+  // Only letters, digits and spaces allowed (e.g. "Domarringen Svart Slinga")
+  const allowedChars = /^[a-zA-ZåäöÅÄÖ0-9 -_]+$/.test(trimmed);
+  if (!allowedChars) return false;
+
+  // Must be mostly text: more letters than digits (rejects pure-number score lines)
+  const letterCount = (trimmed.match(/[a-zA-ZåäöÅÄÖ]/g) ?? []).length;
+  const digitCount = (trimmed.match(/[0-9]/g) ?? []).length;
+  return letterCount > digitCount;
 }
 
 function getUserScore(userId: string, messages: Message[], courseMessage: Message): {
