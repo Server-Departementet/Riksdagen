@@ -65,3 +65,5 @@ next-env.d.ts
 
 # Dump
 /dump/
+
+/ignore
