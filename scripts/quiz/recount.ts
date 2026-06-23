@@ -26,6 +26,7 @@ const discordClient = new DiscordClient({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessagePolls],
 });
 const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const users = Object.fromEntries((
   await prisma.user.findMany()
 ).map((u) => [u.id, u]));
