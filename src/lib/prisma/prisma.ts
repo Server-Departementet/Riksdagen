@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaClient } from "@/lib/prisma/generated";
-import { makeMariaDBAdapter } from "@/lib/prisma";
+import { makeMariaDBAdapter } from "@/lib/prisma/mariadb-adapter";
 import { env } from "node:process";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
