@@ -182,11 +182,18 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   await guild.members.fetch();
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
   const results: { memberId: string; points: number }[] = [];
+  const holeTotals: Record<string, { sum: number; count: number }> = {};
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
-    const { points } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
+    const { points, score } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
     if (points === 0) continue;
     results.push({ memberId: member.id, points });
+    for (const [hole, holePoints] of Object.entries(score)) {
+      const total = holeTotals[hole] ?? { sum: 0, count: 0 };
+      total.sum += holePoints;
+      total.count += 1;
+      holeTotals[hole] = total;
+    }
   }
 
   if (results.length === 0) {
@@ -198,7 +205,8 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   results.sort((a, b) => a.points - b.points);
   const lines = results.map(({ memberId, points }) => `<@${memberId}> - totalt ${points}`);
 
-  const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}`;
+  const table = buildHoleAverageTable(holeTotals);
+  const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}\n${table}`;
   if (!("send" in writeChannel)) {
     logError("Write channel not text-based during 'alla' run", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
     await interaction.reply({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
@@ -207,6 +215,23 @@ async function räkna(interaction: ChatInputCommandInteraction) {
   const sent = await writeChannel.send(out);
   logInfo("Sent aggregated score message (alla)", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
   await interaction.reply({ content: `Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
+}
+
+function buildHoleAverageTable(holeTotals: Record<string, { sum: number; count: number }>): string {
+  const holeHeader = "Hål";
+  const avgHeader = "Snitt";
+  const rows = Object.entries(holeTotals)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([hole, { sum, count }]) => ({ hole, avg: (sum / count).toFixed(1) }));
+
+  const holeWidth = Math.max(holeHeader.length, ...rows.map((r) => r.hole.length));
+  const avgWidth = Math.max(avgHeader.length, ...rows.map((r) => r.avg.length));
+
+  const headerLine = `${holeHeader.padEnd(holeWidth)}  ${avgHeader.padStart(avgWidth)}`;
+  const separator = "-".repeat(headerLine.length);
+  const bodyLines = rows.map((r) => `${r.hole.padEnd(holeWidth)}  ${r.avg.padStart(avgWidth)}`);
+
+  return ["```", headerLine, separator, ...bodyLines, "```"].join("\n");
 }
 
 function isCourseMessage(content: string): boolean {
