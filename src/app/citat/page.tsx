@@ -1,6 +1,7 @@
-import type { Quote } from "@/app/citat/types";
+import { getQuotes } from "@/lib/quotes";
 import { ExternalLinkIcon } from "lucide-react";
-import fs from "node:fs";
+
+export const dynamic = "force-dynamic";
 
 function isMultiSpeakerQuote(content: string): boolean {
   const isMultiLine =
@@ -9,8 +10,8 @@ function isMultiSpeakerQuote(content: string): boolean {
   return isMultiLine;
 }
 
-export default function QuoteStatsPage() {
-  const quotes: Quote[] = JSON.parse(fs.readFileSync("scripts/quotes/out/quotes.json", "utf-8")) as Quote[];
+export default async function QuoteStatsPage() {
+  const quotes = await getQuotes();
 
   return <main>
     <h1 className="mt-4">Citatstatistik</h1>

@@ -51,14 +51,11 @@ next-env.d.ts
 # Prisma
 /prisma/generated
 /src/prisma/generated
+/src/lib/prisma-bot/generated
 
 # Scripts secrets
 /scripts/user-aliases.json
 /scripts/usermap.json
-
-# Scripts generated
-/scripts/quiz/cache/
-/scripts/quotes/cache/
 /scripts/quotes/out/
 /scripts/quotes/stats/
 /scripts/quotes/quotes_used.json

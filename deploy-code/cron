@@ -1,3 +1,2 @@
 */15 *  * * *   /root/Riksdagen/deploy-code/tsx.sh scripts/post-recent-plays.ts >> /var/log/riksdagen/recent-plays.log 2>&1
 23 2    * * *   /root/Riksdagen/deploy-code/tsx.sh scripts/quotes/quotes.ts --fetch >> /var/log/riksdagen/quotes.log 2>&1
-0 18    * * *   /root/Riksdagen/deploy-code/tsx.sh scripts/quiz/quiz.ts >> /var/log/riksdagen/quiz.log 2>&1

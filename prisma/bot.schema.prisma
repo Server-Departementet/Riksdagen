@@ -1,0 +1,29 @@
+// Read-only mirror of the Riksdagen-Bot `Quote` table.
+// The bot owns this schema + its migrations; the web app only reads it over LAN.
+generator client {
+  provider = "prisma-client"
+  moduleFormat = "esm"
+  output   = "../src/lib/prisma-bot/generated"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Quote {
+  id               String   @id // Discord message ID
+  authorId         String
+  createdTimestamp BigInt // ms epoch
+  link             String
+  originalLink     String?
+
+  sender String
+  body   String @db.Text
+  quotee String
+
+  quoteeId    String?
+  context     String? @db.Text
+  attachments Json?
+
+  @@index([createdTimestamp])
+}
