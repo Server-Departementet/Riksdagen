@@ -29,7 +29,8 @@
     "post-recent-plays": "tsx scripts/post-recent-plays.ts",
     "quotes-test": "tsx --test scripts/quotes/quote-utils.test.ts",
     "seed-colors": "tsx scripts/seed-colors.ts",
-    "discgolf": "tsx scripts/discgolf/discgolf.ts"
+    "discgolf": "tsx scripts/discgolf/discgolf.ts",
+    "discgolf-test": "tsx --test scripts/discgolf/courses.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.5",
