@@ -57,8 +57,7 @@ const discordClient = new DiscordClient({
 const commands = [
   new SlashCommandBuilder()
     .setName("räkna")
-    .setDescription("Räknar poäng från senaste banan")
-    .addUserOption((option) => option.setName("den_utsatte").setDescription("Personen vars poäng ska räknas. Lämna tom för att räkna alla.")),
+    .setDescription("Räknar poäng från senaste banan"),
 ].map((command) => command.toJSON());
 
 async function registerCommands() {
@@ -172,89 +171,36 @@ async function räkna(interaction: ChatInputCommandInteraction) {
     logWarn("No course file matches course message, pars will be unavailable", { course: courseMessage.content, interactionId: interaction.id });
   }
 
-  const doAllMembers = interaction.options.getUser("den_utsatte") === null;
-  if (doAllMembers) {
-    logInfo("Running 'alla' flow (aggregated)", { interactionId: interaction.id });
-    const guild = interaction.guild ?? await discordClient.guilds.fetch(DISCGOLF_GUILD_ID);
-    await guild.members.fetch();
-    const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
-    const results: { memberId: string; points: number; score: Record<string, number> }[] = [];
-    for (const member of guild.members.cache.values()) {
-      if (member.user.bot) continue;
-      const { points, score } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
-      if (points === 0) continue;
-      results.push({ memberId: member.id, points, score });
-    }
-
-    if (results.length === 0) {
-      await interaction.reply({ content: `Inga resultat hittades att skicka för banan ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
-      return;
-    }
-
-    results.sort((a, b) => a.points - b.points);
-    const lines = results.map(({ memberId, points, score }) =>
-      `<@${memberId}> - totalt ${points}${formatRelativeSuffix(course, score)}`,
-    );
-    const table = buildScoreTable(course, results.map((result) => result.score));
-    const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}\n\`\`\`\n${table}\n\`\`\``;
-    if (!("send" in writeChannel)) {
-      logError("Write channel not text-based during 'alla' run", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
-      await interaction.reply({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
-      return;
-    }
-    const sent = await writeChannel.send(out);
-    logInfo("Sent aggregated score message (alla)", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
-    return;
-  }
-
-  const targetUser = interaction.options.getUser("den_utsatte") ?? sender;
-  logInfo("Target user resolved", {
-    senderId: sender.id,
-    senderUsername: sender.username,
-    targetUserId: targetUser.id,
-    targetUsername: targetUser.username,
-    interactionId: interaction.id,
-  });
-
-  const yourMessages = allMessages.filter(m =>
-    m.author.id === targetUser.id
-    && m.createdTimestamp > courseMessage.createdTimestamp,
-  );
-
-  if (yourMessages.size === 0) {
-    logWarn("No messages found from target user after course message", { userId: targetUser.id, interactionId: interaction.id });
-    await interaction.reply({ content: `Inga meddelanden hittades för <@${targetUser.id}> efter ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
-    return;
-  }
-
-  logInfo("Filtered user messages after course", { count: yourMessages.size, interactionId: interaction.id });
-
-  const parsedCourseMessage = `Senaste banan tolkas som ${courseMessage.content} (${new Date(courseMessage.createdTimestamp).toISOString()}) (${targetUser.username} har skickat ${yourMessages.size} meddelande sen dess)`;
-  logInfo("Parsed course message", { parsedCourseMessage, interactionId: interaction.id });
-  await interaction.reply({ content: parsedCourseMessage, flags: MessageFlags.Ephemeral });
-
-  const { points, score } = getUserScore(targetUser.id, yourMessages.toJSON(), courseMessage);
+  const guild = interaction.guild ?? await discordClient.guilds.fetch(DISCGOLF_GUILD_ID);
+  await guild.members.fetch();
   const fancyDate = new Date(courseMessage.createdTimestamp).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "long" });
-  const scoreMessage = `-# ${fancyDate}\n${courseMessage.content} - <@${targetUser.id}> totalt: ${points}${formatRelativeSuffix(course, score)}`;
+  const results: { memberId: string; points: number; score: Record<string, number> }[] = [];
+  for (const member of guild.members.cache.values()) {
+    if (member.user.bot) continue;
+    const { points, score } = getUserScore(member.id, allMessages.toJSON(), courseMessage);
+    if (points === 0) continue;
+    results.push({ memberId: member.id, points, score });
+  }
 
-  logInfo("Sending score to write channel", {
-    writeChannelId: writeChannel.id,
-    userId: targetUser.id,
-    totalPoints: points,
-    interactionId: interaction.id,
-  });
+  if (results.length === 0) {
+    await interaction.reply({ content: `Inga resultat hittades att skicka för banan ${courseMessage.content}.`, flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  results.sort((a, b) => a.points - b.points);
+  const lines = results.map(({ memberId, points, score }) =>
+    `<@${memberId}> - totalt ${points}${formatRelativeSuffix(course, score)}`,
+  );
+  const table = buildScoreTable(course, results.map((result) => result.score));
+  const out = `-# ${fancyDate}\n${courseMessage.content}\n${lines.join("\n")}\n\`\`\`\n${table}\n\`\`\``;
   if (!("send" in writeChannel)) {
     logError("Write channel is not text-based", undefined, { channelId: writeChannel.id, interactionId: interaction.id });
-    await interaction.followUp({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "Write channel is not text-based.", flags: MessageFlags.Ephemeral });
     return;
   }
-  const sentMessage = await writeChannel.send(scoreMessage);
-  logInfo("Score message sent successfully", {
-    messageId: sentMessage.id,
-    channelId: writeChannel.id,
-    interactionId: interaction.id,
-  });
+  const sent = await writeChannel.send(out);
+  logInfo("Sent aggregated score message", { messageId: sent.id, channelId: writeChannel.id, interactionId: interaction.id });
+  await interaction.reply({ content: `Skickade ett meddelande med ${lines.length} resultat.`, flags: MessageFlags.Ephemeral });
 }
 
 function isCourseMessage(content: string): boolean {
