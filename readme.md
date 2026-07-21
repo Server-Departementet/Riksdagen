@@ -1,33 +1,7 @@
 ## Environment Variables
 
-```bash
-# The web app's own database
-DATABASE_URL=""
-# The Riksdagen-Backend database (Quote table, read-only)
-QUOTES_DATABASE_URL=""
-# For seeding (don't be silly, don't put this on the server)
-REMOTE_DB_URL=""
-
-# Session cookie signing secret, generate with e.g. `openssl rand -base64 32`
-AUTH_SECRET=""
-
-# For generating links and other stuff in the app (also the OAuth redirect base)
-CANONICAL_URL=""
-
-# Discord OAuth (login). Can be the same Discord application as the bot.
-# Add "<CANONICAL_URL>/api/auth/callback/discord" as a redirect in the Discord developer portal.
-DISCORD_CLIENT_ID=""
-DISCORD_CLIENT_SECRET=""
-
-# Spotify OAuth (ministers connect their account on /spotify; tokens are used by the backend's recent-plays job)
-# Add "<CANONICAL_URL>/api/auth/callback/spotify" as a redirect in the Spotify developer dashboard.
-SPOTIFY_CLIENT_ID=""
-SPOTIFY_CLIENT_SECRET=""
-
-# Backend asset server (quote attachments) to relay /quote-attachments/* misses to.
-# Optional; without it only files in this repo's public/ are served.
-ASSET_SERVER_URL=""
-```
+Create a `.env` in the repo root — see [`.env.example`](.env.example) for every
+variable and what it does.
 
 ## Auth
 

@@ -30,6 +30,7 @@ model SpotifyAccount {
 
 model TrackPlay {
   playedAt DateTime
+  imported Boolean  @default(false) // Play came from a takeout history import, not the recently-played job
 
   user    User   @relation(fields: [userId], references: [id])
   userId  String

@@ -127,3 +127,39 @@ export async function exchangeSpotifyCode(code: string): Promise<{ refreshToken:
   if (!data.refresh_token) return null;
   return { refreshToken: data.refresh_token, scope: data.scope ?? null };
 }
+
+/*
+ * App-level (client credentials) token, used by /api/spotify/import to fetch
+ * track/artist metadata. No user context needed for those endpoints.
+ */
+
+let appToken: { token: string; expiresAt: number } | null = null;
+
+export async function getSpotifyAppToken(): Promise<string | null> {
+  if (appToken && appToken.expiresAt > Date.now()) return appToken.token;
+
+  const basic = Buffer
+    .from(`${requiredEnv("SPOTIFY_CLIENT_ID")}:${requiredEnv("SPOTIFY_CLIENT_SECRET")}`)
+    .toString("base64");
+  const response = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basic}`,
+    },
+    body: new URLSearchParams({ grant_type: "client_credentials" }),
+  });
+  if (!response.ok) {
+    console.error(`Spotify client credentials token failed: ${response.status} ${await response.text()}`);
+    return null;
+  }
+  const data = await response.json() as { access_token?: string; expires_in?: number };
+  if (!data.access_token) return null;
+
+  // Refresh a minute early so in-flight requests don't race expiry
+  appToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + ((data.expires_in ?? 3600) - 60) * 1000,
+  };
+  return appToken.token;
+}
