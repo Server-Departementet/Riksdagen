@@ -24,9 +24,11 @@ type TakeoutEntry = {
 
 type Status =
   | { state: "idle" }
-  | { state: "working"; sent: number; total: number }
-  | { state: "done"; result: ImportResponse; skippedEntries: number }
+  | { state: "working"; sent: number; total: number; pendingTracks?: number }
+  | { state: "done"; result: Totals; skippedEntries: number }
   | { state: "error"; message: string };
+
+type Totals = Pick<ImportResponse, "inserted" | "duplicates" | "unresolved" | "newTracks">;
 
 export function ImportPanel() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -67,29 +69,47 @@ export function ImportPanel() {
 
       setStatus({ state: "working", sent: 0, total: plays.length });
 
-      const totals: ImportResponse = { received: 0, inserted: 0, duplicates: 0, unresolved: 0, newTracks: 0 };
+      const totals: Totals = { inserted: 0, duplicates: 0, unresolved: 0, newTracks: 0 };
       for (let i = 0; i < plays.length; i += CHUNK_SIZE) {
         const chunk = plays.slice(i, i + CHUNK_SIZE);
-        const response = await fetch("/api/spotify/import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plays: chunk }),
-        });
-        if (!response.ok) {
-          const body = await response.json().catch(() => null) as { error?: string } | null;
-          setStatus({
-            state: "error",
-            message: `Importen avbröts efter ${formatNumber(i)} av ${formatNumber(plays.length)} spelningar: ${body?.error ?? `HTTP ${response.status}`}. Det är säkert att försöka igen.`,
+
+        // The server resolves a bounded number of unknown tracks per request
+        // and reports pending > 0 until the chunk is fully processed
+        let pending = Infinity;
+        let attempts = 0;
+        while (pending > 0) {
+          if (++attempts > 500) {
+            setStatus({ state: "error", message: "Importen kom inte vidare. Det är säkert att försöka igen." });
+            return;
+          }
+
+          const response = await fetch("/api/spotify/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plays: chunk }),
           });
-          return;
+          if (!response.ok) {
+            const body = await response.json().catch(() => null) as { error?: string } | null;
+            setStatus({
+              state: "error",
+              message: `Importen avbröts efter ${formatNumber(i)} av ${formatNumber(plays.length)} spelningar: ${body?.error ?? `HTTP ${response.status}`}. Det är säkert att försöka igen.`,
+            });
+            return;
+          }
+
+          const result = await response.json() as ImportResponse;
+          pending = result.pending;
+          totals.newTracks += result.newTracks;
+          if (pending > 0) {
+            setStatus({ state: "working", sent: i, total: plays.length, pendingTracks: pending });
+            continue;
+          }
+
+          totals.inserted += result.inserted;
+          totals.duplicates += result.duplicates;
+          totals.unresolved += result.unresolved;
         }
 
-        const result = await response.json() as ImportResponse;
-        totals.received += result.received;
-        totals.inserted += result.inserted;
-        totals.duplicates += result.duplicates;
-        totals.unresolved += result.unresolved;
-        totals.newTracks += result.newTracks;
         setStatus({ state: "working", sent: Math.min(i + CHUNK_SIZE, plays.length), total: plays.length });
       }
 
@@ -136,6 +156,9 @@ export function ImportPanel() {
         {status.state === "working" && (
           <p className="text-sm" aria-live="polite">
             Skickar {formatNumber(status.sent)} av {formatNumber(status.total)} spelningar…
+            {status.pendingTracks !== undefined && (
+              <> Hämtar låtinfo ({formatNumber(status.pendingTracks)} låtar kvar i denna del)…</>
+            )}
           </p>
         )}
 
