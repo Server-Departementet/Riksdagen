@@ -83,3 +83,8 @@ yarn tsx scripts/quotes/quotes.ts
 # Run the quiz (used by cron and manually when developing)
 yarn tsx scripts/quiz/quiz.ts # --dry-run # does not send messages
 ```
+
+
+## DB
+
+This web app connects to a mariadb database on the server hosting the bots. 
