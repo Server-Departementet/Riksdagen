@@ -1,7 +1,10 @@
 ## Environment Variables
 
 ```bash
+# The web app's own database
 DATABASE_URL=""
+# The Riksdagen-Backend database (Quote table, read-only)
+QUOTES_DATABASE_URL=""
 # For seeding (don't be silly, don't put this on the server)
 REMOTE_DB_URL=""
 
@@ -16,25 +19,20 @@ CANONICAL_URL=""
 DISCORD_CLIENT_ID=""
 DISCORD_CLIENT_SECRET=""
 
-# Spotify OAuth (ministers connect their account on /spotify; tokens are used by scripts/post-recent-plays.ts)
+# Spotify OAuth (ministers connect their account on /spotify; tokens are used by the backend's recent-plays job)
 # Add "<CANONICAL_URL>/api/auth/callback/spotify" as a redirect in the Spotify developer dashboard.
 SPOTIFY_CLIENT_ID=""
 SPOTIFY_CLIENT_SECRET=""
-
-# Discord Bot (used by scripts/make-users.ts and seeding)
-DISCORD_BOT_TOKEN=""
-REGERINGEN_GUILD_ID=""
-QUOTE_CHANNEL_ID=""
-QUIZ_CHANNEL_ID=""
 ```
 
 ## Auth
 
 Login is Discord OAuth (`/api/auth/login`), sessions are signed JWT cookies.
 A logged-in user gets the `minister` role if their Discord ID exists in the `User`
-table, which `yarn tsx scripts/make-users.ts` populates from the guild's minister role.
+table, which the [Riksdagen-Backend](https://github.com/Server-Departementet/Riksdagen-Backend)
+repo's `make-users` job populates from the guild's minister role.
 Ministers connect their Spotify account via the button on `/spotify`; the refresh
-token is stored in the `SpotifyAccount` table and used by the recent-plays cron.
+token is stored in the `SpotifyAccount` table and used by the backend's recent-plays cron.
 
 ### Required files
 Read `scripts/secrets.md` for more info on required files.
@@ -92,17 +90,9 @@ yarn lint
 ```
 
 
-## Discord bot
-
-```bash
-# Scrape quotes channel, saves to scripts/quotes/out/quotes.json
-yarn tsx scripts/quotes/quotes.ts
-
-# Run the quiz (used by cron and manually when developing)
-yarn tsx scripts/quiz/quiz.ts # --dry-run # does not send messages
-```
-
-
 ## DB
 
-This web app connects to a mariadb database on the server hosting the bots. 
+This web app connects to a mariadb database on the server hosting the backend.
+All cron/data jobs (recent plays import, user sync) and the Discord bots live in
+the [Riksdagen-Backend](https://github.com/Server-Departementet/Riksdagen-Backend) repo;
+this repo is only the web site.

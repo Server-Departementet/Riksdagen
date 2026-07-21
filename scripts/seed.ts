@@ -1,7 +1,6 @@
 import "dotenv/config";
 import type { Prisma } from "@/lib/prisma/generated";
 import { PrismaClient } from "@/lib/prisma/generated";
-import { execSync } from "node:child_process";
 import { makeMariaDBAdapter } from "@/lib/prisma";
 import { refreshSpotifyAccessToken } from "./spotify-auth";
 import type SpotifyApi from "spotify-web-api-node";
@@ -320,11 +319,26 @@ const seedTrackPlays = async () => {
   console.debug("Seeding track plays complete.");
 };
 
-async function main() {
-  console.info("Making users");
-  execSync("yarn tsx scripts/make-users.ts");
-  console.info("Finished making users");
+const seedUsers = async () => {
+  console.debug("Seeding users...");
 
+  const remoteUsers = await remotePrisma.user.findMany();
+
+  await runInTransaction("users", async (tx) => {
+    for (const user of remoteUsers) {
+      await tx.user.upsert({
+        where: { id: user.id },
+        create: user,
+        update: user,
+      });
+    }
+  });
+
+  console.debug("Seeding users complete.");
+};
+
+async function main() {
+  await seedUsers();
   await seedGenres();
   await seedAlbums();
   await seedTracks();

@@ -1,2 +1,5 @@
-*/15 *  * * *   /root/Riksdagen/deploy-code/tsx.sh scripts/post-recent-plays.ts >> /var/log/riksdagen/recent-plays.log 2>&1
-23 2    * * *   /root/Riksdagen/deploy-code/tsx.sh scripts/quotes/quotes.ts --fetch >> /var/log/riksdagen/quotes.log 2>&1
+# The web app has no data/cron jobs anymore. Data imports (recent plays, user sync)
+# and the Discord bots live in the Riksdagen-Backend repo.
+
+# Weekly maintenance reboot
+34 4    * * 1   /sbin/reboot

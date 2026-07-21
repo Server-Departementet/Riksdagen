@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const discordUser = await fetchDiscordUser(accessToken);
   if (!discordUser) return failed(req);
 
-  // Ministers are the users make-users.ts has put in the User table
+  // Ministers are the users the backend's make-users job has put in the User table
   const dbUser = await prisma.user.findUnique({ where: { id: discordUser.id } });
 
   const token = await signSessionToken({

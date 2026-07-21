@@ -71,7 +71,7 @@ export function discordAvatarUrl(user: DiscordUser): string {
 }
 
 /*
- * Spotify (connect account, so post-recent-plays.ts can fetch plays)
+ * Spotify (connect account, so the backend's post-recent-plays job can fetch plays)
  */
 
 export function spotifyAuthorizeUrl(state: string): string {
