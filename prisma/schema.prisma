@@ -9,12 +9,23 @@ datasource db {
 }
 
 model User {
-  id          String  @id // Discord ID
-  name        String?
-  clerkDevId  String? @unique
-  clerkProdId String? @unique
+  id   String  @id // Discord ID
+  name String?
 
-  trackPlays TrackPlay[]
+  trackPlays     TrackPlay[]
+  spotifyAccount SpotifyAccount?
+}
+
+// Spotify OAuth refresh tokens, written by /api/auth/callback/spotify
+// and consumed by scripts/post-recent-plays.ts
+model SpotifyAccount {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id])
+
+  refreshToken String   @db.Text
+  scope        String?
+  connectedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model TrackPlay {

@@ -3,7 +3,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import * as Icon from "lucide-react";
 import Link from "next/link";
-import { ClerkLogin } from "@/components/login-button";
+import { LoginButton } from "@/components/login-button";
 import { useEffect, useState } from "react";
 
 export function SidebarLink(
@@ -102,7 +102,7 @@ export function Sidebar(
         {/* Header */}
         <SheetHeader className="h-20 py-10 flex flex-row items-center justify-between px-6 bg-gray-800 -ml-0.5 w-[101%]!" style={{ backgroundSize: "cover" }}>
           {/* Login */}
-          <ClerkLogin nameSide="right" className="text-background" />
+          <LoginButton nameSide="right" className="text-background" />
 
           {/* Close button */}
           <SheetTrigger>

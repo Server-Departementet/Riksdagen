@@ -2,15 +2,11 @@ import "dotenv/config";
 import { extractImageColor } from "@/functions/extract-image-color";
 import type { Prisma } from "@/lib/prisma/generated";
 import { PrismaClient } from "@/lib/prisma/generated";
-import { createClerkClient } from "@clerk/backend";
 import { makeMariaDBAdapter } from "../src/lib/prisma/mariadb-adapter";
+import { refreshSpotifyAccessToken } from "./spotify-auth";
 import type SpotifyApi from "spotify-web-api-node";
 import type { UsersRecentlyPlayedTracksResponse } from "./types";
 
-if (!process.env.CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY is not set in environment variables");
-const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
-if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not set in environment variables");
-const NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set in environment variables");
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -26,66 +22,44 @@ addRecentTrackPlays()
 
 async function addRecentTrackPlays() {
   console.info("Starting recent track plays import.");
-  const clerkClient = createClerkClient({
-    publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-    secretKey: CLERK_SECRET_KEY,
-  });
 
   const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 
   try {
-    console.info("Fetching Clerk users.");
-    const users = await clerkClient.users.getUserList();
-    const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
-    console.info(`Found ${users.data.length} users, ${ministers.length} ministers.`);
+    console.info("Fetching connected Spotify accounts.");
+    const spotifyAccounts = await prisma.spotifyAccount.findMany({ include: { user: true } });
+    console.info(`Found ${spotifyAccounts.length} connected Spotify accounts.`);
 
-    for (const clerkUser of ministers) {
-      console.info(`Processing user: ${clerkUser.firstName ?? "[Unknown user]"} (${clerkUser.id}).`);
-      /* 
-       * Get spotify OAuth token for the user 
+    for (const account of spotifyAccounts) {
+      const dbUser = account.user;
+      const username = dbUser.name ?? dbUser.id;
+      console.info(`Processing user: ${username} (${dbUser.id}).`);
+
+      /*
+       * Get a fresh spotify access token for the user
        */
-      const tokenResponse = await clerkClient.users.getUserOauthAccessToken(clerkUser.id, "spotify");
-      if (!tokenResponse.data.length) {
-        console.warn(`No Spotify token found for user: ${clerkUser.firstName}`);
+      const refreshed = await refreshSpotifyAccessToken(account.refreshToken);
+      if (!refreshed) {
+        console.warn(`Could not refresh Spotify token for user: ${username}. They may need to reconnect at /spotify.`);
         continue;
       }
-      if (tokenResponse.data.length > 1) {
-        console.warn(`Multiple Spotify tokens found for user: ${clerkUser.firstName}. Only using the first one.`);
+      if (refreshed.newRefreshToken) {
+        await prisma.spotifyAccount.update({
+          where: { userId: dbUser.id },
+          data: { refreshToken: refreshed.newRefreshToken },
+        });
       }
-      const spotifyToken = tokenResponse.data?.[0]?.token;
-      if (!spotifyToken) {
-        console.warn(`Spotify token is empty for user: ${clerkUser.firstName}. Skipping.`);
-        continue;
-      }
-      console.info(`Spotify token resolved for ${clerkUser.firstName ?? "[Unknown user]"}.`);
+      const spotifyToken = refreshed.accessToken;
+      console.info(`Spotify token resolved for ${username}.`);
 
-      /* 
-       * Ensure user is in our database 
+      /*
+       * Get recently played tracks from Spotify API
        */
-      const dbUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { clerkDevId: clerkUser.id },
-            { clerkProdId: clerkUser.id },
-            // It should only be one of the above but in migration clerk ids may have been dumped as User.id  TODO remove
-            { id: clerkUser.id },
-          ],
-        },
-      });
-      if (!dbUser) {
-        console.warn(`User ${clerkUser.firstName} not found in database. Skipping.`);
-        continue;
-      }
-      console.info(`Matched DB user ${dbUser.id} for ${clerkUser.firstName ?? "[Unknown user]"}.`);
-
-      /* 
-       * Get recently played tracks from Spotify API 
-       */
-      const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, clerkUser.firstName ?? "[Unknown user]");
+      const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, username);
       if (!recentlyPlayedTracks) {
         continue;
       }
-      console.info(`Fetched ${recentlyPlayedTracks.items.length} recent plays for ${clerkUser.firstName ?? "[Unknown user]"}.`);
+      console.info(`Fetched ${recentlyPlayedTracks.items.length} recent plays for ${username}.`);
 
       /* 
        * Prepare data for upserting to database
@@ -119,7 +93,7 @@ async function addRecentTrackPlays() {
        * Write Genres, Artists, Albums, Tracks and TrackPlays to database
        */
       await prisma.$transaction(async (prisma) => {
-        console.info(`Writing data for ${clerkUser.firstName ?? "[Unknown user]"} in a transaction.`);
+        console.info(`Writing data for ${username} in a transaction.`);
         // Insert Genres, skip dupes
         await prisma.genre.createMany({
           skipDuplicates: true,
@@ -240,7 +214,7 @@ async function addRecentTrackPlays() {
         console.info(`Inserted ${recentlyPlayedTracks.items.length} track plays (duplicates skipped).`);
       })
         .catch((err: unknown) => {
-          console.error(`Error upserting data for user ${clerkUser.firstName}:`, err);
+          console.error(`Error upserting data for user ${username}:`, err);
         });
     }
   } finally {

@@ -1,47 +1,37 @@
 import "dotenv/config";
 import type { Prisma } from "@/lib/prisma/generated";
 import { PrismaClient } from "@/lib/prisma/generated";
-import { createClerkClient } from "@clerk/backend";
 import { execSync } from "node:child_process";
 import { makeMariaDBAdapter } from "@/lib/prisma";
+import { refreshSpotifyAccessToken } from "./spotify-auth";
 import type SpotifyApi from "spotify-web-api-node";
 
 const {
   DATABASE_URL,
   REMOTE_DB_URL,
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-  CLERK_SECRET_KEY,
 } = process.env;
 if (!DATABASE_URL) throw new Error("DATABASE_URL environment variable is not set");
 if (!REMOTE_DB_URL) throw new Error("REMOTE_DB_URL environment variable is not set");
-if (!NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable is not set");
-if (!CLERK_SECRET_KEY) throw new Error("CLERK_SECRET_KEY environment variable is not set");
 
 const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 const remotePrisma = new PrismaClient(makeMariaDBAdapter(REMOTE_DB_URL));
 
-const clerkClient = createClerkClient({
-  publishableKey: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-  secretKey: CLERK_SECRET_KEY,
-});
-const users = await clerkClient.users.getUserList();
-const ministers = users.data.filter((user) => user.publicMetadata?.role === "minister");
-
-const firstMinister = ministers[0];
-if (!firstMinister) {
-  throw new Error("No minister user found in Clerk");
+// Borrow a connected minister's Spotify account (from the remote DB) to fetch public catalog data
+const spotifyAccount = await remotePrisma.spotifyAccount.findFirst();
+if (!spotifyAccount) {
+  throw new Error("No connected Spotify account found in the remote database");
 }
-const tokenResponse = await clerkClient.users.getUserOauthAccessToken(firstMinister.id, "spotify");
-if (!tokenResponse.data.length) {
-  throw new Error(`No Spotify token found for user: ${firstMinister.firstName}`);
+const refreshed = await refreshSpotifyAccessToken(spotifyAccount.refreshToken);
+if (!refreshed) {
+  throw new Error(`Could not refresh Spotify token for user ${spotifyAccount.userId}`);
 }
-if (tokenResponse.data.length > 1) {
-  throw new Error(`Multiple Spotify tokens found for user: ${firstMinister.firstName}`);
+if (refreshed.newRefreshToken) {
+  await remotePrisma.spotifyAccount.update({
+    where: { userId: spotifyAccount.userId },
+    data: { refreshToken: refreshed.newRefreshToken },
+  });
 }
-const spotifyToken = tokenResponse.data[0]?.token;
-if (!spotifyToken) {
-  throw new Error(`Spotify token is empty for user: ${firstMinister.firstName}`);
-}
+const spotifyToken = refreshed.accessToken;
 
 const toPositiveInteger = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);
@@ -306,25 +296,17 @@ const seedTrackPlays = async () => {
     const users = await tx.user.findMany({
       select: {
         id: true,
-        clerkDevId: true,
-        clerkProdId: true,
       },
     });
-
-    const clerkToUserId = new Map<string, string>();
-    for (const user of users) {
-      if (user.clerkDevId) clerkToUserId.set(user.clerkDevId, user.id);
-      if (user.clerkProdId) clerkToUserId.set(user.clerkProdId, user.id);
-    }
+    const userIds = new Set(users.map(u => u.id));
 
     const trackPlayData = remoteTrackPlays.map(tp => {
-      const userId = clerkToUserId.get(tp.userId);
-      if (!userId) {
+      if (!userIds.has(tp.userId)) {
         throw new Error(`User not found for track play seeding (remote ID: ${tp.userId})`);
       }
       return {
         playedAt: tp.playedAt,
-        userId,
+        userId: tp.userId,
         trackId: tp.trackId,
       } satisfies Prisma.TrackPlayCreateManyInput;
     });

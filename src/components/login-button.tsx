@@ -1,20 +1,13 @@
+"use client";
+
 import Image from "next/image";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import * as Icon from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSession } from "@/components/session-provider";
 
 type NameSide = "left" | "right" | "none";
 
-function LoggedInSkeleton({ nameSide = "left" }: { nameSide: NameSide }) {
-  return (
-    <div className="flex flex-row items-center gap-3 me-1">
-      {/* Name */}
-      <div className={`bg-gray-700 w-[10ch] h-4 rounded-sm ${nameSide === "right" ? "order-1" : ""} ${nameSide === "none" ? "hidden" : ""}`}></div>
-      {/* Avatar */}
-      <div className={`bg-gray-700 size-10 rounded-full`}></div>
-    </div>
-  );
-}
-
-export function ClerkLogin(
+export function LoginButton(
   {
     className = "",
     nameSide = "left",
@@ -23,33 +16,53 @@ export function ClerkLogin(
     nameSide?: NameSide,
   },
 ) {
+  const session = useSession();
+
   return (
     <div className={`flex flex-row items-center justify-center ${className}`}>
       {/* Not logged in */}
-      <SignedOut>
-        <SignInButton>
-          <button className="w-min flex flex-row items-center justify-center gap-x-2 px-7 py-2.5 bg-[#5865f2] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg cursor-pointer">
-            <Image
-              width={24} height={24}
-              src="/icons/discord/discord-white.svg"
-              className="size-6"
-              alt="Discord"
-            />
-            Login
-          </button>
-        </SignInButton>
-      </SignedOut>
+      {!session && (
+        <a
+          href="/api/auth/login"
+          className="w-min flex flex-row items-center justify-center gap-x-2 px-7 py-2.5 bg-[#5865f2] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg cursor-pointer"
+        >
+          <Image
+            width={24} height={24}
+            src="/icons/discord/discord-white.svg"
+            className="size-6"
+            alt="Discord"
+          />
+          Login
+        </a>
+      )}
 
       {/* Logged in */}
-      <SignedIn>
-        <UserButton fallback={LoggedInSkeleton({ nameSide })} showName={nameSide !== "none"} appearance={{
-          layout: { shimmer: false },
-          elements: {
-            userButtonBox: `!me-0 ${nameSide === "right" ? "!gap-2" : ""}`,
-            userButtonOuterIdentifier: (nameSide === "right" ? "order-1" : ""),
-          },
-        }} />
-      </SignedIn>
+      {session && (
+        <Popover>
+          <PopoverTrigger className="flex flex-row items-center gap-3 me-1 cursor-pointer">
+            {/* Name */}
+            <span className={`${nameSide === "right" ? "order-1" : ""} ${nameSide === "none" ? "hidden" : ""}`}>
+              {session.name}
+            </span>
+            {/* Avatar */}
+            <Image
+              width={40} height={40}
+              src={session.avatar}
+              className="size-10 rounded-full"
+              alt=""
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-fit p-2">
+            <a
+              href="/api/auth/logout"
+              className="flex flex-row items-center gap-x-2 px-3 py-2 no-underline rounded-md hover:bg-gray-100"
+            >
+              <Icon.LogOut size={18} />
+              Log out
+            </a>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }

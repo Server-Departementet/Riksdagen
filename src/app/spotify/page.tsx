@@ -1,6 +1,5 @@
-import { isMinister } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
 import { TrackList } from "@/components/spotify/track";
@@ -28,9 +27,13 @@ export default async function SpotifyPage({
 }: {
   searchParams: Promise<FilterParams>;
 }) {
-  const userId = (await auth()).userId;
-  if (!userId) return notFound();
-  if (!await isMinister(userId)) return notFound();
+  const session = await auth();
+  if (session?.role !== "minister") return notFound();
+
+  const spotifyConnected = !!(await prisma.spotifyAccount.findUnique({
+    where: { userId: session.userId },
+    select: { userId: true },
+  }));
 
   const {
     users: paramUsers,
@@ -80,6 +83,15 @@ export default async function SpotifyPage({
       <h1 className="mt-4">
         Spotify-statistik
       </h1>
+
+      {!spotifyConnected && (
+        <a
+          href="/api/auth/spotify"
+          className="w-fit px-4 py-2 bg-[#1db954] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg"
+        >
+          Koppla ditt Spotify-konto
+        </a>
+      )}
 
       <FilterPanel
         users={users.map(u => ({ id: u.id, name: u.name }))}

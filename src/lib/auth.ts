@@ -1,16 +1,13 @@
-"use server";
 import "server-only";
-import { clerkClient } from "@clerk/nextjs/server";
+import type { Session } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
-const clerk = await clerkClient();
+/** The current session, or null when not logged in. */
+export async function auth(): Promise<Session | null> {
+  return await getSession();
+}
 
-const authedRoles = ["minister"] as const;
-
-export async function isMinister(userId: string): Promise<boolean> {
-  if (!userId) return false;
-
-  const user = await clerk.users.getUser(userId);
-  if (!user) return false;
-  if (!user.publicMetadata.role) return false;
-  return authedRoles.includes(user.publicMetadata.role as typeof authedRoles[number]);
+export async function isMinister(): Promise<boolean> {
+  const session = await getSession();
+  return session?.role === "minister";
 }

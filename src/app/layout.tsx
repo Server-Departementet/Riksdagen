@@ -3,8 +3,9 @@ import { Open_Sans, Outfit } from "next/font/google";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ClerkProvider } from "@clerk/nextjs";
-import { ClerkLogin } from "@/components/login-button";
+import { SessionProvider } from "@/components/session-provider";
+import { LoginButton } from "@/components/login-button";
+import { auth } from "@/lib/auth";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
@@ -55,10 +56,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: {
+export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
-  return (<ClerkProvider>
+  const session = await auth();
+
+  return (<SessionProvider session={session}>
     <html lang="sv">
       <body>
         {/* Header */}
@@ -81,7 +84,7 @@ export default function RootLayout({ children }: {
           {/* Right group */}
           <div className="flex flex-row items-center justify-between gap-x-6 mr-1">
             {/* Account button */}
-            <ClerkLogin nameSide="left" className="not-sm:hidden" />
+            <LoginButton nameSide="left" className="not-sm:hidden" />
 
             {/* Sidebar */}
             <Sidebar>
@@ -105,5 +108,5 @@ export default function RootLayout({ children }: {
         </footer>
       </body>
     </html>
-  </ClerkProvider>);
+  </SessionProvider>);
 }

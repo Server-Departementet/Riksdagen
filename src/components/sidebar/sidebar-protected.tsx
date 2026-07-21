@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "@/components/session-provider";
 import { SidebarLink } from "@/components/sidebar/sidebar";
 import Image from "next/image";
 
@@ -17,11 +17,10 @@ export function ProtectedLink(
     role?: string;
   },
 ) {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const session = useSession();
 
-  if (!isLoaded) return null;
-  if (!isSignedIn || !user) return null;
-  if (user.publicMetadata?.role !== role) return null;
+  if (!session) return null;
+  if (session.role !== role) return null;
 
   return (
     <SidebarLink href={href} className={className}>

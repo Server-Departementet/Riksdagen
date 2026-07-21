@@ -1,30 +1,26 @@
-import type { ClerkMiddlewareAuth} from "@clerk/nextjs/server";
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import type { NextFetchEvent, NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
-const isMinisterRoute = createRouteMatcher([
-  "/spotify(.*)",
-  "/citat(.*)",
-]);
+const ministerRoutes = [
+  "/spotify",
+  "/citat",
+];
 
-export default clerkMiddleware(async (auth: ClerkMiddlewareAuth, req: NextRequest, _event: NextFetchEvent) => {
-  const response = NextResponse.next();
+export default async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // Spotify
-  if (isMinisterRoute(req)) {
-    const user = await auth();
+  if (ministerRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    const session = token ? await verifySessionToken(token) : null;
 
-    if ((user?.sessionClaims?.metadata as { role: string })?.role === "minister") {
-      return response;
-    }
-    else {
+    if (session?.role !== "minister") {
       return notFound(req);
     }
   }
 
-  return response;
-});
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

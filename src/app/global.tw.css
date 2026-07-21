@@ -249,16 +249,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* Clerk */
-.cl-userButtonBox {
-  @apply gap-x-3 me-2 text-alt-foreground;
-
-  & .cl-userButtonOuterIdentifier {
-    @apply text-sm font-normal;
-  }
-
-  & .cl-userButtonAvatarBox {
-    @apply size-9;
-  }
-}
