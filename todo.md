@@ -1,1 +1,1 @@
-- [ ] redirect back to source after login
+- [x] redirect back to source after login

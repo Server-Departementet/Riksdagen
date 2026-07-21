@@ -19,6 +19,16 @@ export function appUrl(path: string): string {
   return new URL(path, requiredEnv("CANONICAL_URL")).toString();
 }
 
+/**
+ * Only accept same-origin paths as post-login redirect targets, so a crafted
+ * login link can't bounce users to another site.
+ */
+export function safeReturnPath(path: string | null | undefined): string | null {
+  if (!path || !path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return null;
+  if (path.startsWith("/api/")) return null;
+  return path;
+}
+
 /*
  * Discord (login)
  */

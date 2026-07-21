@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 export const SESSION_COOKIE = "riks_session";
 export const OAUTH_STATE_COOKIE = "riks_oauth_state";
+export const OAUTH_NEXT_COOKIE = "riks_oauth_next";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export type SessionRole = "minister" | null;

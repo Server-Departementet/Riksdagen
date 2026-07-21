@@ -23,12 +23,12 @@ const nextConfig: NextConfig = {
   // crawler); relay requests for files we don't have locally. Local public/ files
   // win because plain rewrites run after the filesystem check.
   ...env.ASSET_SERVER_URL ? {
-    rewrites: async () => [
+    rewrites: () => Promise.resolve([
       {
         source: "/quote-attachments/:path*",
         destination: `${env.ASSET_SERVER_URL}/quote-attachments/:path*`,
       },
-    ],
+    ]),
   } : {},
 };
 

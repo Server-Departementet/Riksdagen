@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { appUrl, discordAvatarUrl, exchangeDiscordCode, fetchDiscordUser } from "@/lib/oauth";
-import { OAUTH_STATE_COOKIE, SESSION_COOKIE, sessionCookieOptions, signSessionToken } from "@/lib/session";
+import { appUrl, discordAvatarUrl, exchangeDiscordCode, fetchDiscordUser, safeReturnPath } from "@/lib/oauth";
+import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE, SESSION_COOKIE, sessionCookieOptions, signSessionToken } from "@/lib/session";
 import { prisma } from "@/lib/prisma/prisma";
 
 export async function GET(req: NextRequest) {
@@ -29,14 +29,17 @@ export async function GET(req: NextRequest) {
     role: dbUser ? "minister" : null,
   });
 
-  const response = NextResponse.redirect(appUrl("/"));
+  const next = safeReturnPath(req.cookies.get(OAUTH_NEXT_COOKIE)?.value) ?? "/";
+  const response = NextResponse.redirect(appUrl(next));
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
   response.cookies.delete(OAUTH_STATE_COOKIE);
+  response.cookies.delete(OAUTH_NEXT_COOKIE);
   return response;
 }
 
 function failed() {
   const response = NextResponse.redirect(appUrl("/?login=failed"));
   response.cookies.delete(OAUTH_STATE_COOKIE);
+  response.cookies.delete(OAUTH_NEXT_COOKIE);
   return response;
 }

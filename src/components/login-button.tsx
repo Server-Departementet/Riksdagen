@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import * as Icon from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSession } from "@/components/session-provider";
@@ -17,13 +18,14 @@ export function LoginButton(
   },
 ) {
   const session = useSession();
+  const pathname = usePathname();
 
   return (
     <div className={`flex flex-row items-center justify-center ${className}`}>
       {/* Not logged in */}
       {!session && (
         <a
-          href="/api/auth/login"
+          href={`/api/auth/login?next=${encodeURIComponent(pathname)}`}
           className="w-min flex flex-row items-center justify-center gap-x-2 px-7 py-2.5 bg-[#5865f2] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg cursor-pointer"
         >
           <Image
