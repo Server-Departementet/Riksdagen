@@ -24,8 +24,3 @@ CREATE TABLE SpotifyAccount (
   PRIMARY KEY (userId),
   CONSTRAINT SpotifyAccount_userId_fkey FOREIGN KEY (userId) REFERENCES User(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
-
-
--- Takeout import: mark plays that came from a historic import
-ALTER TABLE TrackPlay
-ADD COLUMN imported BOOLEAN NOT NULL DEFAULT false;
