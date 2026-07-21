@@ -1,0 +1,14 @@
+[Unit]
+Description=Yarn Start for riksdagen
+After=network.target
+
+[Service]
+User=riks
+Environment=HOME=/home/riks
+WorkingDirectory=/home/riks/Riksdagen/
+ExecStart=/bin/bash -c "source /home/riks/.nvm/nvm.sh && systemd/start.sh"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

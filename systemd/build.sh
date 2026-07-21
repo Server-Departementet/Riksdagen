@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /root/Riksdagen
+cd /home/riks/Riksdagen
 
 export CI=true
 
@@ -8,6 +8,7 @@ export CI=true
 corepack enable
 yarn install --immutable --immutable-cache
 yarn prisma generate
+yarn prisma generate --config prisma.bot.config.ts
 CI=true yarn build
 yarn cache clean
 
@@ -18,6 +19,6 @@ cp -r public .next/standalone/
 cp -r cache .next/standalone/
 cp -r .next/static .next/standalone/.next/
 
-cd /root/Riksdagen
+cd /home/riks/Riksdagen
 
-chmod +x /root/Riksdagen/deploy-code/*
+chmod +x /home/riks/Riksdagen/systemd/*.sh
