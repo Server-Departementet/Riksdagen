@@ -39,6 +39,9 @@ type SpotifyTrack = SpotifyApi.TrackObjectFull & {
   album: SpotifyApi.AlbumObjectSimplified & { release_date?: string };
 };
 
+// Spotify no longer returns `genres` on artist objects for this app
+type SpotifyArtist = Omit<SpotifyApi.ArtistObjectFull, "genres"> & { genres?: string[] };
+
 export type ImportResponse = {
   /** Unknown tracks still to resolve — re-send the same chunk while > 0 */
   pending: number;
@@ -179,9 +182,9 @@ async function importMissingTracks(trackIds: string[], token: string): Promise<s
     })).map((artist) => artist.id),
   );
 
-  const fetchedArtists: SpotifyApi.ArtistObjectFull[] = [];
+  const fetchedArtists: SpotifyArtist[] = [];
   for (const artistId of artistIdsOnTracks.filter((id) => !existingArtistIds.has(id))) {
-    const artist = await fetchSpotifyOne<SpotifyApi.ArtistObjectFull>(`artists/${artistId}`, token);
+    const artist = await fetchSpotifyOne<SpotifyArtist>(`artists/${artistId}`, token);
     if (artist) fetchedArtists.push(artist);
   }
   const knownArtistIds = new Set([...existingArtistIds, ...fetchedArtists.map((artist) => artist.id)]);
@@ -191,7 +194,7 @@ async function importMissingTracks(trackIds: string[], token: string): Promise<s
   await prisma.genre.createMany({
     skipDuplicates: true,
     data: fetchedArtists
-      .flatMap((artist) => artist.genres)
+      .flatMap((artist) => artist.genres ?? [])
       .map((genre) => ({ name: genre })) satisfies Prisma.GenreCreateManyInput[],
   });
 
@@ -217,7 +220,7 @@ async function importMissingTracks(trackIds: string[], token: string): Promise<s
   });
 
   for (const artist of fetchedArtists) {
-    if (artist.genres.length === 0) continue;
+    if (!artist.genres?.length) continue;
     await prisma.artist.update({
       where: { id: artist.id },
       data: { genres: { connect: artist.genres.map((genre) => ({ name: genre })) } },
