@@ -25,7 +25,7 @@ export function ProtectedLink(
   return (
     <SidebarLink href={href} className={className}>
       {children}
-      <Image src={"icons/crown.svg"} alt="(skyddad)" width={24} height={24} />
+      <Image src={"/icons/crown.svg"} alt="(skyddad)" width={24} height={24} />
     </SidebarLink>
   );
 }

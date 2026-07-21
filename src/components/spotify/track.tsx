@@ -330,7 +330,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={"icons/crown.svg"} alt="Låtbild"
+          src={"/icons/crown.svg"} alt="Låtbild"
         />
       </>
       : <>
@@ -338,7 +338,7 @@ function TrackElement({
         <Image
           width={128} height={128}
           className="col-start-1 row-start-1 row-span-4 rounded-lg size-full aspect-square bg-gray-200"
-          src={album?.image ?? "icons/crown.svg"} alt="Låtbild"
+          src={album?.image ?? "/icons/crown.svg"} alt="Låtbild"
         />
 
         {/* Track Title */}
@@ -523,7 +523,7 @@ function OpenInSpotifyButton({ trackURL }: { trackURL: string }) {
         <Image
           width={21} height={21}
           className="size-5.25"
-          src={"icons/spotify/Primary_Logo_Green_RGB.svg"} alt="Spotify"
+          src={"/icons/spotify/Primary_Logo_Green_RGB.svg"} alt="Spotify"
         />
 
         {/* Hides on smaller screens for space savings */}
