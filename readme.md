@@ -23,6 +23,10 @@ DISCORD_CLIENT_SECRET=""
 # Add "<CANONICAL_URL>/api/auth/callback/spotify" as a redirect in the Spotify developer dashboard.
 SPOTIFY_CLIENT_ID=""
 SPOTIFY_CLIENT_SECRET=""
+
+# Backend asset server (quote attachments) to relay /quote-attachments/* misses to.
+# Optional; without it only files in this repo's public/ are served.
+ASSET_SERVER_URL=""
 ```
 
 ## Auth
