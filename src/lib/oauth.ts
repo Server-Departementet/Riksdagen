@@ -10,6 +10,15 @@ export function callbackUrl(provider: "discord" | "spotify"): string {
   return `${requiredEnv("CANONICAL_URL")}/api/auth/callback/${provider}`;
 }
 
+/**
+ * Absolute app URL for redirects. Built from CANONICAL_URL because the
+ * standalone server reconstructs req.url from its bind address (0.0.0.0:3000)
+ * behind the reverse proxy.
+ */
+export function appUrl(path: string): string {
+  return new URL(path, requiredEnv("CANONICAL_URL")).toString();
+}
+
 /*
  * Discord (login)
  */

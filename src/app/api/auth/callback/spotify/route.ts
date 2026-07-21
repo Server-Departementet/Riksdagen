@@ -1,13 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { exchangeSpotifyCode } from "@/lib/oauth";
+import { appUrl, exchangeSpotifyCode } from "@/lib/oauth";
 import { OAUTH_STATE_COOKIE, getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma/prisma";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (session?.role !== "minister") {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(appUrl("/"));
   }
 
   const code = req.nextUrl.searchParams.get("code");
@@ -15,11 +15,11 @@ export async function GET(req: NextRequest) {
   const stateCookie = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
   if (!code || !state || !stateCookie || state !== stateCookie) {
-    return failed(req);
+    return failed();
   }
 
   const tokens = await exchangeSpotifyCode(code);
-  if (!tokens) return failed(req);
+  if (!tokens) return failed();
 
   await prisma.spotifyAccount.upsert({
     where: { userId: session.userId },
@@ -34,13 +34,13 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const response = NextResponse.redirect(new URL("/spotify", req.url));
+  const response = NextResponse.redirect(appUrl("/spotify"));
   response.cookies.delete(OAUTH_STATE_COOKIE);
   return response;
 }
 
-function failed(req: NextRequest) {
-  const response = NextResponse.redirect(new URL("/spotify?connect=failed", req.url));
+function failed() {
+  const response = NextResponse.redirect(appUrl("/spotify?connect=failed"));
   response.cookies.delete(OAUTH_STATE_COOKIE);
   return response;
 }

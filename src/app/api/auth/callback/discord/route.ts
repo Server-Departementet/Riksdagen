@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { discordAvatarUrl, exchangeDiscordCode, fetchDiscordUser } from "@/lib/oauth";
+import { appUrl, discordAvatarUrl, exchangeDiscordCode, fetchDiscordUser } from "@/lib/oauth";
 import { OAUTH_STATE_COOKIE, SESSION_COOKIE, sessionCookieOptions, signSessionToken } from "@/lib/session";
 import { prisma } from "@/lib/prisma/prisma";
 
@@ -10,14 +10,14 @@ export async function GET(req: NextRequest) {
   const stateCookie = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
   if (!code || !state || !stateCookie || state !== stateCookie) {
-    return failed(req);
+    return failed();
   }
 
   const accessToken = await exchangeDiscordCode(code);
-  if (!accessToken) return failed(req);
+  if (!accessToken) return failed();
 
   const discordUser = await fetchDiscordUser(accessToken);
-  if (!discordUser) return failed(req);
+  if (!discordUser) return failed();
 
   // Ministers are the users the backend's make-users job has put in the User table
   const dbUser = await prisma.user.findUnique({ where: { id: discordUser.id } });
@@ -29,14 +29,14 @@ export async function GET(req: NextRequest) {
     role: dbUser ? "minister" : null,
   });
 
-  const response = NextResponse.redirect(new URL("/", req.url));
+  const response = NextResponse.redirect(appUrl("/"));
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
   response.cookies.delete(OAUTH_STATE_COOKIE);
   return response;
 }
 
-function failed(req: NextRequest) {
-  const response = NextResponse.redirect(new URL("/?login=failed", req.url));
+function failed() {
+  const response = NextResponse.redirect(appUrl("/?login=failed"));
   response.cookies.delete(OAUTH_STATE_COOKIE);
   return response;
 }

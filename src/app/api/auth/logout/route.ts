@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { appUrl } from "@/lib/oauth";
 import { SESSION_COOKIE } from "@/lib/session";
 
-export function GET(req: NextRequest) {
-  const response = NextResponse.redirect(new URL("/", req.url));
+export function GET() {
+  const response = NextResponse.redirect(appUrl("/"));
   response.cookies.delete(SESSION_COOKIE);
   return response;
 }
