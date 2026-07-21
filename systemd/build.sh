@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 cd /home/riks/Riksdagen
 
@@ -6,7 +7,7 @@ export CI=true
 
 # Build
 corepack enable
-yarn install --immutable --immutable-cache
+yarn install --immutable
 yarn prisma generate
 yarn prisma generate --config prisma.bot.config.ts
 CI=true yarn build
@@ -16,7 +17,6 @@ yarn cache clean
 mkdir -p .next/standalone/
 cp .env .next/standalone/
 cp -r public .next/standalone/
-cp -r cache .next/standalone/
 cp -r .next/static .next/standalone/.next/
 
 cd /home/riks/Riksdagen
