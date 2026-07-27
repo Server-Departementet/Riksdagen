@@ -11,7 +11,7 @@ runuser -u riks -- bash -c '
   cd "$HOME/Riksdagen"
 
   git fetch origin
-  git checkout -B main --force origin/main
+  git checkout -B dev --force origin/dev
 
   chmod +x systemd/*.sh
 
