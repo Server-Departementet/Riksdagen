@@ -91,7 +91,7 @@ export function FilterPanel({
       />
 
       <FacetFilter
-        title="Inskickare"
+        title="Skriven av"
         facets={senders}
         selected={selectedSenders}
         setSelected={setSelectedSenders}
@@ -104,7 +104,7 @@ export function FilterPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             type="text"
-            placeholder="Sök citat, citerad eller inskickare"
+            placeholder="Sök citat, citerad eller skriven av"
           />
         </label>
       </div>
