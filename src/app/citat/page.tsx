@@ -1,5 +1,6 @@
-import type { QuoteFacet } from "@/lib/quotes";
 import { getFilteredQuotes, getQuoteeCounts, getSenderCounts } from "@/lib/quotes";
+import { decodeFacetSelection } from "@/lib/quote-facets";
+import { isMinisterName } from "@/lib/ministers";
 import { FilterPanel } from "@/components/quotes/filter-panel";
 import { ExternalLinkIcon } from "lucide-react";
 import type {
@@ -21,26 +22,6 @@ type FilterParams = {
   sort?: string;
   dir?: string;
 };
-
-/**
- * Resolve a repeatable filter param against the values that actually exist.
- * No param at all means "everything"; a param whose values have all been
- * filtered away by the search means "nothing".
- */
-function resolveFacetSelection(
-  param: string | string[] | undefined,
-  facets: QuoteFacet[],
-): { selected: string[]; isFiltered: boolean } {
-  const requested = [param ?? []].flat().filter(value => value.trim() !== "");
-  if (requested.length === 0) {
-    return { selected: facets.map(facet => facet.value), isFiltered: false };
-  }
-
-  return {
-    selected: requested.filter(value => facets.some(facet => facet.value === value)),
-    isFiltered: true,
-  };
-}
 
 function isMultiSpeakerQuote(content: string): boolean {
   const isMultiLine =
@@ -76,14 +57,15 @@ export default async function QuoteStatsPage({
     getSenderCounts(searchQuery),
   ]);
 
+  // Both filters start out on the ministers only
   const {
     selected: selectedQuotees,
     isFiltered: quoteesFiltered,
-  } = resolveFacetSelection(paramQuotees, quoteeCounts);
+  } = decodeFacetSelection(paramQuotees, quoteeCounts, isMinisterName);
   const {
     selected: selectedSenders,
     isFiltered: sendersFiltered,
-  } = resolveFacetSelection(paramSenders, senderCounts);
+  } = decodeFacetSelection(paramSenders, senderCounts, isMinisterName);
 
   const filteredToNothing =
     (quoteesFiltered && selectedQuotees.length === 0)

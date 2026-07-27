@@ -15,11 +15,8 @@ import {
   QUOTE_SORT_OPTIONS,
 } from "@/lib/quote-sort";
 
-/** Structurally the same as the `QuoteFacet` the server builds, kept local to stay client-safe. */
-type Facet = {
-  value: string;
-  count: number;
-};
+import type { QuoteFacet } from "@/lib/quote-facets";
+import { encodeFacetSelection } from "@/lib/quote-facets";
 
 export function FilterPanel({
   quotees,
@@ -30,8 +27,8 @@ export function FilterPanel({
   sortValue: initialSortValue,
   sortDirection: initialSortDirection,
 }: {
-  quotees: Facet[];
-  senders: Facet[];
+  quotees: QuoteFacet[];
+  senders: QuoteFacet[];
   selectedQuotees: string[];
   selectedSenders: string[];
   query?: string;
@@ -55,17 +52,14 @@ export function FilterPanel({
         // Reload with the current filters as query params
         const params = new URLSearchParams();
 
-        // Selecting everyone is the same as no filter at all
-        if (selectedQuotees.length !== quotees.length) {
-          for (const quotee of selectedQuotees) {
-            params.append("quotee", quotee);
-          }
+        // Always written out: an absent param means "first visit", which
+        // pre-selects the ministers rather than everyone
+        for (const quotee of encodeFacetSelection(selectedQuotees, quotees.length)) {
+          params.append("quotee", quotee);
         }
 
-        if (selectedSenders.length !== senders.length) {
-          for (const sender of selectedSenders) {
-            params.append("sender", sender);
-          }
+        for (const sender of encodeFacetSelection(selectedSenders, senders.length)) {
+          params.append("sender", sender);
         }
 
         if (searchQuery.trim() !== "") {
@@ -160,7 +154,7 @@ function FacetFilter({
   setSelected,
 }: {
   title: string;
-  facets: Facet[];
+  facets: QuoteFacet[];
   selected: string[];
   setSelected: React.Dispatch<React.SetStateAction<string[]>>;
 }) {

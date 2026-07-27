@@ -2,6 +2,7 @@ import "server-only";
 import type { Quote } from "@/app/citat/types";
 import type { Prisma, Quote as QuoteRow } from "@/lib/prisma-bot/generated/client";
 import { botPrisma } from "@/lib/prisma-bot";
+import type { QuoteFacet } from "@/lib/quote-facets";
 import type { QuoteSortDirection, QuoteSortValue } from "@/lib/quote-sort";
 import {
   DEFAULT_QUOTE_SORT_DIRECTION,
@@ -74,12 +75,6 @@ export async function getFilteredQuotes({
       return a.id.localeCompare(b.id);
     });
 }
-
-/** One selectable value in a side panel filter, with how many quotes carry it. */
-export type QuoteFacet = {
-  value: string;
-  count: number;
-};
 
 /**
  * The distinct quotees available for filtering, with how many quotes each has.
