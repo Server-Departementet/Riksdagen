@@ -1,4 +1,5 @@
-import { getFilteredQuotes, getQuoteeCounts } from "@/lib/quotes";
+import type { QuoteFacet } from "@/lib/quotes";
+import { getFilteredQuotes, getQuoteeCounts, getSenderCounts } from "@/lib/quotes";
 import { FilterPanel } from "@/components/quotes/filter-panel";
 import { ExternalLinkIcon } from "lucide-react";
 import type {
@@ -15,10 +16,31 @@ export const dynamic = "force-dynamic";
 
 type FilterParams = {
   quotee?: string | string[]; // Repeated once per selected quotee
+  sender?: string | string[]; // Repeated once per selected sender
   q?: string; // Search query
   sort?: string;
   dir?: string;
 };
+
+/**
+ * Resolve a repeatable filter param against the values that actually exist.
+ * No param at all means "everything"; a param whose values have all been
+ * filtered away by the search means "nothing".
+ */
+function resolveFacetSelection(
+  param: string | string[] | undefined,
+  facets: QuoteFacet[],
+): { selected: string[]; isFiltered: boolean } {
+  const requested = [param ?? []].flat().filter(value => value.trim() !== "");
+  if (requested.length === 0) {
+    return { selected: facets.map(facet => facet.value), isFiltered: false };
+  }
+
+  return {
+    selected: requested.filter(value => facets.some(facet => facet.value === value)),
+    isFiltered: true,
+  };
+}
 
 function isMultiSpeakerQuote(content: string): boolean {
   const isMultiLine =
@@ -34,6 +56,7 @@ export default async function QuoteStatsPage({
 }) {
   const {
     quotee: paramQuotees,
+    sender: paramSenders,
     q: paramQuery,
     sort: paramSort,
     dir: paramDirection,
@@ -48,18 +71,29 @@ export default async function QuoteStatsPage({
 
   const searchQuery = paramQuery?.trim() ? paramQuery.trim() : undefined;
 
-  const quoteeCounts = await getQuoteeCounts(searchQuery);
-  const requestedQuotees = [paramQuotees ?? []].flat().filter(q => q.trim() !== "");
-  const hasQuoteeParam = requestedQuotees.length > 0;
-  // Quotees that no longer exist under the current search are dropped
-  const selectedQuotees = hasQuoteeParam
-    ? requestedQuotees.filter(q => quoteeCounts.some(entry => entry.quotee === q))
-    : quoteeCounts.map(entry => entry.quotee);
+  const [quoteeCounts, senderCounts] = await Promise.all([
+    getQuoteeCounts(searchQuery),
+    getSenderCounts(searchQuery),
+  ]);
 
-  const quotes = hasQuoteeParam && selectedQuotees.length === 0
+  const {
+    selected: selectedQuotees,
+    isFiltered: quoteesFiltered,
+  } = resolveFacetSelection(paramQuotees, quoteeCounts);
+  const {
+    selected: selectedSenders,
+    isFiltered: sendersFiltered,
+  } = resolveFacetSelection(paramSenders, senderCounts);
+
+  const filteredToNothing =
+    (quoteesFiltered && selectedQuotees.length === 0)
+    || (sendersFiltered && selectedSenders.length === 0);
+
+  const quotes = filteredToNothing
     ? []
     : await getFilteredQuotes({
-      quotees: hasQuoteeParam ? selectedQuotees : undefined,
+      quotees: quoteesFiltered ? selectedQuotees : undefined,
+      senders: sendersFiltered ? selectedSenders : undefined,
       searchQuery,
       sortValue,
       sortDirection,
@@ -76,12 +110,14 @@ export default async function QuoteStatsPage({
       px-0
     `}
   >
-    <aside className="px-4 flex flex-col gap-y-5">
+    <aside className="w-full max-w-sm lg:w-72 lg:max-w-none shrink-0 px-4 flex flex-col gap-y-5">
       <h1 className="mt-4">Citatstatistik</h1>
 
       <FilterPanel
         quotees={quoteeCounts}
+        senders={senderCounts}
         selectedQuotees={selectedQuotees}
+        selectedSenders={selectedSenders}
         query={searchQuery}
         sortValue={sortValue}
         sortDirection={sortDirection}
@@ -90,7 +126,7 @@ export default async function QuoteStatsPage({
 
     <hr className="lg:hidden w-11/12" />
 
-    <section className="lg:pt-4 pb-16 w-full lg:w-auto px-4 lg:px-0">
+    <section className="lg:pt-4 pb-16 w-full max-w-4xl px-4 lg:px-0">
       <p className="opacity-60">
         {quotes.length} citat
       </p>
@@ -99,23 +135,28 @@ export default async function QuoteStatsPage({
         {quotes.map(q => (
           <li
             key={q.id}
-            className="*:ms-3 not-first:border-t-2 py-1 flex flex-row "
+            className="not-first:border-t-2 py-1 ps-3 flex flex-row gap-x-3"
           >
             <a
               href={q.link}
-              className="global min-w-fit"
+              className="global w-20 shrink-0"
               target="_blank"
               rel="noreferrer"
             >
               discord&nbsp;
               <ExternalLinkIcon className="size-3 inline mb-0.5" />
             </a>
-            <span className="min-w-fit">{new Date(q.createdTimestamp).toLocaleString("se")}</span>
+            <span className="w-44 shrink-0 tabular-nums">
+              {new Date(q.createdTimestamp).toLocaleString("sv-SE")}
+            </span>
+            <span className="w-32 shrink-0 truncate" title={q.sender}>
+              {q.sender}
+            </span>
             {isMultiSpeakerQuote(q.body)
-              ? <p className="whitespace-pre-wrap">
+              ? <p className="flex-1 min-w-0 whitespace-pre-wrap">
                 {q.body}
               </p>
-              : <span>
+              : <span className="flex-1 min-w-0">
                 {q.body} - {q.quotee}
               </span>
             }

@@ -11,6 +11,8 @@ import {
 export type QuoteFilter = {
   /** Only keep quotes attributed to one of these quotees. Omitted or empty means "all". */
   quotees?: string[];
+  /** Only keep quotes submitted by one of these senders. Omitted or empty means "all". */
+  senders?: string[];
   /** Free text matched against body, quotee, sender and context. */
   searchQuery?: string;
   sortValue?: QuoteSortValue;
@@ -26,12 +28,13 @@ export async function getQuotes(): Promise<Quote[]> {
 /** Read the canonical quotes, filtered and sorted according to the given criteria. */
 export async function getFilteredQuotes({
   quotees,
+  senders,
   searchQuery,
   sortValue = DEFAULT_QUOTE_SORT_VALUE,
   sortDirection = DEFAULT_QUOTE_SORT_DIRECTION,
 }: QuoteFilter): Promise<Quote[]> {
   const rows = await botPrisma.quote.findMany({
-    where: buildQuoteWhere({ quotees, searchQuery }),
+    where: buildQuoteWhere({ quotees, senders, searchQuery }),
   });
 
   const directionMultiplier = sortDirection === "asc" ? 1 : -1;
@@ -51,6 +54,9 @@ export async function getFilteredQuotes({
         case "sender":
           comparison = collator.compare(a.sender, b.sender);
           break;
+        case "length":
+          comparison = a.body.length - b.body.length;
+          break;
         default:
           comparison = 0;
       }
@@ -69,30 +75,48 @@ export async function getFilteredQuotes({
     });
 }
 
+/** One selectable value in a side panel filter, with how many quotes carry it. */
+export type QuoteFacet = {
+  value: string;
+  count: number;
+};
+
 /**
  * The distinct quotees available for filtering, with how many quotes each has.
  * The search query is applied first, so the list mirrors what can actually be shown.
  */
-export async function getQuoteeCounts(searchQuery?: string): Promise<{
-  quotee: string;
-  count: number;
-}[]> {
+export async function getQuoteeCounts(searchQuery?: string): Promise<QuoteFacet[]> {
   const groups = await botPrisma.quote.groupBy({
     by: ["quotee"],
     where: buildQuoteWhere({ searchQuery }),
     _count: { _all: true },
   });
 
+  return sortFacets(groups.map(group => ({ value: group.quotee, count: group._count._all })));
+}
+
+/** The distinct senders available for filtering, counted the same way as the quotees. */
+export async function getSenderCounts(searchQuery?: string): Promise<QuoteFacet[]> {
+  const groups = await botPrisma.quote.groupBy({
+    by: ["sender"],
+    where: buildQuoteWhere({ searchQuery }),
+    _count: { _all: true },
+  });
+
+  return sortFacets(groups.map(group => ({ value: group.sender, count: group._count._all })));
+}
+
+/** Most quotes first, then alphabetically so the panel keeps a stable order. */
+function sortFacets(facets: QuoteFacet[]): QuoteFacet[] {
   const collator = new Intl.Collator("sv-SE", { sensitivity: "base" });
-  return groups
-    .map(group => ({ quotee: group.quotee, count: group._count._all }))
-    .sort((a, b) => b.count - a.count || collator.compare(a.quotee, b.quotee));
+  return facets.sort((a, b) => b.count - a.count || collator.compare(a.value, b.value));
 }
 
 function buildQuoteWhere({
   quotees,
+  senders,
   searchQuery,
-}: Pick<QuoteFilter, "quotees" | "searchQuery">): Prisma.QuoteWhereInput {
+}: Pick<QuoteFilter, "quotees" | "senders" | "searchQuery">): Prisma.QuoteWhereInput {
   const conditions: Prisma.QuoteWhereInput[] = [];
 
   const trimmedQuery = searchQuery?.trim();
@@ -109,6 +133,10 @@ function buildQuoteWhere({
 
   if (quotees && quotees.length > 0) {
     conditions.push({ quotee: { in: quotees } });
+  }
+
+  if (senders && senders.length > 0) {
+    conditions.push({ sender: { in: senders } });
   }
 
   return conditions.length > 0 ? { AND: conditions } : {};

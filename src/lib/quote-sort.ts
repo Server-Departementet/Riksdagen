@@ -2,6 +2,7 @@ export const QUOTE_SORT_OPTIONS = [
   { value: "date", label: "Datum" },
   { value: "quotee", label: "Citerad" },
   { value: "sender", label: "Skriven av" },
+  { value: "length", label: "Längd" },
 ] as const;
 
 export type QuoteSortValue = typeof QUOTE_SORT_OPTIONS[number]["value"];
