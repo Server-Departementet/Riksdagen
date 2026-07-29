@@ -13,6 +13,10 @@ runuser -u riks -- bash -c '
   git fetch origin
   git checkout -B dev --force origin/dev
 
+  printf "\n\033[1;32m================= UPDATED TO =================\033[0m\n"
+  git log -1 --date=format:"%Y-%m-%d %H:%M:%S" --format="  commit:  %h%n  date:    %cd%n  message: %s"
+  printf "\033[1;32m==============================================\033[0m\n\n"
+
   chmod +x systemd/*.sh
 
   # Build (aborts the update on failure, keeping the running app)
