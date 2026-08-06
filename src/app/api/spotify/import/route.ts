@@ -126,11 +126,18 @@ export async function POST(req: NextRequest) {
 
   // The recently-played job records the same play with a timestamp seconds off
   // from the takeout's, so exact-PK skipDuplicates can't catch those — drop
-  // candidates that have a stored play within the tolerance
+  // candidates that have a stored play within the tolerance.
+  //
+  // Only job-recorded plays (imported = false) are compared against. Timestamps
+  // never drift between takeout exports, so an already-imported play collides on
+  // the PK and skipDuplicates handles it; running the tolerance against those too
+  // would throw away genuine repeat listens seconds apart, which takeout records
+  // in full (it logs skips, unlike the 50-item recently-played window).
   const playTimes = candidatePlays.map((play) => play.playedAt.getTime());
   const storedPlays = candidatePlays.length === 0 ? [] : await prisma.trackPlay.findMany({
     where: {
       userId: session.userId,
+      imported: false,
       trackId: { in: [...new Set(candidatePlays.map((play) => play.trackId))] },
       playedAt: {
         gte: new Date(Math.min(...playTimes) - PLAY_DEDUPE_TOLERANCE_MS),
