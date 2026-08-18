@@ -1,0 +1,64 @@
+# Build on the self-hosted LAN runner (container riksdagen-ci) and deploy:
+# main -> riksdagen-prod, dev -> riksdagen-dev.
+# Hosts, DB URLs and build-time env live in /home/runner/deploy-web.env on the
+# runner, so no LAN details or credentials sit in the repo.
+name: Deploy
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve deploy target
+        run: |
+          source /home/runner/deploy-web.env
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "TARGET_HOST=$PROD_HOST" >> "$GITHUB_ENV"
+            echo "DATABASE_URL=$PROD_DATABASE_URL" >> "$GITHUB_ENV"
+            echo "CANONICAL_URL=$PROD_CANONICAL_URL" >> "$GITHUB_ENV"
+          else
+            echo "TARGET_HOST=$DEV_HOST" >> "$GITHUB_ENV"
+            echo "DATABASE_URL=$DEV_DATABASE_URL" >> "$GITHUB_ENV"
+            echo "CANONICAL_URL=$DEV_CANONICAL_URL" >> "$GITHUB_ENV"
+          fi
+          echo "ASSET_SERVER_URL=$ASSET_SERVER_URL" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Install dependencies
+        run: corepack enable && yarn install --immutable
+
+      - name: Generate Prisma client
+        # main still carries the read-only bot-DB mirror client; nothing connects during CI
+        run: |
+          yarn prisma generate
+          if [ -f prisma.bot.config.ts ]; then
+            QUOTES_DATABASE_URL="mysql://unused:unused@localhost:3306/unused" yarn prisma generate --config prisma.bot.config.ts
+          fi
+
+      - name: Build
+        run: yarn build
+
+      - name: Apply migrations
+        run: yarn prisma migrate deploy
+
+      - name: Package standalone build
+        run: |
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+
+      - name: Deploy
+        run: |
+          rsync -a --delete .next/standalone/ "root@$TARGET_HOST:/home/riks/Riksdagen/.next/standalone-new/"
+          ssh "root@$TARGET_HOST" bash -s -- "${{ github.sha }}" < systemd/activate.sh
