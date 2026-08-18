@@ -23,9 +23,14 @@ runuser -u riks -- bash -c '
   bash systemd/build.sh
 '
 
-# Refresh service + cron definitions (cron holds the maintenance reboot, so it is root's)
+# Log dir for the riks cron jobs (recent plays + minister sync)
+mkdir -p /var/log/riksdagen-web
+chown riks:riks /var/log/riksdagen-web
+
+# Refresh service + cron definitions
 cp "$REPO/systemd/next-start.service" /etc/systemd/system/
-crontab "$REPO/systemd/cron"
+crontab -u riks "$REPO/systemd/cron"
+crontab "$REPO/systemd/cron.root"
 
 # Restart
 systemctl daemon-reload
