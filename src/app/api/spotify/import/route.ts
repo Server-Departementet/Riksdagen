@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getSpotifyAppToken } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma/prisma";
+import { filterNearDuplicatePlays, PLAY_DEDUPE_TOLERANCE_MS } from "@/lib/play-dedupe";
 import type { Prisma } from "@/lib/prisma/generated";
 
 /**
@@ -116,14 +117,40 @@ export async function POST(req: NextRequest) {
   }
 
   const insertablePlays = plays.filter((play) => knownTrackIds.has(play.trackId));
+  const candidatePlays = insertablePlays.map((play) => ({
+    playedAt: new Date(play.playedAt),
+    userId: session.userId,
+    trackId: play.trackId,
+    imported: true,
+  })) satisfies Prisma.TrackPlayCreateManyInput[];
+
+  // The recently-played job records the same play with a timestamp seconds off
+  // from the takeout's, so exact-PK skipDuplicates can't catch those — drop
+  // candidates that have a stored play within the tolerance.
+  //
+  // Only job-recorded plays (imported = false) are compared against. Timestamps
+  // never drift between takeout exports, so an already-imported play collides on
+  // the PK and skipDuplicates handles it; running the tolerance against those too
+  // would throw away genuine repeat listens seconds apart, which takeout records
+  // in full (it logs skips, unlike the 50-item recently-played window).
+  const playTimes = candidatePlays.map((play) => play.playedAt.getTime());
+  const storedPlays = candidatePlays.length === 0 ? [] : await prisma.trackPlay.findMany({
+    where: {
+      userId: session.userId,
+      imported: false,
+      trackId: { in: [...new Set(candidatePlays.map((play) => play.trackId))] },
+      playedAt: {
+        gte: new Date(Math.min(...playTimes) - PLAY_DEDUPE_TOLERANCE_MS),
+        lte: new Date(Math.max(...playTimes) + PLAY_DEDUPE_TOLERANCE_MS),
+      },
+    },
+    select: { trackId: true, playedAt: true },
+  });
+  const newPlays = filterNearDuplicatePlays(candidatePlays, storedPlays);
+
   const { count: inserted } = await prisma.trackPlay.createMany({
     skipDuplicates: true,
-    data: insertablePlays.map((play) => ({
-      playedAt: new Date(play.playedAt),
-      userId: session.userId,
-      trackId: play.trackId,
-      imported: true,
-    })) satisfies Prisma.TrackPlayCreateManyInput[],
+    data: newPlays,
   });
 
   return NextResponse.json({
