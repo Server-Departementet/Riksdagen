@@ -37,7 +37,11 @@ jobs:
           node-version: 26
 
       - name: Install dependencies
-        run: corepack enable && yarn install --immutable
+        # node 26 no longer bundles corepack
+        run: |
+          npm install -g corepack --silent
+          corepack enable
+          yarn install --immutable
 
       - name: Generate Prisma client
         # main still carries the read-only bot-DB mirror client; nothing connects during CI
