@@ -1,7 +1,7 @@
 import "server-only";
 import type { Quote } from "@/app/citat/types";
-import type { Prisma, Quote as QuoteRow } from "@/lib/prisma-bot/generated/client";
-import { botPrisma } from "@/lib/prisma-bot";
+import type { Prisma, Quote as QuoteRow } from "@/lib/prisma/generated";
+import { prisma } from "@/lib/prisma";
 import type { QuoteFacet } from "@/lib/quote-facets";
 import type { QuoteSortDirection, QuoteSortValue } from "@/lib/quote-sort";
 import {
@@ -20,9 +20,9 @@ export type QuoteFilter = {
   sortDirection?: QuoteSortDirection;
 };
 
-/** Read the canonical quotes from the Riksdagen-Bot database (over LAN), newest first. */
+/** Read the quotes (injected by the Riksdagen-Bot crawler), newest first. */
 export async function getQuotes(): Promise<Quote[]> {
-  const rows = await botPrisma.quote.findMany({ orderBy: { createdTimestamp: "desc" } });
+  const rows = await prisma.quote.findMany({ orderBy: { createdTimestamp: "desc" } });
   return rows.map(fromQuoteRow);
 }
 
@@ -34,7 +34,7 @@ export async function getFilteredQuotes({
   sortValue = DEFAULT_QUOTE_SORT_VALUE,
   sortDirection = DEFAULT_QUOTE_SORT_DIRECTION,
 }: QuoteFilter): Promise<Quote[]> {
-  const rows = await botPrisma.quote.findMany({
+  const rows = await prisma.quote.findMany({
     where: buildQuoteWhere({ quotees, senders, searchQuery }),
   });
 
@@ -81,7 +81,7 @@ export async function getFilteredQuotes({
  * The search query is applied first, so the list mirrors what can actually be shown.
  */
 export async function getQuoteeCounts(searchQuery?: string): Promise<QuoteFacet[]> {
-  const groups = await botPrisma.quote.groupBy({
+  const groups = await prisma.quote.groupBy({
     by: ["quotee"],
     where: buildQuoteWhere({ searchQuery }),
     _count: { _all: true },
@@ -92,7 +92,7 @@ export async function getQuoteeCounts(searchQuery?: string): Promise<QuoteFacet[
 
 /** The distinct senders available for filtering, counted the same way as the quotees. */
 export async function getSenderCounts(searchQuery?: string): Promise<QuoteFacet[]> {
-  const groups = await botPrisma.quote.groupBy({
+  const groups = await prisma.quote.groupBy({
     by: ["sender"],
     where: buildQuoteWhere({ searchQuery }),
     _count: { _all: true },

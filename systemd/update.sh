@@ -23,6 +23,10 @@ runuser -u riks -- bash -c '
   bash systemd/build.sh
 '
 
+# Log dir for the riks cron jobs (recent plays + minister sync)
+mkdir -p /var/log/riksdagen-web
+chown riks:riks /var/log/riksdagen-web
+
 # Refresh service + cron definitions
 cp "$REPO/systemd/next-start.service" /etc/systemd/system/
 crontab -u riks "$REPO/systemd/cron"

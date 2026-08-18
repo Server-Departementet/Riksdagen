@@ -1,4 +1,4 @@
 # Installed as the riks user's crontab (crontab -u riks systemd/cron).
 # The maintenance reboot lives in systemd/cron.root.
-# The data cron jobs (recent plays, minister sync) exist on the dev branch and
-# arrive here when it merges.
+*/15 *  * * *   /home/riks/Riksdagen/systemd/tsx-log.sh scripts/post-recent-plays.ts >> /var/log/riksdagen-web/recent-plays.log 2>&1
+7 3     * * *   /home/riks/Riksdagen/systemd/tsx-log.sh scripts/make-users.ts >> /var/log/riksdagen-web/make-users.log 2>&1
