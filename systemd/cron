@@ -1,5 +1,4 @@
-# The web app has no data/cron jobs anymore. Data imports (recent plays, user sync)
-# and the Discord bots live in the Riksdagen-Backend repo.
-
-# Weekly maintenance reboot
-34 4    * * 1   /sbin/reboot
+# Installed as the riks user's crontab (crontab -u riks systemd/cron).
+# The maintenance reboot lives in systemd/cron.root.
+# The data cron jobs (recent plays, minister sync) exist on the dev branch and
+# arrive here when it merges.

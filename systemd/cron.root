@@ -1,0 +1,4 @@
+# Installed as root's crontab (crontab systemd/cron.root) — reboot needs root.
+
+# Weekly maintenance reboot
+34 4    * * 1   /sbin/reboot
