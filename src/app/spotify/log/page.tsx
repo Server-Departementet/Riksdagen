@@ -33,8 +33,6 @@ export default async function SpotifyLogPage() {
     }
   }
 
-  const collecting = process.env.COLLECT_RECENT_PLAYS !== "false";
-
   return <main className="flex flex-col items-center px-4 pb-16">
     <div className="w-full max-w-2xl">
       <h1 className="mt-4">Hämtningslogg</h1>
@@ -45,12 +43,7 @@ export default async function SpotifyLogPage() {
         ditt konto på <a href="/spotify" className="global">Spotify-sidan</a>.
       </p>
 
-      {!collecting && (
-        <p className="mt-4">
-          Hämtning är avstängd i den här miljön — spelningar samlas in i produktion.
-        </p>
-      )}
-      {collecting && runs.length === 0 && (
+      {runs.length === 0 && (
         <p className="mt-4">Inga körningar loggade ännu.</p>
       )}
 

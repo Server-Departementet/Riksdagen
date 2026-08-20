@@ -27,8 +27,7 @@
     "start": "next start",
     "lint": "tsc --noEmit -p ./tsconfig.json && eslint -c ./eslint.config.ts --cache --concurrency auto",
     "seed-colors": "tsx scripts/seed-colors.ts",
-    "make-users": "tsx scripts/make-users.ts",
-    "post-recent-plays": "tsx scripts/post-recent-plays.ts"
+    "make-users": "tsx scripts/make-users.ts"
   },
   "dependencies": {
     "@prisma/client": "^7.9.1",
