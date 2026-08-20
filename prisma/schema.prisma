@@ -12,9 +12,28 @@ model User {
   id   String  @id // Discord ID
   name String?
 
-  trackPlays      TrackPlay[]
-  spotifyAccount  SpotifyAccount?
+  trackPlays       TrackPlay[]
+  spotifyAccount   SpotifyAccount?
   trackPlayFetches TrackPlayFetch[]
+  importQueue      ImportQueueItem[]
+}
+
+// Takeout plays waiting for the server-side import. The import API only
+// enqueues; scripts/process-import-queue.ts drains the queue from cron at a
+// deliberately slow pace so the dev-mode Spotify app is never hammered.
+model ImportQueueItem {
+  id       BigInt   @id @default(autoincrement())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  trackId  String // Spotify track id — no FK: the track is usually not in the catalog yet
+  playedAt DateTime
+  queuedAt DateTime @default(now())
+  status   String   @default("pending") // pending | done | duplicate | failed
+  reason   String? // Why a failed row failed (track unresolvable etc.)
+
+  // Re-uploading the same takeout file is a no-op
+  @@unique([userId, trackId, playedAt])
+  @@index([status])
 }
 
 // One row per minister per recently-played fetch (scripts/post-recent-plays.ts),
