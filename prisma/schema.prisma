@@ -12,8 +12,27 @@ model User {
   id   String  @id // Discord ID
   name String?
 
-  trackPlays     TrackPlay[]
-  spotifyAccount SpotifyAccount?
+  trackPlays      TrackPlay[]
+  spotifyAccount  SpotifyAccount?
+  trackPlayFetches TrackPlayFetch[]
+}
+
+// One row per minister per recently-played fetch (scripts/post-recent-plays.ts),
+// pruned after 30 days. /spotify/log shows the latest runs so ministers can
+// check their own imports.
+model TrackPlayFetch {
+  id    Int      @id @default(autoincrement())
+  runAt DateTime // Shared by every row of one script run
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  status   String // ok | token-failed | fetch-failed | write-failed
+  inserted Int     @default(0)
+  skipped  Int     @default(0) // Plays already in the database
+  detail   String? @db.Text
+
+  @@index([runAt])
 }
 
 // Spotify OAuth refresh tokens, written by /api/auth/callback/spotify

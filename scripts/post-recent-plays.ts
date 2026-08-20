@@ -35,6 +35,16 @@ async function addRecentTrackPlays() {
 
   const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
 
+  // Every user's outcome this run is recorded under one timestamp and shown
+  // on /spotify/log, so ministers can check their own imports
+  const runAt = new Date();
+  async function logFetch(userId: string, status: string, inserted: number, skipped: number, detail?: string) {
+    await prisma.trackPlayFetch.create({ data: { runAt, userId, status, inserted, skipped, detail } })
+      .catch((err: unknown) => {
+        console.error("Error recording fetch log:", err);
+      });
+  }
+
   try {
     console.info("Fetching connected Spotify accounts.");
     const spotifyAccounts = await prisma.spotifyAccount.findMany({ include: { user: true } });
@@ -51,6 +61,7 @@ async function addRecentTrackPlays() {
       const refreshed = await refreshSpotifyAccessToken(account.refreshToken);
       if (!refreshed) {
         console.warn(`Could not refresh Spotify token for user: ${username}. They may need to reconnect at /spotify.`);
+        await logFetch(dbUser.id, "token-failed", 0, 0, "Koppla om ditt Spotify-konto på /spotify");
         continue;
       }
       if (refreshed.newRefreshToken) {
@@ -67,6 +78,12 @@ async function addRecentTrackPlays() {
        */
       const recentlyPlayedTracks = await getRecentlyPlayedTracks(spotifyToken, username);
       if (!recentlyPlayedTracks) {
+        await logFetch(dbUser.id, "fetch-failed", 0, 0, "Spotify svarade med fel");
+        continue;
+      }
+      if (recentlyPlayedTracks.items.length === 0) {
+        console.info(`No recently played tracks found for user: ${username}`);
+        await logFetch(dbUser.id, "ok", 0, 0);
         continue;
       }
       console.info(`Fetched ${recentlyPlayedTracks.items.length} recent plays for ${username}.`);
@@ -118,7 +135,7 @@ async function addRecentTrackPlays() {
       /* 
        * Write Genres, Artists, Albums, Tracks and TrackPlays to database
        */
-      await prisma.$transaction(async (prisma) => {
+      const counts = await prisma.$transaction(async (prisma) => {
         console.info(`Writing data for ${username} in a transaction.`);
         // Insert Genres, skip dupes
         await prisma.genre.createMany({
@@ -267,11 +284,24 @@ async function addRecentTrackPlays() {
           data: candidatePlays,
         });
         console.info(`Inserted ${inserted.count} track plays (${candidatePlays.length - inserted.count} already stored).`);
+        return { inserted: inserted.count, skipped: candidatePlays.length - inserted.count };
       })
         .catch((err: unknown) => {
           console.error(`Error upserting data for user ${username}:`, err);
+          return { error: err instanceof Error ? err.message : String(err) };
         });
+      if ("error" in counts) {
+        await logFetch(dbUser.id, "write-failed", 0, 0, counts.error);
+      }
+      else {
+        await logFetch(dbUser.id, "ok", counts.inserted, counts.skipped);
+      }
     }
+
+    // The log only needs to cover recent history
+    await prisma.trackPlayFetch.deleteMany({
+      where: { runAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+    });
   } finally {
     console.info("Disconnecting Prisma.");
     await prisma.$disconnect();
@@ -342,12 +372,8 @@ async function getRecentlyPlayedTracks(token: string, username: string): Promise
     return null;
   }
   const recentlyPlayedTracks = await recentlyPlayedTracksResponse.json() as UsersRecentlyPlayedTracksResponse;
-  if (!recentlyPlayedTracks.items || recentlyPlayedTracks.items.length === 0) {
-    console.warn(`No recently played tracks found for user: ${username}`);
-    return null;
-  }
-  // Filter out local tracks
-  recentlyPlayedTracks.items = recentlyPlayedTracks.items.filter((item) => !item.track.is_local);
+  // Filter out local tracks; an empty list is a valid result, not an error
+  recentlyPlayedTracks.items = (recentlyPlayedTracks.items ?? []).filter((item) => !item.track.is_local);
 
   return recentlyPlayedTracks;
 }

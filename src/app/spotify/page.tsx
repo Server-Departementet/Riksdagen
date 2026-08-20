@@ -85,6 +85,10 @@ export default async function SpotifyPage({
         Spotify-statistik
       </h1>
 
+      <a href="/spotify/log" className="global w-fit -mt-3">
+        Hämtningslogg
+      </a>
+
       {!spotifyConnected && (
         <a
           href="/api/auth/spotify"
