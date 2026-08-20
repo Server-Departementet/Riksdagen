@@ -1,5 +1,6 @@
 "use server";
 
+import { cacheLife } from "next/cache";
 import { prisma } from "@/lib/prisma/prisma";
 import type { TrackWithCompany } from "@/types";
 
@@ -9,6 +10,7 @@ export type TrackDataFilters = {
 
 export async function getTrackDataBatch(ISRCs: string[], filters?: TrackDataFilters): Promise<TrackWithCompany[]> {
   "use cache";
+  cacheLife("minutes"); // Stats shift constantly (imports, 15-min fetches); the default 15-min revalidation made independently cached pieces disagree
 
   const uniqueISRCs = Array.from(new Set(ISRCs.filter(Boolean)));
   if (uniqueISRCs.length === 0) return [];

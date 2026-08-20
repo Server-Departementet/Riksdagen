@@ -1,5 +1,6 @@
 "use server";
 
+import { cacheLife } from "next/cache";
 import { prisma } from "@/lib/prisma/prisma";
 import { buildTrackSearchWhere } from "@/lib/track-search";
 import type { SpotifySortDirection, SpotifySortValue } from "@/lib/spotify-sort";
@@ -18,6 +19,7 @@ export async function getSortedTrackISRCs({
   sortDirection,
 }: GetSortedTrackISRCsOptions): Promise<string[]> {
   "use cache";
+  cacheLife("minutes"); // Stats shift constantly (imports, 15-min fetches); the default 15-min revalidation made independently cached pieces disagree
 
   const filteredUserIds = Array.from(new Set(userIds.filter(Boolean)));
   if (filteredUserIds.length === 0) {

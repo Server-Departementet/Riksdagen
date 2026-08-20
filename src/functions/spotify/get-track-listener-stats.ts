@@ -1,5 +1,6 @@
 "use server";
 
+import { cacheLife } from "next/cache";
 import { prisma } from "@/lib/prisma/prisma";
 
 export type TrackListenerStatsOptions = {
@@ -15,6 +16,7 @@ export type TrackListenerStat = {
 
 export async function getTrackListenerStats(ISRC: string, options?: TrackListenerStatsOptions): Promise<TrackListenerStat[]> {
   "use cache";
+  cacheLife("minutes"); // Stats shift constantly (imports, 15-min fetches); the default 15-min revalidation made independently cached pieces disagree
 
   const trimmedISRC = ISRC?.trim();
   if (!trimmedISRC) return [];
