@@ -23,13 +23,36 @@ type TakeoutEntry = {
   spotify_track_uri?: string | null;
 };
 
+type SkippedBreakdown = {
+  /** Entries without a spotify:track: URI — podcasts, audiobooks, videos */
+  notTracks: number;
+  /** Track plays under Spotify's 30-second stream threshold */
+  tooShort: number;
+  /** Entries with a missing or unparseable timestamp */
+  badTimestamps: number;
+  /** The same play appearing more than once within the uploaded files */
+  inFileDuplicates: number;
+};
+
 type Status =
   | { state: "idle" }
   | { state: "working"; sent: number; total: number }
-  | { state: "done"; result: Totals; skippedEntries: number }
+  | { state: "done"; result: Totals; skipped: SkippedBreakdown }
   | { state: "error"; message: string };
 
 type Totals = Pick<ImportResponse, "queued" | "alreadyQueued" | "alreadyImported">;
+
+function formatSkipped(skipped: SkippedBreakdown): string {
+  const parts = [
+    skipped.tooShort > 0 && `${skipped.tooShort.toLocaleString("sv-SE")} spelningar under 30 sekunder`,
+    skipped.notTracks > 0 && `${skipped.notTracks.toLocaleString("sv-SE")} poddar/videor`,
+    skipped.inFileDuplicates > 0 && `${skipped.inFileDuplicates.toLocaleString("sv-SE")} dubblettrader i filerna`,
+    skipped.badTimestamps > 0 && `${skipped.badTimestamps.toLocaleString("sv-SE")} poster utan giltig tidsstämpel`,
+  ].filter((part): part is string => !!part);
+
+  if (parts.length === 0) return "";
+  return ` Hoppades över: ${parts.join(", ")}.`;
+}
 
 export function ImportPanel() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -55,7 +78,7 @@ export function ImportPanel() {
     if (!files || files.length === 0) return;
 
     try {
-      let totalEntries = 0;
+      const skipped: SkippedBreakdown = { notTracks: 0, tooShort: 0, badTimestamps: 0, inFileDuplicates: 0 };
       const playsByKey = new Map<string, { trackId: string; playedAt: string }>();
       for (const file of Array.from(files)) {
         const entries = JSON.parse(await file.text()) as unknown;
@@ -64,14 +87,27 @@ export function ImportPanel() {
           return;
         }
 
-        totalEntries += entries.length;
         for (const entry of entries as TakeoutEntry[]) {
-          if (!entry.spotify_track_uri?.startsWith(TRACK_URI_PREFIX)) continue;
-          if ((entry.ms_played ?? 0) < MIN_PLAY_MS) continue;
-          if (!entry.ts || isNaN(new Date(entry.ts).getTime())) continue;
+          if (!entry.spotify_track_uri?.startsWith(TRACK_URI_PREFIX)) {
+            skipped.notTracks++;
+            continue;
+          }
+          if ((entry.ms_played ?? 0) < MIN_PLAY_MS) {
+            skipped.tooShort++;
+            continue;
+          }
+          if (!entry.ts || isNaN(new Date(entry.ts).getTime())) {
+            skipped.badTimestamps++;
+            continue;
+          }
 
           const trackId = entry.spotify_track_uri.slice(TRACK_URI_PREFIX.length);
-          playsByKey.set(`${trackId}@${entry.ts}`, { trackId, playedAt: entry.ts });
+          const key = `${trackId}@${entry.ts}`;
+          if (playsByKey.has(key)) {
+            skipped.inFileDuplicates++;
+            continue;
+          }
+          playsByKey.set(key, { trackId, playedAt: entry.ts });
         }
       }
 
@@ -109,7 +145,7 @@ export function ImportPanel() {
         setStatus({ state: "working", sent: Math.min(i + CHUNK_SIZE, plays.length), total: plays.length });
       }
 
-      setStatus({ state: "done", result: totals, skippedEntries: totalEntries - plays.length });
+      setStatus({ state: "done", result: totals, skipped });
       void refreshQueue();
     }
     catch (err) {
@@ -171,7 +207,7 @@ export function ImportPanel() {
               : "Allt i filerna är redan importerat eller köat sedan tidigare."}
             {status.result.alreadyQueued > 0 && ` ${formatNumber(status.result.alreadyQueued)} låg redan i kön.`}
             {status.result.alreadyImported > 0 && ` ${formatNumber(status.result.alreadyImported)} var redan importerade.`}
-            {status.skippedEntries > 0 && ` ${formatNumber(status.skippedEntries)} poster i filerna var inte importerbara låtspelningar.`}
+            {formatSkipped(status.skipped)}
           </p>
         )}
 
