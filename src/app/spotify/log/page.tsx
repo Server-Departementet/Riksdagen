@@ -6,10 +6,13 @@ export const dynamic = "force-dynamic";
 
 const statusLabels: Record<string, string> = {
   "ok": "ok",
+  "import": "import",
   "token-failed": "ogiltig token",
   "fetch-failed": "Spotify-fel",
   "write-failed": "databasfel",
 };
+
+const okStatuses = ["ok", "import"];
 
 export default async function SpotifyLogPage() {
   const session = await auth();
@@ -63,10 +66,10 @@ export default async function SpotifyLogPage() {
                   <span className="w-32 shrink-0 truncate" title={row.user.name ?? row.userId}>
                     {row.user.name ?? row.userId}
                   </span>
-                  <span className={`w-28 shrink-0 ${row.status === "ok" ? "" : "text-red-600 font-bold"}`}>
+                  <span className={`w-28 shrink-0 ${okStatuses.includes(row.status) ? "" : "text-red-600 font-bold"}`}>
                     {statusLabels[row.status] ?? row.status}
                   </span>
-                  {row.status === "ok" && (
+                  {okStatuses.includes(row.status) && (
                     <span className="tabular-nums">
                       {row.inserted} nya
                       {row.skipped > 0 ? `, ${row.skipped} redan sparade` : ""}

@@ -2,19 +2,20 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import type { ImportResponse } from "@/app/api/spotify/import/route";
+import { useEffect, useState } from "react";
+import type { ImportResponse, QueueStatus } from "@/app/api/spotify/import/route";
 
 /**
  * Historic takeout import. Parses "Streaming_History_Audio_*.json" files from
  * a Spotify data export locally, keeps audio track plays of at least 30
- * seconds (Spotify's own threshold for a counted stream), and uploads them in
- * chunks to /api/spotify/import.
+ * seconds (Spotify's own threshold for a counted stream), and enqueues them on
+ * the server. The server drains the queue slowly on its own; progress shows up
+ * on /spotify/log and in the queue counter here.
  */
 
 const TRACK_URI_PREFIX = "spotify:track:";
 const MIN_PLAY_MS = 30_000;
-const CHUNK_SIZE = 500;
+const CHUNK_SIZE = 1000;
 
 type TakeoutEntry = {
   ts?: string;
@@ -24,18 +25,31 @@ type TakeoutEntry = {
 
 type Status =
   | { state: "idle" }
-  | { state: "working"; sent: number; total: number; pendingTracks?: number }
+  | { state: "working"; sent: number; total: number }
   | { state: "done"; result: Totals; skippedEntries: number }
   | { state: "error"; message: string };
 
-type Totals = Pick<ImportResponse, "inserted" | "duplicates" | "unresolved" | "newTracks">;
+type Totals = Pick<ImportResponse, "queued" | "alreadyQueued" | "alreadyImported">;
 
 export function ImportPanel() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [status, setStatus] = useState<Status>({ state: "idle" });
+  const [queue, setQueue] = useState<QueueStatus | null>(null);
 
   const working = status.state === "working";
   const formatNumber = (n: number) => n.toLocaleString("sv-SE");
+
+  async function refreshQueue() {
+    const response = await fetch("/api/spotify/import").catch(() => null);
+    if (!response?.ok) return;
+    setQueue(await response.json() as QueueStatus);
+  }
+
+  useEffect(() => {
+    // Fetch-on-mount: the queue counter comes from the server, not props
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshQueue();
+  }, []);
 
   async function startImport() {
     if (!files || files.length === 0) return;
@@ -69,55 +83,38 @@ export function ImportPanel() {
 
       setStatus({ state: "working", sent: 0, total: plays.length });
 
-      const totals: Totals = { inserted: 0, duplicates: 0, unresolved: 0, newTracks: 0 };
+      const totals: Totals = { queued: 0, alreadyQueued: 0, alreadyImported: 0 };
       for (let i = 0; i < plays.length; i += CHUNK_SIZE) {
         const chunk = plays.slice(i, i + CHUNK_SIZE);
 
-        // The server resolves a bounded number of unknown tracks per request
-        // and reports pending > 0 until the chunk is fully processed
-        let pending = Infinity;
-        let attempts = 0;
-        while (pending > 0) {
-          if (++attempts > 500) {
-            setStatus({ state: "error", message: "Importen kom inte vidare. Det är säkert att försöka igen." });
-            return;
-          }
-
-          const response = await fetch("/api/spotify/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plays: chunk }),
+        const response = await fetch("/api/spotify/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plays: chunk }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => null) as { error?: string } | null;
+          setStatus({
+            state: "error",
+            message: `Uppladdningen avbröts efter ${formatNumber(i)} av ${formatNumber(plays.length)} spelningar: ${body?.error ?? `HTTP ${response.status}`}. Det är säkert att försöka igen.`,
           });
-          if (!response.ok) {
-            const body = await response.json().catch(() => null) as { error?: string } | null;
-            setStatus({
-              state: "error",
-              message: `Importen avbröts efter ${formatNumber(i)} av ${formatNumber(plays.length)} spelningar: ${body?.error ?? `HTTP ${response.status}`}. Det är säkert att försöka igen.`,
-            });
-            return;
-          }
-
-          const result = await response.json() as ImportResponse;
-          pending = result.pending;
-          totals.newTracks += result.newTracks;
-          if (pending > 0) {
-            setStatus({ state: "working", sent: i, total: plays.length, pendingTracks: pending });
-            continue;
-          }
-
-          totals.inserted += result.inserted;
-          totals.duplicates += result.duplicates;
-          totals.unresolved += result.unresolved;
+          return;
         }
+
+        const result = await response.json() as ImportResponse;
+        totals.queued += result.queued;
+        totals.alreadyQueued += result.alreadyQueued;
+        totals.alreadyImported += result.alreadyImported;
 
         setStatus({ state: "working", sent: Math.min(i + CHUNK_SIZE, plays.length), total: plays.length });
       }
 
       setStatus({ state: "done", result: totals, skippedEntries: totalEntries - plays.length });
+      void refreshQueue();
     }
     catch (err) {
-      console.error("Takeout import failed:", err);
-      setStatus({ state: "error", message: "Något gick fel under importen. Det är säkert att försöka igen." });
+      console.error("Takeout upload failed:", err);
+      setStatus({ state: "error", message: "Något gick fel under uppladdningen. Det är säkert att försöka igen." });
     }
   }
 
@@ -131,8 +128,10 @@ export function ImportPanel() {
         <p className="text-sm">
           Ladda upp <code>Streaming_History_Audio_*.json</code> från
           din Spotify-dataexport. Endast låtar spelade i minst 30 sekunder
-          importeras — poddar och videor hoppas över. Dubbletter läggs inte in,
-          så det är säkert att köra om.
+          importeras — poddar och videor hoppas över. Uppladdningen köar bara
+          spelningarna; servern betar av kön i lugn takt och förloppet syns
+          på <a href="/spotify/log" className="global">Hämtningsloggen</a>.
+          Samma fil igen köas inte om.
         </p>
 
         <Input
@@ -150,24 +149,28 @@ export function ImportPanel() {
           disabled={working || !files || files.length === 0}
           onClick={() => void startImport()}
         >
-          {working ? "Importerar…" : "Importera"}
+          {working ? "Laddar upp…" : "Importera"}
         </Button>
+
+        {queue && queue.pending > 0 && (
+          <p className="text-sm opacity-60" aria-live="polite">
+            {formatNumber(queue.pending)} spelningar väntar i kön.
+          </p>
+        )}
 
         {status.state === "working" && (
           <p className="text-sm" aria-live="polite">
-            Skickar {formatNumber(status.sent)} av {formatNumber(status.total)} spelningar…
-            {status.pendingTracks !== undefined && (
-              <> Hämtar låtinfo ({formatNumber(status.pendingTracks)} låtar kvar i denna del)…</>
-            )}
+            Laddar upp {formatNumber(status.sent)} av {formatNumber(status.total)} spelningar…
           </p>
         )}
 
         {status.state === "done" && (
           <p className="text-sm" aria-live="polite">
-            Klart! {formatNumber(status.result.inserted)} spelningar importerades
-            ({formatNumber(status.result.newTracks)} nya låtar).
-            {status.result.duplicates > 0 && ` ${formatNumber(status.result.duplicates)} fanns redan.`}
-            {status.result.unresolved > 0 && ` ${formatNumber(status.result.unresolved)} kunde inte matchas mot Spotify.`}
+            {status.result.queued > 0
+              ? `Klart! ${formatNumber(status.result.queued)} spelningar köades.`
+              : "Allt i filerna är redan importerat eller köat sedan tidigare."}
+            {status.result.alreadyQueued > 0 && ` ${formatNumber(status.result.alreadyQueued)} låg redan i kön.`}
+            {status.result.alreadyImported > 0 && ` ${formatNumber(status.result.alreadyImported)} var redan importerade.`}
             {status.skippedEntries > 0 && ` ${formatNumber(status.skippedEntries)} poster i filerna var inte importerbara låtspelningar.`}
           </p>
         )}

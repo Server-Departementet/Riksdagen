@@ -1,57 +1,41 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getSpotifyAppToken } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma/prisma";
-import { filterNearDuplicatePlays, PLAY_DEDUPE_TOLERANCE_MS } from "@/lib/play-dedupe";
-import type { Prisma } from "@/lib/prisma/generated";
 
 /**
- * Historic takeout import. Receives a chunk of plays parsed client-side from
- * "Streaming_History_Audio_*.json", fetches metadata for tracks the database
- * has not seen before, and inserts the plays for the logged-in user with
- * imported = true.
+ * Historic takeout import, enqueue side. Receives chunks of plays parsed
+ * client-side from "Streaming_History_Audio_*.json" and writes them to the
+ * import queue — no Spotify calls happen here, so uploads are instant.
+ * scripts/process-import-queue.ts drains the queue from cron at a slow pace.
  *
- * Spotify's batch metadata endpoints (/v1/tracks?ids=, /v1/artists?ids=)
- * return 403 for this app (development-mode restriction), so metadata is
- * fetched one resource at a time. To keep each request short, at most
- * MAX_NEW_TRACKS_PER_REQUEST unknown tracks are resolved per call; while more
- * remain the response carries pending > 0 and the client re-sends the same
- * chunk until it drains.
+ * Re-uploading the same file is a no-op: plays already in the database are
+ * counted as alreadyImported, plays already queued as alreadyQueued (the
+ * queue's (userId, trackId, playedAt) unique key absorbs them).
  */
 
 const MAX_PLAYS_PER_REQUEST = 1000;
-const MAX_NEW_TRACKS_PER_REQUEST = 15;
 const SPOTIFY_ID_REGEX = /^[0-9A-Za-z]{22}$/;
-
-// Tracks Spotify no longer resolves (removed, local-only, or missing ISRC),
-// remembered so retried chunks don't refetch them. Cleared on restart, which
-// only costs one extra lookup round.
-const unresolvableTrackIds = new Set<string>();
 
 type ImportPlay = {
   trackId: string;
   playedAt: string; // ISO timestamp
 };
 
-// The bundled @types/spotify-api predates these fields; the API returns them
-type SpotifyTrack = SpotifyApi.TrackObjectFull & {
-  is_local?: boolean;
-  album: SpotifyApi.AlbumObjectSimplified & { release_date?: string };
+export type ImportResponse = {
+  received: number;
+  queued: number;
+  /** Plays this user already has in the queue */
+  alreadyQueued: number;
+  /** Plays this user already has in the database (same track and second) */
+  alreadyImported: number;
 };
 
-// Spotify no longer returns `genres` on artist objects for this app
-type SpotifyArtist = Omit<SpotifyApi.ArtistObjectFull, "genres"> & { genres?: string[] };
-
-export type ImportResponse = {
-  /** Unknown tracks still to resolve — re-send the same chunk while > 0 */
+export type QueueStatus = {
   pending: number;
-  newTracks: number;
-  received: number;
-  inserted: number;
-  duplicates: number;
-  /** Plays whose track could not be resolved (removed from Spotify, local file, or missing ISRC) */
-  unresolved: number;
+  done: number;
+  duplicate: number;
+  failed: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -76,91 +60,59 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const uniqueTrackIds = [...new Set(plays.map((play) => play.trackId))];
-  const existingTracks = await prisma.track.findMany({
-    where: { id: { in: uniqueTrackIds } },
-    select: { id: true },
-  });
-  const knownTrackIds = new Set(existingTracks.map((track) => track.id));
-  const missingTrackIds = uniqueTrackIds
-    .filter((id) => !knownTrackIds.has(id) && !unresolvableTrackIds.has(id));
-
-  let newTracks = 0;
-  if (missingTrackIds.length > 0) {
-    const token = await getSpotifyAppToken();
-    if (!token) {
-      return NextResponse.json({ error: "Could not authenticate against Spotify" }, { status: 502 });
-    }
-
-    try {
-      const created = await importMissingTracks(missingTrackIds.slice(0, MAX_NEW_TRACKS_PER_REQUEST), token);
-      newTracks = created.length;
-      for (const id of created) knownTrackIds.add(id);
-    }
-    catch (err) {
-      console.error("Takeout import: metadata fetch failed:", err);
-      return NextResponse.json({ error: "Spotify metadata fetch failed" }, { status: 502 });
-    }
-  }
-
-  const pending = missingTrackIds.length - Math.min(missingTrackIds.length, MAX_NEW_TRACKS_PER_REQUEST);
-  if (pending > 0) {
-    // More tracks to resolve — plays are inserted once the chunk is fully resolved
-    return NextResponse.json({
-      pending,
-      newTracks,
-      received: plays.length,
-      inserted: 0,
-      duplicates: 0,
-      unresolved: 0,
-    } satisfies ImportResponse);
-  }
-
-  const insertablePlays = plays.filter((play) => knownTrackIds.has(play.trackId));
-  const candidatePlays = insertablePlays.map((play) => ({
-    playedAt: new Date(play.playedAt),
-    userId: session.userId,
-    trackId: play.trackId,
-    imported: true,
-  })) satisfies Prisma.TrackPlayCreateManyInput[];
-
-  // The recently-played job records the same play with a timestamp seconds off
-  // from the takeout's, so exact-PK skipDuplicates can't catch those — drop
-  // candidates that have a stored play within the tolerance.
-  //
-  // Only job-recorded plays (imported = false) are compared against. Timestamps
-  // never drift between takeout exports, so an already-imported play collides on
-  // the PK and skipDuplicates handles it; running the tolerance against those too
-  // would throw away genuine repeat listens seconds apart, which takeout records
-  // in full (it logs skips, unlike the 50-item recently-played window).
-  const playTimes = candidatePlays.map((play) => play.playedAt.getTime());
-  const storedPlays = candidatePlays.length === 0 ? [] : await prisma.trackPlay.findMany({
+  // Exact-match plays that are already in the database (imported plays keep
+  // their takeout timestamps verbatim, so a re-upload collides exactly)
+  const storedPlays = await prisma.trackPlay.findMany({
     where: {
       userId: session.userId,
-      imported: false,
-      trackId: { in: [...new Set(candidatePlays.map((play) => play.trackId))] },
-      playedAt: {
-        gte: new Date(Math.min(...playTimes) - PLAY_DEDUPE_TOLERANCE_MS),
-        lte: new Date(Math.max(...playTimes) + PLAY_DEDUPE_TOLERANCE_MS),
-      },
+      trackId: { in: [...new Set(plays.map((play) => play.trackId))] },
+      playedAt: { in: plays.map((play) => new Date(play.playedAt)) },
     },
     select: { trackId: true, playedAt: true },
   });
-  const newPlays = filterNearDuplicatePlays(candidatePlays, storedPlays);
+  const storedKeys = new Set(storedPlays.map((play) => `${play.trackId}@${play.playedAt.getTime()}`));
 
-  const { count: inserted } = await prisma.trackPlay.createMany({
+  const toQueue = plays.filter((play) => !storedKeys.has(`${play.trackId}@${new Date(play.playedAt).getTime()}`));
+  const alreadyImported = plays.length - toQueue.length;
+
+  const { count: queued } = await prisma.importQueueItem.createMany({
     skipDuplicates: true,
-    data: newPlays,
+    data: toQueue.map((play) => ({
+      userId: session.userId,
+      trackId: play.trackId,
+      playedAt: new Date(play.playedAt),
+    })),
   });
 
   return NextResponse.json({
-    pending: 0,
-    newTracks,
     received: plays.length,
-    inserted,
-    duplicates: insertablePlays.length - inserted,
-    unresolved: plays.length - insertablePlays.length,
+    queued,
+    alreadyQueued: toQueue.length - queued,
+    alreadyImported,
   } satisfies ImportResponse);
+}
+
+/** Queue status for the logged-in user, shown in the import panel. */
+export async function GET() {
+  const session = await auth();
+  if (session?.role !== "minister") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  const groups = await prisma.importQueueItem.groupBy({
+    by: ["status"],
+    where: { userId: session.userId },
+    _count: { _all: true },
+  });
+
+  const status: QueueStatus = { pending: 0, done: 0, duplicate: 0, failed: 0 };
+  for (const group of groups) {
+    if (group.status in status) {
+      status[group.status as keyof QueueStatus] = group._count._all;
+    }
+  }
+
+  return NextResponse.json(status satisfies QueueStatus);
 }
 
 function parsePlays(body: unknown): ImportPlay[] | null {
@@ -177,140 +129,4 @@ function parsePlays(body: unknown): ImportPlay[] | null {
     parsed.push({ trackId, playedAt });
   }
   return parsed;
-}
-
-/**
- * Fetch metadata for unknown tracks and write Genres, Albums, Artists and
- * Tracks. Mirrors the backend's post-recent-plays upserts, minus image colors
- * (the seed-colors script backfills those). Returns the created track IDs.
- */
-async function importMissingTracks(trackIds: string[], token: string): Promise<string[]> {
-  const tracks: SpotifyTrack[] = [];
-  for (const trackId of trackIds) {
-    const track = await fetchSpotifyOne<SpotifyTrack>(`tracks/${trackId}`, token);
-    if (!track || track.is_local || !track.external_ids.isrc) {
-      if (track && !track.external_ids.isrc) {
-        console.warn(`No ISRC found for track ${track.name} (${track.id}). Skipping.`);
-      }
-      unresolvableTrackIds.add(trackId);
-      continue;
-    }
-    tracks.push(track);
-  }
-  if (tracks.length === 0) return [];
-
-  const albums = uniqueById(tracks.map((track) => track.album));
-
-  const artistIdsOnTracks = [...new Set(tracks.flatMap((track) => track.artists.map((artist) => artist.id)))];
-  const existingArtistIds = new Set(
-    (await prisma.artist.findMany({
-      where: { id: { in: artistIdsOnTracks } },
-      select: { id: true },
-    })).map((artist) => artist.id),
-  );
-
-  const fetchedArtists: SpotifyArtist[] = [];
-  for (const artistId of artistIdsOnTracks.filter((id) => !existingArtistIds.has(id))) {
-    const artist = await fetchSpotifyOne<SpotifyArtist>(`artists/${artistId}`, token);
-    if (artist) fetchedArtists.push(artist);
-  }
-  const knownArtistIds = new Set([...existingArtistIds, ...fetchedArtists.map((artist) => artist.id)]);
-
-  // Insert in FK order. All writes are idempotent (skipDuplicates / connect),
-  // so a failed request can simply be retried.
-  await prisma.genre.createMany({
-    skipDuplicates: true,
-    data: fetchedArtists
-      .flatMap((artist) => artist.genres ?? [])
-      .map((genre) => ({ name: genre })) satisfies Prisma.GenreCreateManyInput[],
-  });
-
-  await prisma.album.createMany({
-    skipDuplicates: true,
-    data: albums.map((album) => ({
-      id: album.id,
-      name: album.name,
-      url: album.external_urls.spotify,
-      image: album.images[0]?.url || null,
-      releaseDate: parseReleaseDate(album.release_date),
-    })) satisfies Prisma.AlbumCreateManyInput[],
-  });
-
-  await prisma.artist.createMany({
-    skipDuplicates: true,
-    data: fetchedArtists.map((artist) => ({
-      id: artist.id,
-      name: artist.name,
-      url: artist.external_urls.spotify,
-      image: artist.images[0]?.url || null,
-    })) satisfies Prisma.ArtistCreateManyInput[],
-  });
-
-  for (const artist of fetchedArtists) {
-    if (!artist.genres?.length) continue;
-    await prisma.artist.update({
-      where: { id: artist.id },
-      data: { genres: { connect: artist.genres.map((genre) => ({ name: genre })) } },
-    });
-  }
-
-  await prisma.track.createMany({
-    skipDuplicates: true,
-    data: tracks.map((track) => ({
-      id: track.id,
-      name: track.name,
-      url: track.external_urls.spotify,
-      duration: track.duration_ms,
-      albumId: track.album.id,
-      ISRC: track.external_ids.isrc as string,
-    })) satisfies Prisma.TrackCreateManyInput[],
-  });
-
-  for (const track of tracks) {
-    const artistIds = track.artists
-      .map((artist) => artist.id)
-      .filter((id) => knownArtistIds.has(id));
-    if (artistIds.length === 0) continue;
-    await prisma.track.update({
-      where: { id: track.id },
-      data: { artists: { connect: artistIds.map((id) => ({ id })) } },
-    });
-  }
-
-  return tracks.map((track) => track.id);
-}
-
-/**
- * Single-resource metadata fetch with 429 handling. Returns null when the
- * resource does not exist (removed from Spotify); throws on other failures so
- * the whole request fails retryably instead of silently dropping data.
- */
-async function fetchSpotifyOne<T>(path: string, token: string): Promise<T | null> {
-  const url = `https://api.spotify.com/v1/${path}`;
-
-  let response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (response.status === 429) {
-    const retryAfter = Math.min(Number(response.headers.get("Retry-After") ?? 1), 30);
-    await new Promise((resolve) => setTimeout(resolve, (retryAfter + 1) * 1000));
-    response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  }
-  if (response.status === 404 || response.status === 400) return null;
-  if (!response.ok) {
-    throw new Error(`Spotify ${path} failed: ${response.status} ${await response.text()}`);
-  }
-  return await response.json() as T;
-}
-
-function uniqueById<T extends { id: string }>(items: T[]): T[] {
-  const seen = new Map<string, T>();
-  for (const item of items) {
-    if (!seen.has(item.id)) seen.set(item.id, item);
-  }
-  return [...seen.values()];
-}
-
-function parseReleaseDate(releaseDate: string | undefined): Date | null {
-  if (!releaseDate) return null;
-  const date = new Date(releaseDate);
-  return isNaN(date.getTime()) ? null : date;
 }
