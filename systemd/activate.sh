@@ -17,7 +17,9 @@ runuser -u riks -- bash -c "
   git checkout --force --detach '$SHA'
   chmod +x systemd/*.sh
   corepack enable > /dev/null 2>&1 || true
-  yarn install --immutable
+  # Cap the heap: an uncached fetch otherwise balloons node past the
+  # container's memory limit and the cgroup OOM-kills the install
+  NODE_OPTIONS=--max-old-space-size=1024 yarn install --immutable
   yarn prisma generate
   if [ -f prisma.bot.config.ts ]; then yarn prisma generate --config prisma.bot.config.ts; fi
 "
