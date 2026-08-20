@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
+import { ImportPanel } from "@/components/spotify/import-panel";
 import { TrackList } from "@/components/spotify/track";
 import type { Track } from "@/lib/prisma/generated";
 import { getSortedTrackISRCs } from "@/functions/spotify/get-sorted-track-isrcs";
@@ -105,7 +106,7 @@ export default async function SpotifyPage({
         sortDirection={sortDirection}
       />
 
-      {/* The takeout ImportPanel is retired; /api/spotify/import is disabled too */}
+      <ImportPanel />
     </aside>
 
     <hr className="lg:hidden w-11/12" />
