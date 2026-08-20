@@ -7,5 +7,7 @@ export NVM_DIR="$HOME/.nvm"
 # Change to project directory
 cd "$HOME/Riksdagen" || exit 1
 
-# Run the script passed as argument
-exec yarn tsx "$@"
+# Run the script passed as argument. tsx is invoked directly instead of via
+# `yarn tsx`: yarn leaks xfs-* temp dirs into /tmp (a tmpfs) on every run,
+# which slowly eats the container's RAM.
+exec ./node_modules/.bin/tsx "$@"
