@@ -26,6 +26,7 @@
     "build": "yarn lint && yarn next build",
     "start": "next start",
     "lint": "tsc --noEmit -p ./tsconfig.json && eslint -c ./eslint.config.ts --cache --concurrency auto",
+    "test": "tsx --test src/lib/play-dedupe.test.ts",
     "seed-colors": "tsx scripts/seed-colors.ts",
     "make-users": "tsx scripts/make-users.ts"
   },

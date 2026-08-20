@@ -51,6 +51,9 @@ jobs:
             QUOTES_DATABASE_URL="mysql://unused:unused@localhost:3306/unused" yarn prisma generate --config prisma.bot.config.ts
           fi
 
+      - name: Test
+        run: yarn test
+
       - name: Build
         run: yarn build
 
