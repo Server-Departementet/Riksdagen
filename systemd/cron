@@ -1,4 +1,4 @@
 # Installed as the riks user's crontab (crontab -u riks systemd/cron).
 # The maintenance reboot lives in systemd/cron.root.
-*/15 *  * * *   /home/riks/Riksdagen/systemd/tsx-log.sh scripts/post-recent-plays.ts >> /var/log/riksdagen-web/recent-plays.log 2>&1
+# Spotify plays and quotes are injected into the database by the Riksdagen-Bot repo.
 7 3     * * *   /home/riks/Riksdagen/systemd/tsx-log.sh scripts/make-users.ts >> /var/log/riksdagen-web/make-users.log 2>&1
