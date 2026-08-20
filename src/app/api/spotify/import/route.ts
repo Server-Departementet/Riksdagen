@@ -54,7 +54,16 @@ export type ImportResponse = {
   unresolved: number;
 };
 
+// The takeout import is retired: everyone's history is already in, and imported
+// plays have been purged from dev. Flip this (and re-add <ImportPanel /> on
+// /spotify) to bring it back.
+const IMPORT_DISABLED = true;
+
 export async function POST(req: NextRequest) {
+  if (IMPORT_DISABLED) {
+    return NextResponse.json({ error: "Importen är avstängd" }, { status: 410 });
+  }
+
   const session = await auth();
   if (session?.role !== "minister") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
