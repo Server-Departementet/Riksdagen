@@ -1,3 +1,4 @@
+import { cacheLife } from "next/cache";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma/prisma";
@@ -126,6 +127,7 @@ async function getUsers(trackSearchQuery?: string): Promise<{
   trackPlays: Record<Track["ISRC"], number>;
 }[]> {
   "use cache";
+  cacheLife("minutes"); // Stats shift constantly (imports, 15-min fetches); the default 15-min revalidation made independently cached pieces disagree
   return (await prisma.user.findMany({
     select: {
       id: true,
