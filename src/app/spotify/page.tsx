@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma/prisma";
 import { FilterPanel } from "@/components/spotify/filter-panel";
 import { ImportPanel } from "@/components/spotify/import-panel";
 import { TrackList } from "@/components/spotify/track";
-import type { Track } from "@/lib/prisma/generated";
 import { getSortedTrackISRCs } from "@/functions/spotify/get-sorted-track-isrcs";
 import type {
   SpotifySortDirection,
@@ -37,12 +36,13 @@ export default async function SpotifyPage({
     select: { userId: true },
   }));
 
+  const params = await searchParams;
   const {
     users: paramUsers,
     q: paramQuery,
     sort: paramSort,
     dir: paramDirection,
-  } = await searchParams;
+  } = params;
 
   const sortValue: SpotifySortValue = isSpotifySortValue(paramSort)
     ? paramSort
@@ -51,7 +51,7 @@ export default async function SpotifyPage({
     ? "asc"
     : DEFAULT_SPOTIFY_SORT_DIRECTION;
 
-  const users = await getUsers(paramQuery);
+  const users = await getUsers();
   const hasUserParam = (
     typeof paramUsers !== "undefined"
     && paramUsers.trim() !== ""
@@ -99,7 +99,10 @@ export default async function SpotifyPage({
         </a>
       )}
 
+      {/* Keyed on the URL so a soft navigation remounts the panel with the
+          server-normalised selection (unknown users dropped, defaulted sort) */}
       <FilterPanel
+        key={JSON.stringify(params)}
         users={users.map(u => ({ id: u.id, name: u.name }))}
         selectedUsers={selectedUsers.map(u => ({ id: u.id, name: u.name }))}
         query={paramQuery}
@@ -121,53 +124,13 @@ export default async function SpotifyPage({
   </main>;
 }
 
-async function getUsers(trackSearchQuery?: string): Promise<{
-  id: string;
-  name: string | null;
-  trackPlays: Record<Track["ISRC"], number>;
-}[]> {
+/** Every user with at least one play, most plays first. Only the identity is needed: the track list fetches its own stats. */
+async function getUsers(): Promise<{ id: string; name: string | null }[]> {
   "use cache";
   cacheLife("minutes"); // Stats shift constantly (imports, 15-min fetches); the default 15-min revalidation made independently cached pieces disagree
-  return (await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      trackPlays: {
-        select: { trackId: true, track: { select: { ISRC: true } } },
-        where: {
-          OR: [
-            {
-              track: { name: { contains: trackSearchQuery ?? "" } },
-            },
-            {
-              track: { album: { name: { contains: trackSearchQuery ?? "" } } },
-            },
-            {
-              track: { artists: { some: { name: { contains: trackSearchQuery ?? "" } } } },
-            },
-            {
-              trackId: trackSearchQuery,
-            },
-            {
-              track: { ISRC: trackSearchQuery },
-            },
-          ],
-        },
-      },
-    },
-    where: {
-      trackPlays: { some: {} },
-    },
+  return await prisma.user.findMany({
+    select: { id: true, name: true },
+    where: { trackPlays: { some: {} } },
     orderBy: { trackPlays: { _count: "desc" } },
-  }))
-    .map(user => ({
-      id: user.id,
-      name: user.name,
-      trackPlays: user.trackPlays.reduce((acc, tp) => {
-        const isrc = tp.track?.ISRC;
-        if (!isrc) return acc;
-        acc[isrc] = (acc[isrc] ?? 0) + 1;
-        return acc;
-      }, {} as Record<Track["ISRC"], number>),
-    }));
+  });
 }

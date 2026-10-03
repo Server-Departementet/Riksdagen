@@ -35,13 +35,14 @@ export default async function QuoteStatsPage({
 }: {
   searchParams: Promise<FilterParams>;
 }) {
+  const params = await searchParams;
   const {
     quotee: paramQuotees,
     sender: paramSenders,
     q: paramQuery,
     sort: paramSort,
     dir: paramDirection,
-  } = await searchParams;
+  } = params;
 
   const sortValue: QuoteSortValue = isQuoteSortValue(paramSort)
     ? paramSort
@@ -95,7 +96,10 @@ export default async function QuoteStatsPage({
     <aside className="w-full max-w-sm lg:w-72 lg:max-w-none shrink-0 px-4 flex flex-col gap-y-5">
       <h1 className="mt-4">Citatstatistik</h1>
 
+      {/* Keyed on the URL so a soft navigation remounts the panel with the
+          server-normalised selection (dropped facets, defaulted sort) */}
       <FilterPanel
+        key={JSON.stringify(params)}
         quotees={quoteeCounts}
         senders={senderCounts}
         selectedQuotees={selectedQuotees}
