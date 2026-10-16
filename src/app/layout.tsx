@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { ExternalLink, Sidebar, SidebarLink } from "@/components/sidebar/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedLink } from "@/components/sidebar/sidebar-protected";
+import { parseJson } from "@/lib/json";
 
 /* Used in global css */
 const _outfit = Outfit({ subsets: ["latin"] });
@@ -60,6 +61,8 @@ export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
   const session = await auth();
+  const copyrightHolders = new Intl.ListFormat("sv", { type: "conjunction" })
+    .format(parseJson(PACKAGE_CONTRIBUTORS).map(c => c.name));
 
   return (<SessionProvider session={session}>
     <html lang="sv">
@@ -104,7 +107,7 @@ export default async function RootLayout({ children }: {
         <Toaster theme="light" />
 
         <footer className="p-3 mt-5">
-          <p>© 2025 Vena Ström, Axel Thornberg & Emil Winroth</p>
+          <p>&copy; {COPYRIGHT_YEAR} {copyrightHolders}</p>
         </footer>
       </body>
     </html>
