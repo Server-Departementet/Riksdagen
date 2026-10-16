@@ -36,6 +36,13 @@ export default async function SpotifyPage({
     where: { userId: session.userId },
     select: { userId: true },
   }));
+  // A connected account whose refresh token Spotify rejects needs re-linking
+  const latestFetch = await prisma.trackPlayFetch.findFirst({
+    where: { userId: session.userId },
+    orderBy: { runAt: "desc" },
+    select: { status: true },
+  });
+  const spotifyBroken = spotifyConnected && latestFetch?.status === "token-failed";
 
   const {
     users: paramUsers,
@@ -90,12 +97,12 @@ export default async function SpotifyPage({
         Hämtningslogg
       </a>
 
-      {!spotifyConnected && (
+      {(!spotifyConnected || spotifyBroken) && (
         <a
           href="/api/auth/spotify"
           className="w-fit px-4 py-2 bg-[#1db954] text-white rounded-lg font-bold no-underline hover:text-white hover:drop-shadow-lg"
         >
-          Koppla ditt Spotify-konto
+          {spotifyBroken ? "Koppla om ditt Spotify-konto" : "Koppla ditt Spotify-konto"}
         </a>
       )}
 
