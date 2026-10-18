@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client"
+  provider     = "prisma-client"
   moduleFormat = "esm"
-  output   = "./generated"
+  output       = "./generated"
 }
 
 datasource db {
@@ -124,7 +124,7 @@ model Genre {
 // injects a copy into this database (its src/quotes/web-sync.ts mirrors this
 // model — keep them in sync). The web app only reads this table.
 model Quote {
-  id               String   @id // Discord message ID
+  id               String  @id // Discord message ID
   authorId         String
   createdTimestamp BigInt // ms epoch
   link             String
@@ -139,4 +139,36 @@ model Quote {
   attachments Json?
 
   @@index([createdTimestamp])
+}
+
+// Citat quiz rounds and votes, copied in by the Riksdagen-Bot quiz (its own
+// database is canonical; src/quiz/web-sync.ts there mirrors these models — keep
+// them in sync). The web app only reads these tables, for /citat/stats.
+model QuizRound {
+  number    Int      @id // N in "Citat Quiz #N"
+  messageId String   @unique // The poll message
+  quoteId   String // No FK: the quote may have been deleted since
+  kind      String // minister | external
+  options   Json // Poll answer texts, in poll order
+  postedAt  DateTime
+
+  // Set once the results are posted
+  resultMessageId String?   @unique
+  correctAnswer   String?
+  closedAt        DateTime?
+
+  votes QuizVote[]
+
+  @@index([quoteId])
+}
+
+model QuizVote {
+  round       QuizRound @relation(fields: [roundNumber], references: [number], onDelete: Cascade)
+  roundNumber Int
+  userId      String // Discord ID of the voter
+  answer      String // Poll answer text they picked
+  correct     Boolean
+
+  @@id([roundNumber, userId]) // Polls are single choice
+  @@index([userId])
 }

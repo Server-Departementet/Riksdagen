@@ -95,6 +95,7 @@ export default async function QuoteStatsPage({
   >
     <aside className="w-full max-w-sm lg:w-72 lg:max-w-none shrink-0 px-4 flex flex-col gap-y-5">
       <h1 className="mt-4">Citatstatistik</h1>
+      <a href="/citat/stats" className="global -mt-3">Quizstatistik</a>
 
       {/* Keyed on the URL so a soft navigation remounts the panel with the
           server-normalised selection (dropped facets, defaulted sort) */}
