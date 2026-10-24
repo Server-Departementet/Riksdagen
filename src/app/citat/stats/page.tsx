@@ -50,7 +50,8 @@ export default async function QuizStatsPage() {
             <h2>Över tid</h2>
             <ProgressChart series={stats.series} rollingWindow={ROLLING_WINDOW} />
             <p className="text-sm opacity-60">
-              Träffsäkerheten räknas över de senaste {ROLLING_WINDOW} rundorna personen röstade i.
+              Andel rätt räknas över alla rundor personen röstat i hittills, eller bara de
+              senaste {ROLLING_WINDOW}.
               Den som röstat färre än {MIN_VOTES_FOR_CHART} gånger syns bara i tabellen.
             </p>
           </section>

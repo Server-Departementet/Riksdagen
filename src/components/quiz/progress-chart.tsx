@@ -5,10 +5,12 @@ import type { PlayerPoint } from "@/lib/quiz-stats";
 import { SERIES_COLORS } from "@/lib/chart-colors";
 
 type Series = { userId: string; name: string; points: PlayerPoint[] };
-type Mode = "total" | "rate";
+type Mode = "total" | "allTime" | "rate";
 
 const HEIGHT = 320;
 const MARGIN = { top: 12, right: 16, bottom: 28, left: 44 };
+// The all-time hit rate swings wildly over someone's first few votes; start the line here
+const ALL_TIME_MIN_VOTES = 10;
 const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
 export function ProgressChart({ series, rollingWindow }: { series: Series[]; rollingWindow: number }) {
@@ -21,7 +23,8 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
   const lines = useMemo(() => series.map((s, i) => ({
     ...s,
     color: SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6",
-    points: s.points.map(p => ({ t: Date.parse(p.date), round: p.round, v: mode === "total" ? p.cumulativeCorrect : p.rollingRate === null ? null : p.rollingRate * 100 })),
+    // One point per vote, so a point's index + 1 is the number of votes so far
+    points: s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
   })), [series, mode]);
 
   const times = lines.flatMap(l => l.points.map(p => p.t));
@@ -64,6 +67,11 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
   };
 
   const format = (v: number) => (mode === "total" ? String(Math.round(v)) : `${Math.round(v)}%`);
+  const modes = [
+    ["total", "Antal rätt"],
+    ["allTime", "Andel rätt"],
+    ["rate", `Andel rätt (senaste ${rollingWindow})`],
+  ] as const;
 
   return <div className="flex flex-col gap-y-3">
     <div className="flex flex-row flex-wrap items-center justify-between gap-3">
@@ -76,7 +84,7 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
         ))}
       </ul>
       <div role="group" aria-label="Visa" className="flex flex-row text-sm border border-gray-300 rounded-sm overflow-hidden">
-        {([["total", "Rätt svar totalt"], ["rate", `Träffsäkerhet (senaste ${rollingWindow})`]] as const).map(([value, label]) => (
+        {modes.map(([value, label]) => (
           <button
             key={value}
             type="button"
@@ -162,6 +170,12 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
       )}
     </div>
   </div>;
+}
+
+function valueOf(mode: Mode, point: PlayerPoint, votesSoFar: number): number | null {
+  if (mode === "total") return point.cumulativeCorrect;
+  if (mode === "allTime") return votesSoFar < ALL_TIME_MIN_VOTES ? null : (point.cumulativeCorrect / votesSoFar) * 100;
+  return point.rollingRate === null ? null : point.rollingRate * 100;
 }
 
 function useWidth(ref: React.RefObject<HTMLElement | null>): number {
