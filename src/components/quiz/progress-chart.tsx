@@ -16,6 +16,7 @@ const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "
 export function ProgressChart({ series, rollingWindow }: { series: Series[]; rollingWindow: number }) {
   const [mode, setMode] = useState<Mode>("total");
   const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const width = useWidth(containerRef);
 
@@ -24,7 +25,7 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
     .sort((a, b) => a[0] - b[0]), [series]);
 
   // Series arrive sorted by Discord id, so a player keeps their color whatever their rank
-  const lines = useMemo(() => {
+  const allLines = useMemo(() => {
     const behind = mode === "behind" ? pointsBehindLeader(series, roundTimes) : null;
     return series.map((s, i) => ({
       ...s,
@@ -33,8 +34,18 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
       points: behind?.[i] ?? s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
     }));
   }, [series, roundTimes, mode]);
+  // Hidden players still count towards who leads, and the time axis stays put when toggling
+  const lines = allLines.filter(l => !hidden.has(l.userId));
 
-  const times = lines.flatMap(l => l.points.map(p => p.t));
+  function toggle(userId: string) {
+    setHidden(previous => {
+      const next = new Set(previous);
+      if (!next.delete(userId)) next.add(userId);
+      return next;
+    });
+  }
+
+  const times = allLines.flatMap(l => l.points.map(p => p.t));
   const tMin = Math.min(...times);
   const tMax = Math.max(...times);
   const values = lines.flatMap(l => l.points.map(p => p.v ?? 0));
@@ -84,10 +95,18 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
   return <div className="flex flex-col gap-y-3">
     <div className="flex flex-row flex-wrap items-center justify-between gap-3">
       <ul className="flex flex-row flex-wrap gap-x-4 gap-y-1 text-sm">
-        {lines.map(l => (
-          <li key={l.userId} className="flex flex-row items-center gap-x-1.5">
-            <span className="inline-block w-4 h-0.5 rounded-full" style={{ backgroundColor: l.color }} />
-            {l.name}
+        {allLines.map(l => (
+          <li key={l.userId}>
+            <button
+              type="button"
+              aria-pressed={!hidden.has(l.userId)}
+              title={hidden.has(l.userId) ? `Visa ${l.name}` : `Dölj ${l.name}`}
+              onClick={() => toggle(l.userId)}
+              className={`flex flex-row items-center gap-x-1.5 font-normal transition-opacity ${hidden.has(l.userId) ? "opacity-40 line-through" : "hover:opacity-70"}`}
+            >
+              <span className="inline-block w-4 h-0.5 rounded-full" style={{ backgroundColor: l.color }} />
+              {l.name}
+            </button>
           </li>
         ))}
       </ul>
