@@ -139,14 +139,19 @@ export default async function QuoteStatsPage({
             <span className="w-32 shrink-0 truncate" title={q.sender}>
               {q.sender}
             </span>
-            {isMultiSpeakerQuote(q.body)
-              ? <p className="flex-1 min-w-0 whitespace-pre-wrap">
-                {q.body}
-              </p>
-              : <span className="flex-1 min-w-0">
-                {q.body} - {q.quotee}
-              </span>
-            }
+            <div className="flex-1 min-w-0">
+              {isMultiSpeakerQuote(q.body)
+                ? <p className="whitespace-pre-wrap">
+                  {q.body}
+                </p>
+                : <span>
+                  {q.body} - {q.quotee}
+                </span>
+              }
+              {q.context && <p className="text-sm opacity-60 italic whitespace-pre-wrap">
+                {q.context}
+              </p>}
+            </div>
           </li>
         ))}
       </ul>

@@ -5,7 +5,7 @@ import type { PlayerPoint } from "@/lib/quiz-stats";
 import { SERIES_COLORS } from "@/lib/chart-colors";
 
 type Series = { userId: string; name: string; points: PlayerPoint[] };
-type Mode = "total" | "allTime" | "rate";
+type Mode = "total" | "behind" | "allTime" | "rate";
 
 const HEIGHT = 320;
 const MARGIN = { top: 12, right: 16, bottom: 28, left: 44 };
@@ -19,31 +19,38 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
   const containerRef = useRef<HTMLDivElement>(null);
   const width = useWidth(containerRef);
 
+  // Every round someone in the chart voted in, for the crosshair to snap to
+  const roundTimes = useMemo(() => [...new Map(series.flatMap(s => s.points.map(p => [p.round, Date.parse(p.date)] as const))).entries()]
+    .sort((a, b) => a[0] - b[0]), [series]);
+
   // Series arrive sorted by Discord id, so a player keeps their color whatever their rank
-  const lines = useMemo(() => series.map((s, i) => ({
-    ...s,
-    color: SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6",
-    // One point per vote, so a point's index + 1 is the number of votes so far
-    points: s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
-  })), [series, mode]);
+  const lines = useMemo(() => {
+    const behind = mode === "behind" ? pointsBehindLeader(series, roundTimes) : null;
+    return series.map((s, i) => ({
+      ...s,
+      color: SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6",
+      // One point per vote, so a point's index + 1 is the number of votes so far
+      points: behind?.[i] ?? s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
+    }));
+  }, [series, roundTimes, mode]);
 
   const times = lines.flatMap(l => l.points.map(p => p.t));
   const tMin = Math.min(...times);
   const tMax = Math.max(...times);
-  const yStep = mode === "total" ? niceStep(Math.max(1, ...lines.flatMap(l => l.points.map(p => p.v ?? 0))) / 5) : 25;
-  const yMax = mode === "total" ? yStep * Math.ceil(Math.max(1, ...lines.flatMap(l => l.points.map(p => p.v ?? 0))) / yStep) : 100;
+  const values = lines.flatMap(l => l.points.map(p => p.v ?? 0));
+  const isPercent = mode === "allTime" || mode === "rate";
+  const yStep = isPercent ? 25 : niceStep(Math.max(1, ...values.map(Math.abs)) / 5);
+  // "Behind" values are zero or negative: the leader runs along the top
+  const yMax = mode === "total" ? yStep * Math.ceil(Math.max(1, ...values) / yStep) : isPercent ? 100 : 0;
+  const yMin = mode === "behind" ? -yStep * Math.ceil(Math.max(1, ...values.map(v => -v)) / yStep) : 0;
 
   const innerW = Math.max(0, width - MARGIN.left - MARGIN.right);
   const innerH = HEIGHT - MARGIN.top - MARGIN.bottom;
   const x = (t: number) => MARGIN.left + (tMax === tMin ? 0 : ((t - tMin) / (tMax - tMin)) * innerW);
-  const y = (v: number) => MARGIN.top + innerH - (v / yMax) * innerH;
+  const y = (v: number) => MARGIN.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
 
-  const yTicks = Array.from({ length: Math.round(yMax / yStep) + 1 }, (_, i) => i * yStep);
+  const yTicks = Array.from({ length: Math.round((yMax - yMin) / yStep) + 1 }, (_, i) => yMin + i * yStep);
   const monthTicks = monthStarts(tMin, tMax);
-
-  // Every round time, for the crosshair to snap to
-  const roundTimes = useMemo(() => [...new Map(lines.flatMap(l => l.points.map(p => [p.round, p.t] as const))).entries()]
-    .sort((a, b) => a[0] - b[0]), [lines]);
 
   function onPointerMove(event: React.PointerEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -66,9 +73,10 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
       .sort((a, b) => b.v - a.v),
   };
 
-  const format = (v: number) => (mode === "total" ? String(Math.round(v)) : `${Math.round(v)}%`);
+  const format = (v: number) => (isPercent ? `${Math.round(v)}%` : String(Math.round(v)).replace("-", "−"));
   const modes = [
     ["total", "Antal rätt"],
+    ["behind", "Poäng efter ledaren"],
     ["allTime", "Andel rätt"],
     ["rate", `Andel rätt (senaste ${rollingWindow})`],
   ] as const;
@@ -103,7 +111,12 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
         width={width}
         height={HEIGHT}
         role="img"
-        aria-label={mode === "total" ? "Antal rätt svar över tid per minister" : "Andel rätt svar över tid per minister"}
+        aria-label={{
+          total: "Antal rätt svar över tid per minister",
+          behind: "Antal poäng efter den som leder, över tid per minister",
+          allTime: "Andel rätt svar över tid per minister",
+          rate: "Andel rätt svar över tid per minister",
+        }[mode]}
         onPointerMove={onPointerMove}
         onPointerLeave={() => setHoverTime(null)}
         className="touch-none select-none"
@@ -176,6 +189,32 @@ function valueOf(mode: Mode, point: PlayerPoint, votesSoFar: number): number | n
   if (mode === "total") return point.cumulativeCorrect;
   if (mode === "allTime") return votesSoFar < ALL_TIME_MIN_VOTES ? null : (point.cumulativeCorrect / votesSoFar) * 100;
   return point.rollingRate === null ? null : point.rollingRate * 100;
+}
+
+/**
+ * How many correct answers each player trails the leader by, as a negative number, at every
+ * round from their first vote on. Rounds they skip count too, since the leader can pull away then.
+ */
+function pointsBehindLeader(series: Series[], roundTimes: (readonly [number, number])[]) {
+  const players = series.map(s => ({
+    points: s.points,
+    next: 0, // Index of the next point not yet counted
+    total: 0,
+    out: [] as { t: number; round: number; v: number | null }[],
+  }));
+  for (const [round, t] of roundTimes) {
+    for (const player of players) {
+      for (let point = player.points[player.next]; point && point.round <= round; point = player.points[player.next]) {
+        player.total = point.cumulativeCorrect;
+        player.next += 1;
+      }
+    }
+    const leader = Math.max(...players.map(p => p.total));
+    for (const player of players) {
+      if (player.next > 0) player.out.push({ t, round, v: player.total - leader });
+    }
+  }
+  return players.map(p => p.out);
 }
 
 function useWidth(ref: React.RefObject<HTMLElement | null>): number {
