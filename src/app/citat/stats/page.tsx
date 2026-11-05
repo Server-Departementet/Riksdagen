@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { getQuizStats, getQuoteFlow, MIN_VOTES_FOR_CHART, ROLLING_WINDOW, type QuoteeStats } from "@/lib/quiz-stats";
 import { ProgressChart } from "@/components/quiz/progress-chart";
 import { FlowChart } from "@/components/quiz/flow-chart";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { SERIES_COLORS } from "@/lib/chart-colors";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -32,6 +32,16 @@ export default async function QuizStatsPage() {
           Resultaten från det dagliga citatquizet i Discord.{" "}
           <a href="/citat" className="global">Alla citat</a>
         </p>
+        {stats.rounds > 0 && <div className="flex flex-row flex-wrap items-center gap-2 mt-3 text-sm">
+          <span className="opacity-60">Ladda ner all data:</span>
+          <a href="/citat/stats/export?format=csv" download className="inline-flex items-center gap-x-1.5 px-3 py-1 border border-gray-300 rounded-sm hover:bg-gray-100 transition-colors">
+            <DownloadIcon className="size-4" /> CSV
+          </a>
+          <a href="/citat/stats/export?format=json" download className="inline-flex items-center gap-x-1.5 px-3 py-1 border border-gray-300 rounded-sm hover:bg-gray-100 transition-colors">
+            <DownloadIcon className="size-4" /> JSON
+          </a>
+          <span className="opacity-60">En rad per röst i CSV-filen, med citatet och rätt svar.</span>
+        </div>}
       </div>
 
       {stats.rounds === 0
