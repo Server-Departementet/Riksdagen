@@ -9,16 +9,21 @@ export const SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87b
  */
 const L_MIN = 0.35;
 const L_MAX = 0.66;
+/** Avatar colours tend to be muted; chroma is multiplied by this, within the sRGB gamut. */
+const SATURATION_BOOST = 2;
 /** OKLab distance below which two lines are hard to tell apart. */
 const MIN_DISTANCE = 0.12;
 
 /** Display colours for people charted together, in input order; null falls back to the palette. */
 export function lineColors(avatarColors: (string | null)[]): string[] {
   const labs: Lab[] = avatarColors.map((hex, i): Lab => {
-    const lab = hex ? hexToOklab(hex) : null;
-    return lab ?? hexToOklab(SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6") ?? { l: 0.5, a: 0, b: 0 };
+    const avatar = hex ? hexToOklab(hex) : null;
+    // Only avatar colours are boosted; the palette is already tuned
+    const lab = avatar
+      ? { ...avatar, a: avatar.a * SATURATION_BOOST, b: avatar.b * SATURATION_BOOST }
+      : hexToOklab(SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6") ?? { l: 0.5, a: 0, b: 0 };
+    return { ...lab, l: clamp(lab.l, L_MIN, L_MAX) };
   });
-  for (const lab of labs) lab.l = clamp(lab.l, L_MIN, L_MAX);
 
   for (let pass = 0; pass < 50; pass++) {
     let moved = false;
@@ -38,7 +43,7 @@ export function lineColors(avatarColors: (string | null)[]): string[] {
     }
     if (!moved) break;
   }
-  return labs.map(oklabToHex);
+  return labs.map(lab => oklabToHex(intoGamut(lab)));
 }
 
 export type Lab = { l: number; a: number; b: number };
@@ -74,18 +79,28 @@ export function rgbToOklab(red: number, green: number, blue: number): Lab {
   };
 }
 
-function oklabToHex({ l: L, a: A, b: B }: Lab): string {
-  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
-  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
-  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
-  const linear = [
-    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-  ];
-  return "#" + linear.map(v => {
+/** Scale chroma down until the colour fits in sRGB, keeping its hue and lightness. */
+function intoGamut(lab: Lab): Lab {
+  let scale = 1;
+  while (scale > 0 && oklabToLinear({ ...lab, a: lab.a * scale, b: lab.b * scale }).some(v => v < 0 || v > 1)) scale -= 0.01;
+  return { ...lab, a: lab.a * Math.max(0, scale), b: lab.b * Math.max(0, scale) };
+}
+
+function oklabToHex(lab: Lab): string {
+  return "#" + oklabToLinear(lab).map(v => {
     const c = clamp(v, 0, 1);
     const srgb = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
     return Math.round(srgb * 255).toString(16).padStart(2, "0");
   }).join("");
+}
+
+function oklabToLinear({ l: L, a: A, b: B }: Lab): number[] {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
 }
