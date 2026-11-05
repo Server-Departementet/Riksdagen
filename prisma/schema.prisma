@@ -137,6 +137,8 @@ model Quote {
   quotee String
 
   quoteeId    String?
+  /// Groups the spellings of a non-minister quotee (set by the bot's crawler); the quiz uses it
+  quoteeKey   String?
   context     String? @db.Text
   attachments Json?
 
