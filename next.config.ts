@@ -1,5 +1,18 @@
 import type { NextConfig } from "next";
 import { env } from "node:process";
+import packageJson from "./package.json" with { type: "json" };
+import type { Json } from "./src/lib/json";
+
+// Compile-time constants replacing bare identifiers in every bundle. Next
+// JSON-encodes each value as a literal, so only strings, numbers and booleans
+// survive - anything structured travels as a JSON string and is parsed with
+// parseJson. The global declarations in src/types/globals.d.ts take their
+// types from here.
+const defines = {
+  PACKAGE_CONTRIBUTORS: JSON.stringify(packageJson.contributors) as Json<typeof packageJson.contributors>,
+  COPYRIGHT_YEAR: new Date().getFullYear(),
+};
+export type Defines = typeof defines;
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -30,6 +43,10 @@ const nextConfig: NextConfig = {
       },
     ]),
   } : {},
+
+  compiler: {
+    define: defines,
+  },
 };
 
 export default nextConfig;

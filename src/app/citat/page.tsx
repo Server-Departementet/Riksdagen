@@ -35,13 +35,14 @@ export default async function QuoteStatsPage({
 }: {
   searchParams: Promise<FilterParams>;
 }) {
+  const params = await searchParams;
   const {
     quotee: paramQuotees,
     sender: paramSenders,
     q: paramQuery,
     sort: paramSort,
     dir: paramDirection,
-  } = await searchParams;
+  } = params;
 
   const sortValue: QuoteSortValue = isQuoteSortValue(paramSort)
     ? paramSort
@@ -94,8 +95,12 @@ export default async function QuoteStatsPage({
   >
     <aside className="w-full max-w-sm lg:w-72 lg:max-w-none shrink-0 px-4 flex flex-col gap-y-5">
       <h1 className="mt-4">Citatstatistik</h1>
+      <a href="/citat/stats" className="global -mt-3">Quizstatistik</a>
 
+      {/* Keyed on the URL so a soft navigation remounts the panel with the
+          server-normalised selection (dropped facets, defaulted sort) */}
       <FilterPanel
+        key={JSON.stringify(params)}
         quotees={quoteeCounts}
         senders={senderCounts}
         selectedQuotees={selectedQuotees}
@@ -134,14 +139,19 @@ export default async function QuoteStatsPage({
             <span className="w-32 shrink-0 truncate" title={q.sender}>
               {q.sender}
             </span>
-            {isMultiSpeakerQuote(q.body)
-              ? <p className="flex-1 min-w-0 whitespace-pre-wrap">
-                {q.body}
-              </p>
-              : <span className="flex-1 min-w-0">
-                {q.body} - {q.quotee}
-              </span>
-            }
+            <div className="flex-1 min-w-0">
+              {isMultiSpeakerQuote(q.body)
+                ? <p className="whitespace-pre-wrap">
+                  {q.body}
+                </p>
+                : <span>
+                  {q.body} - {q.quotee}
+                </span>
+              }
+              {q.context && <p className="text-sm opacity-60 italic whitespace-pre-wrap">
+                {q.context}
+              </p>}
+            </div>
           </li>
         ))}
       </ul>

@@ -1,0 +1,267 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PlayerPoint } from "@/lib/quiz-stats";
+
+type Series = { userId: string; name: string; color: string; points: PlayerPoint[] };
+type Mode = "total" | "behind" | "allTime" | "rate";
+
+const HEIGHT = 320;
+const MARGIN = { top: 12, right: 16, bottom: 28, left: 44 };
+// The all-time hit rate swings wildly over someone's first few votes; start the line here
+const ALL_TIME_MIN_VOTES = 10;
+const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+
+export function ProgressChart({ series, rollingWindow }: { series: Series[]; rollingWindow: number }) {
+  const [mode, setMode] = useState<Mode>("total");
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const width = useWidth(containerRef);
+
+  // Every round someone in the chart voted in, for the crosshair to snap to
+  const roundTimes = useMemo(() => [...new Map(series.flatMap(s => s.points.map(p => [p.round, Date.parse(p.date)] as const))).entries()]
+    .sort((a, b) => a[0] - b[0]), [series]);
+
+  const allLines = useMemo(() => {
+    const behind = mode === "behind" ? pointsBehindLeader(series, roundTimes) : null;
+    return series.map((s, i) => ({
+      ...s,
+      // One point per vote, so a point's index + 1 is the number of votes so far
+      points: behind?.[i] ?? s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
+    }));
+  }, [series, roundTimes, mode]);
+  // Hidden players still count towards who leads, and the time axis stays put when toggling
+  const lines = allLines.filter(l => !hidden.has(l.userId));
+
+  function toggle(userId: string) {
+    setHidden(previous => {
+      const next = new Set(previous);
+      if (!next.delete(userId)) next.add(userId);
+      return next;
+    });
+  }
+
+  const times = allLines.flatMap(l => l.points.map(p => p.t));
+  const tMin = Math.min(...times);
+  const tMax = Math.max(...times);
+  const values = lines.flatMap(l => l.points.map(p => p.v ?? 0));
+  const isPercent = mode === "allTime" || mode === "rate";
+  const yStep = isPercent ? 25 : niceStep(Math.max(1, ...values.map(Math.abs)) / 5);
+  // "Behind" values are zero or negative: the leader runs along the top
+  const yMax = mode === "total" ? yStep * Math.ceil(Math.max(1, ...values) / yStep) : isPercent ? 100 : 0;
+  const yMin = mode === "behind" ? -yStep * Math.ceil(Math.max(1, ...values.map(v => -v)) / yStep) : 0;
+
+  const innerW = Math.max(0, width - MARGIN.left - MARGIN.right);
+  const innerH = HEIGHT - MARGIN.top - MARGIN.bottom;
+  const x = (t: number) => MARGIN.left + (tMax === tMin ? 0 : ((t - tMin) / (tMax - tMin)) * innerW);
+  const y = (v: number) => MARGIN.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
+
+  const yTicks = Array.from({ length: Math.round((yMax - yMin) / yStep) + 1 }, (_, i) => yMin + i * yStep);
+  const monthTicks = monthStarts(tMin, tMax);
+
+  function onPointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const px = event.clientX - rect.left;
+    let best: number | null = null;
+    for (const [, t] of roundTimes) {
+      if (best === null || Math.abs(x(t) - px) < Math.abs(x(best) - px)) best = t;
+    }
+    setHoverTime(best);
+  }
+
+  const hovered = hoverTime === null ? null : {
+    round: roundTimes.find(([, t]) => t === hoverTime)?.[0],
+    rows: lines
+      .map(l => {
+        const point = [...l.points].reverse().find(p => p.t <= hoverTime);
+        return { name: l.name, color: l.color, v: point?.v ?? null };
+      })
+      .filter((r): r is { name: string; color: string; v: number } => r.v !== null)
+      .sort((a, b) => b.v - a.v),
+  };
+
+  const format = (v: number) => (isPercent ? `${Math.round(v)}%` : String(Math.round(v)).replace("-", "−"));
+  const modes = [
+    ["total", "Antal rätt"],
+    ["behind", "Poäng efter ledaren"],
+    ["allTime", "Andel rätt"],
+    ["rate", `Andel rätt (senaste ${rollingWindow})`],
+  ] as const;
+
+  return <div className="flex flex-col gap-y-3">
+    <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+      <ul className="flex flex-row flex-wrap gap-x-4 gap-y-1 text-sm">
+        {allLines.map(l => (
+          <li key={l.userId}>
+            <button
+              type="button"
+              aria-pressed={!hidden.has(l.userId)}
+              title={hidden.has(l.userId) ? `Visa ${l.name}` : `Dölj ${l.name}`}
+              onClick={() => toggle(l.userId)}
+              className={`flex flex-row items-center gap-x-1.5 font-normal transition-opacity ${hidden.has(l.userId) ? "opacity-40 line-through" : "hover:opacity-70"}`}
+            >
+              <span className="inline-block w-4 h-0.5 rounded-full" style={{ backgroundColor: l.color }} />
+              {l.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div role="group" aria-label="Visa" className="flex flex-row text-sm border border-gray-300 rounded-sm overflow-hidden">
+        {modes.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={mode === value}
+            onClick={() => setMode(value)}
+            className={`px-3 py-1 transition-colors ${mode === value ? "bg-gray-800 text-white font-normal" : "hover:bg-gray-100"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div ref={containerRef} className="relative w-full">
+      {width > 0 && <svg
+        width={width}
+        height={HEIGHT}
+        role="img"
+        aria-label={{
+          total: "Antal rätt svar över tid per minister",
+          behind: "Antal poäng efter den som leder, över tid per minister",
+          allTime: "Andel rätt svar över tid per minister",
+          rate: "Andel rätt svar över tid per minister",
+        }[mode]}
+        onPointerMove={onPointerMove}
+        onPointerLeave={() => setHoverTime(null)}
+        className="touch-none select-none"
+      >
+        {yTicks.map(v => (
+          <g key={v}>
+            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(v)} y2={y(v)} stroke={v === 0 ? "#c3c2b7" : "#e1e0d9"} strokeWidth={1} />
+            <text x={MARGIN.left - 8} y={y(v)} dy="0.32em" textAnchor="end" fontSize={11} fill="#898781" className="tabular-nums">
+              {format(v)}
+            </text>
+          </g>
+        ))}
+        {monthTicks.map(t => (
+          <text key={t} x={x(t)} y={HEIGHT - 8} textAnchor="middle" fontSize={11} fill="#898781">
+            {MONTHS[new Date(t).getMonth()]}
+          </text>
+        ))}
+
+        {hoverTime !== null && (
+          <line x1={x(hoverTime)} x2={x(hoverTime)} y1={MARGIN.top} y2={MARGIN.top + innerH} stroke="#c3c2b7" strokeWidth={1} />
+        )}
+
+        {lines.map(l => {
+          const drawn = l.points.filter((p): p is typeof p & { v: number } => p.v !== null);
+          const last = drawn.at(-1);
+          return <g key={l.userId}>
+            <path
+              d={drawn.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("")}
+              fill="none"
+              stroke={l.color}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {last && <circle cx={x(last.t)} cy={y(last.v)} r={4} fill={l.color} stroke="white" strokeWidth={2} />}
+          </g>;
+        })}
+
+        {hoverTime !== null && hovered?.rows.map(r => (
+          <circle key={r.name} cx={x(hoverTime)} cy={y(r.v)} r={4} fill={r.color} stroke="white" strokeWidth={2} />
+        ))}
+      </svg>}
+
+      {hoverTime !== null && hovered && hovered.rows.length > 0 && (
+        <div
+          className="absolute top-2 pointer-events-none bg-white border border-gray-200 shadow-sm rounded-sm px-3 py-2 text-sm"
+          style={x(hoverTime) > width / 2
+            ? { right: width - x(hoverTime) + 12 }
+            : { left: x(hoverTime) + 12 }}
+        >
+          <p className="opacity-60 whitespace-nowrap">
+            Quiz #{hovered.round} · {new Date(hoverTime).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
+          </p>
+          <ul>
+            {hovered.rows.map(r => (
+              <li key={r.name} className="flex flex-row items-center gap-x-2 whitespace-nowrap">
+                <span className="inline-block w-3 h-0.5 rounded-full" style={{ backgroundColor: r.color }} />
+                <span className="font-semibold tabular-nums">{format(r.v)}</span>
+                <span className="opacity-70">{r.name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  </div>;
+}
+
+function valueOf(mode: Mode, point: PlayerPoint, votesSoFar: number): number | null {
+  if (mode === "total") return point.cumulativeCorrect;
+  if (mode === "allTime") return votesSoFar < ALL_TIME_MIN_VOTES ? null : (point.cumulativeCorrect / votesSoFar) * 100;
+  return point.rollingRate === null ? null : point.rollingRate * 100;
+}
+
+/**
+ * How many correct answers each player trails the leader by, as a negative number, at every
+ * round from their first vote on. Rounds they skip count too, since the leader can pull away then.
+ */
+function pointsBehindLeader(series: Series[], roundTimes: (readonly [number, number])[]) {
+  const players = series.map(s => ({
+    points: s.points,
+    next: 0, // Index of the next point not yet counted
+    total: 0,
+    out: [] as { t: number; round: number; v: number | null }[],
+  }));
+  for (const [round, t] of roundTimes) {
+    for (const player of players) {
+      for (let point = player.points[player.next]; point && point.round <= round; point = player.points[player.next]) {
+        player.total = point.cumulativeCorrect;
+        player.next += 1;
+      }
+    }
+    const leader = Math.max(...players.map(p => p.total));
+    for (const player of players) {
+      if (player.next > 0) player.out.push({ t, round, v: player.total - leader });
+    }
+  }
+  return players.map(p => p.out);
+}
+
+function useWidth(ref: React.RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry?.contentRect.width ?? 0));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
+/** Round a tick step up to 1, 2, 2.5 or 5 times a power of ten, so the ticks land on clean numbers. */
+function niceStep(value: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 2, 2.5, 5, 10].find(s => s * magnitude >= value) ?? 10;
+  return Math.max(1, step * magnitude);
+}
+
+/** The first of every month between two timestamps. */
+function monthStarts(tMin: number, tMax: number): number[] {
+  const ticks: number[] = [];
+  const date = new Date(tMin);
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  date.setMonth(date.getMonth() + 1);
+  while (date.getTime() <= tMax) {
+    ticks.push(date.getTime());
+    date.setMonth(date.getMonth() + 1);
+  }
+  return ticks;
+}

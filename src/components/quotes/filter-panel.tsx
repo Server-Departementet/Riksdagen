@@ -4,8 +4,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
-import { ArrowDownNarrowWide, ArrowDownWideNarrow } from "lucide-react";
+import { useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowDownNarrowWide, ArrowDownWideNarrow, Loader2Icon } from "lucide-react";
 import type {
   QuoteSortDirection,
   QuoteSortValue } from "@/lib/quote-sort";
@@ -41,6 +42,10 @@ export function FilterPanel({
   const [sortOption, setSortOption] = useState<QuoteSortValue>(initialSortValue);
   const [sortDirection, setSortDirection] = useState<QuoteSortDirection>(initialSortDirection);
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+
   return (
     <form
       className={`
@@ -49,7 +54,9 @@ export function FilterPanel({
         gap-y-4
       `}
       action={() => {
-        // Reload with the current filters as query params
+        // Navigate with the current filters as query params. A soft navigation
+        // only re-renders this page's server component; the layout, sidebar
+        // and scripts stay put rather than reloading the whole document.
         const params = new URLSearchParams();
 
         // Always written out: an absent param means "first visit", which
@@ -74,7 +81,9 @@ export function FilterPanel({
           params.append("dir", sortDirection);
         }
 
-        window.location.search = params.toString();
+        startTransition(() => {
+          router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        });
       }}
     >
       <FacetFilter
@@ -138,9 +147,12 @@ export function FilterPanel({
       <Button
         type="submit"
         variant={"outline"}
+        disabled={isPending}
+        aria-busy={isPending}
         className="hover:bg-gray-800 hover:text-white"
       >
-        Uppdatera
+        {isPending && <Loader2Icon className="size-4 animate-spin" />}
+        {isPending ? "Uppdaterar" : "Uppdatera"}
       </Button>
     </form>
   );
