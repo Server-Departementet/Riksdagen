@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { lineColors } from "@/lib/chart-colors";
 
 /*
  * Citat quiz statistics for /citat/stats. The rounds and votes are copied in by the
@@ -41,7 +42,8 @@ export type QuizStats = {
   correct: number;
   firstRoundAt: string | null;
   players: PlayerStats[];
-  series: { userId: string; name: string; points: PlayerPoint[] }[];
+  /** Chart colour per player in the chart, from their avatar. */
+  series: { userId: string; name: string; color: string; points: PlayerPoint[] }[];
   quotees: QuoteeStats[];
 };
 
@@ -55,6 +57,7 @@ export async function getQuizStats(): Promise<QuizStats> {
     prisma.user.findMany(),
   ]);
   const nameOf = new Map(users.map(u => [u.id, u.name ?? u.id]));
+  const avatarColorOf = new Map(users.map(u => [u.id, u.avatarColor]));
 
   const players = new Map<string, PlayerStats & { history: boolean[]; points: PlayerPoint[] }>();
   const quotees = new Map<string, QuoteeStats>();
@@ -109,8 +112,10 @@ export async function getQuizStats(): Promise<QuizStats> {
     }
   }
 
-  // Stable order by Discord id, so a player keeps their chart color whatever the ranking
+  // Stable order by Discord id, so a player without an avatar colour keeps their palette slot
   const allPlayers = [...players.values()].sort((a, b) => a.userId.localeCompare(b.userId));
+  const charted = allPlayers.filter(p => p.votes >= MIN_VOTES_FOR_CHART);
+  const colors = lineColors(charted.map(p => avatarColorOf.get(p.userId) ?? null));
 
   return {
     rounds: rounds.length,
@@ -120,9 +125,7 @@ export async function getQuizStats(): Promise<QuizStats> {
     players: allPlayers
       .map(({ history: _history, points: _points, ...stats }) => stats)
       .sort((a, b) => b.correct - a.correct || b.votes - a.votes),
-    series: allPlayers
-      .filter(p => p.votes >= MIN_VOTES_FOR_CHART)
-      .map(p => ({ userId: p.userId, name: p.name, points: p.points })),
+    series: charted.map((p, i) => ({ userId: p.userId, name: p.name, color: colors[i] ?? "#2a78d6", points: p.points })),
     // Hardest first; the non-minister group goes last
     quotees: [...quotees.values()].sort((a, b) =>
       Number(b.isMinister) - Number(a.isMinister) || a.correct / (a.votes || 1) - b.correct / (b.votes || 1)),

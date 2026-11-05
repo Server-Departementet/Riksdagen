@@ -7268,6 +7268,7 @@ __metadata:
     react-day-picker: "npm:9.14.0"
     react-dom: "npm:^19.2.8"
     server-only: "npm:^0.0.1"
+    sharp: "npm:^0.35.3"
     sonner: "npm:^2.0.8"
     tailwind-merge: "npm:^3.6.0"
     tailwindcss: "npm:^4.3.3"

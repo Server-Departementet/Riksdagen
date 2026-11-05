@@ -19,7 +19,7 @@ export default async function QuizStatsPage() {
   if (session?.role !== "minister") return notFound();
 
   const stats = await getQuizStats();
-  const colorOf = new Map(stats.series.map((s, i) => [s.userId, SERIES_COLORS[i % SERIES_COLORS.length]]));
+  const colorOf = new Map(stats.series.map(s => [s.userId, s.color]));
 
   return <main className="flex flex-col items-center px-4 pb-16">
     <div className="w-full max-w-4xl flex flex-col gap-y-8">

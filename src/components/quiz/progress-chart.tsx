@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PlayerPoint } from "@/lib/quiz-stats";
-import { SERIES_COLORS } from "@/lib/chart-colors";
 
-type Series = { userId: string; name: string; points: PlayerPoint[] };
+type Series = { userId: string; name: string; color: string; points: PlayerPoint[] };
 type Mode = "total" | "behind" | "allTime" | "rate";
 
 const HEIGHT = 320;
@@ -24,12 +23,10 @@ export function ProgressChart({ series, rollingWindow }: { series: Series[]; rol
   const roundTimes = useMemo(() => [...new Map(series.flatMap(s => s.points.map(p => [p.round, Date.parse(p.date)] as const))).entries()]
     .sort((a, b) => a[0] - b[0]), [series]);
 
-  // Series arrive sorted by Discord id, so a player keeps their color whatever their rank
   const allLines = useMemo(() => {
     const behind = mode === "behind" ? pointsBehindLeader(series, roundTimes) : null;
     return series.map((s, i) => ({
       ...s,
-      color: SERIES_COLORS[i % SERIES_COLORS.length] ?? "#2a78d6",
       // One point per vote, so a point's index + 1 is the number of votes so far
       points: behind?.[i] ?? s.points.map((p, i) => ({ t: Date.parse(p.date), round: p.round, v: valueOf(mode, p, i + 1) })),
     }));
