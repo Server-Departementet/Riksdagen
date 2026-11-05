@@ -233,7 +233,7 @@ function pointsBehindLeader(series: Series[], roundTimes: (readonly [number, num
   return players.map(p => p.out);
 }
 
-function useWidth(ref: React.RefObject<HTMLElement | null>): number {
+export function useWidth(ref: React.RefObject<HTMLElement | null>): number {
   const [width, setWidth] = useState(0);
   useEffect(() => {
     const element = ref.current;
@@ -246,7 +246,7 @@ function useWidth(ref: React.RefObject<HTMLElement | null>): number {
 }
 
 /** Round a tick step up to 1, 2, 2.5 or 5 times a power of ten, so the ticks land on clean numbers. */
-function niceStep(value: number): number {
+export function niceStep(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const step = [1, 2, 2.5, 5, 10].find(s => s * magnitude >= value) ?? 10;
   return Math.max(1, step * magnitude);
