@@ -1,5 +1,6 @@
 import "dotenv/config";
 import sharp from "sharp";
+import { rgbToOklab } from "@/lib/chart-colors";
 import { PrismaClient } from "@/lib/prisma/generated";
 import { makeMariaDBAdapter } from "@/lib/prisma";
 
@@ -12,7 +13,7 @@ import { makeMariaDBAdapter } from "@/lib/prisma";
  * application must have the Server Members privileged intent enabled and be a
  * member of the guild. Runs from cron on each web server (systemd/cron).
  *
- * Also stores the mean colour of each minister's avatar, used for their line in
+ * Also stores the most vibrant colour of each minister's avatar, used for their line in
  * the /citat/stats charts.
  */
 
@@ -62,7 +63,7 @@ async function makeUsers() {
   const prisma = new PrismaClient(makeMariaDBAdapter(DATABASE_URL));
   try {
     for (const member of ministers) {
-      const avatarColor = await meanAvatarColor(member).catch((err: unknown) => {
+      const avatarColor = await vibrantAvatarColor(member).catch((err: unknown) => {
         // Keep whatever colour is stored rather than failing the whole sync
         console.warn(`Could not get the avatar colour of ${member.user.id}:`, err);
         return undefined;
@@ -94,8 +95,18 @@ function avatarUrl(member: GuildMember): string {
   return `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(member.user.id) >> 22n) % 6n)}.png`;
 }
 
-/** Mean colour of the avatar as "#rrggbb", weighted by opacity so transparent corners don't count. */
-async function meanAvatarColor(member: GuildMember): Promise<string> {
+/** OKLab chroma below which a pixel counts as grey. */
+const MIN_CHROMA = 0.04;
+/** Below this share of colourful pixels the avatar is basically grey: use its plain mean. */
+const MIN_COLOURFUL_SHARE = 0.03;
+const HUE_BINS = 24;
+
+/**
+ * The avatar's most vibrant colour as "#rrggbb": colourful pixels are binned by hue,
+ * weighted by chroma, and the strongest bin (with its neighbours, so a hue on a bin
+ * edge isn't split) is averaged. A plain mean would blend different hues into brown.
+ */
+async function vibrantAvatarColor(member: GuildMember): Promise<string> {
   const response = await fetch(avatarUrl(member));
   if (!response.ok) throw new Error(`Avatar request failed: ${response.status}`);
   const { data } = await sharp(Buffer.from(await response.arrayBuffer()))
@@ -104,14 +115,34 @@ async function meanAvatarColor(member: GuildMember): Promise<string> {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  let r = 0, g = 0, b = 0, weight = 0;
+  type Pixel = { rgb: [number, number, number]; chroma: number; bin: number };
+  const pixels: Pixel[] = [];
   for (let i = 0; i + 3 < data.length; i += 4) {
-    const alpha = (data[i + 3] ?? 0) / 255;
-    r += (data[i] ?? 0) * alpha;
-    g += (data[i + 1] ?? 0) * alpha;
-    b += (data[i + 2] ?? 0) * alpha;
-    weight += alpha;
+    if ((data[i + 3] ?? 0) < 128) continue; // Transparent corners
+    const rgb: [number, number, number] = [data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0];
+    const { a, b } = rgbToOklab(...rgb);
+    const hue = (Math.atan2(b, a) / (2 * Math.PI) + 1) % 1;
+    pixels.push({ rgb, chroma: Math.hypot(a, b), bin: Math.floor(hue * HUE_BINS) % HUE_BINS });
   }
-  if (weight === 0) throw new Error("Avatar is fully transparent");
-  return "#" + [r, g, b].map(c => Math.round(c / weight).toString(16).padStart(2, "0")).join("");
+  if (pixels.length === 0) throw new Error("Avatar is fully transparent");
+
+  const colourful = pixels.filter(p => p.chroma > MIN_CHROMA);
+  if (colourful.length < pixels.length * MIN_COLOURFUL_SHARE) return averageHex(pixels, () => 1);
+
+  const scores = new Array<number>(HUE_BINS).fill(0);
+  for (const p of colourful) scores[p.bin] = (scores[p.bin] ?? 0) + p.chroma;
+  const best = scores.indexOf(Math.max(...scores));
+  const near = (bin: number) => [0, 1, HUE_BINS - 1].some(offset => (best + offset) % HUE_BINS === bin);
+  return averageHex(colourful.filter(p => near(p.bin)), p => p.chroma);
+}
+
+function averageHex(pixels: { rgb: [number, number, number]; chroma: number }[], weightOf: (p: { chroma: number }) => number): string {
+  const sum = [0, 0, 0];
+  let total = 0;
+  for (const p of pixels) {
+    const weight = weightOf(p);
+    p.rgb.forEach((c, i) => { sum[i] = (sum[i] ?? 0) + c * weight; });
+    total += weight;
+  }
+  return "#" + sum.map(c => Math.round(c / total).toString(16).padStart(2, "0")).join("");
 }

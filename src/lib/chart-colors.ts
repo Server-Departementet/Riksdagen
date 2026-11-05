@@ -3,7 +3,7 @@
 export const SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
 
 /*
- * Line colours from people's mean avatar colours. Those are often muddy, so each keeps its
+ * Line colours from people's avatar colours. Those can be too light or alike, so each keeps its
  * hue but its OKLab lightness is clamped to a range that reads on white (≥ 3:1 contrast at
  * the top end), and colours too close to each other get their lightness spread apart.
  */
@@ -41,7 +41,7 @@ export function lineColors(avatarColors: (string | null)[]): string[] {
   return labs.map(oklabToHex);
 }
 
-type Lab = { l: number; a: number; b: number };
+export type Lab = { l: number; a: number; b: number };
 
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
@@ -55,7 +55,12 @@ function hexToOklab(hex: string): Lab | null {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!match?.[1]) return null;
   const n = parseInt(match[1], 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => {
+  return rgbToOklab((n >> 16) & 255, (n >> 8) & 255, n & 255);
+}
+
+/** sRGB channels 0–255 to OKLab. */
+export function rgbToOklab(red: number, green: number, blue: number): Lab {
+  const [r, g, b] = [red, green, blue].map(c => {
     const v = c / 255;
     return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   }) as [number, number, number];

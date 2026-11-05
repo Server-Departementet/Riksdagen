@@ -11,7 +11,7 @@ datasource db {
 model User {
   id   String  @id // Discord ID
   name String?
-  /// Mean colour of their Discord avatar ("#rrggbb"), set by scripts/make-users.ts
+  /// Most vibrant colour of their Discord avatar ("#rrggbb"), set by scripts/make-users.ts
   avatarColor String? @db.VarChar(7)
 
   trackPlays       TrackPlay[]
