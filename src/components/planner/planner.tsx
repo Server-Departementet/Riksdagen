@@ -51,7 +51,7 @@ const TOOL_HELP: Record<Tool, string> = {
   area: "Dra rektanglar över hela golvytan, så många som behövs. Överlapp räknas bara en gång.",
   scale: "Dra en linje längs en sträcka du vet längden på, till exempel skalstocken eller en vägg med angivet mått.",
 };
-const MODEL_NAMES: Record<ItemModel, string> = { "block": "Block", "table": "Bord", "chair": "Matstol", "office-chair": "Kontorsstol" };
+const MODEL_NAMES: Record<ItemModel, string> = { "block": "Block", "table": "Bord", "chair": "Matstol", "office-chair": "Kontorsstol", "cylinder": "Cylinder" };
 const STACK_NAMES: Record<StackMode, string> = { floor: "Alltid på golvet", top: "Ovanpå", under: "Under" };
 const FIXTURE_PRESETS: readonly (readonly [string, number])[] = [["Kök", 90], ["Garderob", 210], ["Kyl/frys", 195], ["Städskåp", 210]];
 
