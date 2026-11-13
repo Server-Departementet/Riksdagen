@@ -22,6 +22,7 @@ import { NorthField, SunInfo } from "@/components/planner/north";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
+import { PlanComments } from "@/components/planner/comments";
 import type { TraceOverview, TraceStatus } from "@/lib/planner/tracer/config";
 import { download, fileSlug, picture, planFile, toPng } from "@/components/planner/export";
 import { Card, Check, NumField, Segments, TextField, buttonClass, inputClass, primaryClass } from "@/components/planner/controls";
@@ -866,6 +867,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             <button type="button" className={buttonClass} onClick={() => void exportPicture("svg")}>Spara SVG</button>
           </div>
         </Card>}
+
+        {plan && <PlanComments planId={currentId} />}
 
         {plan && mine && <p className="text-xs text-gray-500 font-normal leading-relaxed max-md:hidden">
           Dra möbler för att flytta · dra i tom yta, eller med mitten-/högerknappen, för att panorera · scrolla eller nyp för att zooma<br />
