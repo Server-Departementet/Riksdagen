@@ -49,8 +49,15 @@ export function groupItems(plan: PlanData, ids: ReadonlySet<string>): PlanData {
 export const ungroupItems = (plan: PlanData, ids: ReadonlySet<string>) =>
   mapChosen(plan, ids, (it) => { const { g: _g, ...rest } = it; return rest; });
 
+/** Change fields of the pieces. The optional settings `stack` and `lift` are cleared by passing them as undefined. */
 export const patchItems = (plan: PlanData, ids: ReadonlySet<string>, patch: Partial<Omit<Item, "id" | "g">>) =>
-  mapChosen(plan, ids, (it) => ({ ...it, ...patch }));
+  mapChosen(plan, ids, (it) => {
+    const next = { ...it, ...patch };
+    // Dropped rather than kept as undefined, so the plan in memory is the same as the one that comes back from storage.
+    if (next.stack === undefined) delete next.stack;
+    if (next.lift === undefined) delete next.lift;
+    return next;
+  });
 
 export const nudgeItems = (plan: PlanData, ids: ReadonlySet<string>, dx: number, dy: number) =>
   mapChosen(plan, ids, (it) => ({ ...it, x: it.x + dx, y: it.y + dy }));

@@ -24,6 +24,12 @@ export type Angle = 0 | 90 | 180 | 270;
  */
 export const ITEM_MODELS = ["block", "table", "chair", "office-chair"] as const;
 export type ItemModel = (typeof ITEM_MODELS)[number];
+/**
+ * How a piece is stacked when the automatic guess is wrong. "floor": never lifted onto anything. "top": on
+ * whatever it overlaps, never under it. "under": on the floor beneath a table or a raised piece it overlaps.
+ */
+export const STACK_MODES = ["floor", "top", "under"] as const;
+export type StackMode = (typeof STACK_MODES)[number];
 export type Item = {
   id: string;
   name: string;
@@ -41,6 +47,10 @@ export type Item = {
   color: string;
   /** Pieces sharing a group id move as one */
   g?: string;
+  /** Overrules the automatic stacking, see STACK_MODES. Absent: automatic. */
+  stack?: StackMode;
+  /** Height above the floor the piece is fixed at, like a wall shelf. Absent: it stands on the floor or on what it is stacked on. */
+  lift?: number;
 };
 
 export type PlanImage = {
@@ -200,7 +210,7 @@ export function sanitizePlan(input: unknown): PlanData {
     const rid = id(r.id), x = coord(r.x), y = coord(r.y);
     if (rid === null || x === null || y === null) return null;
     const a = r.a === 90 || r.a === 180 || r.a === 270 ? r.a : 0;
-    const g = id(r.g);
+    const g = id(r.g), stack = STACK_MODES.find((m) => m === r.stack);
     return {
       id: rid, name: str(r.name, 30),
       w: Math.round(num(r.w, 5, 600, 60)), d: Math.round(num(r.d, 5, 600, 60)), h: Math.round(num(r.h, 1, 300, 75)),
@@ -208,6 +218,8 @@ export function sanitizePlan(input: unknown): PlanData {
       model: ITEM_MODELS.find((m) => m === r.model) ?? (r.open === true ? "table" : "block"), x, y, a,
       color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : COLORS[0],
       ...(g ? { g } : {}),
+      ...(stack ? { stack } : {}),
+      ...(typeof r.lift === "number" && Number.isFinite(r.lift) ? { lift: Math.round(clamp(r.lift, 0, 300)) } : {}),
     };
   }));
   dropLoneGroups(plan.items);

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Fixture, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
-import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
+import type { Fixture, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
+import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, STACK_MODES, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
 import { dimLength, enclosedArea, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
@@ -52,6 +52,7 @@ const TOOL_HELP: Record<Tool, string> = {
   scale: "Dra en linje längs en sträcka du vet längden på, till exempel skalstocken eller en vägg med angivet mått.",
 };
 const MODEL_NAMES: Record<ItemModel, string> = { "block": "Block", "table": "Bord", "chair": "Matstol", "office-chair": "Kontorsstol" };
+const STACK_NAMES: Record<StackMode, string> = { floor: "Alltid på golvet", top: "Ovanpå", under: "Under" };
 const FIXTURE_PRESETS: readonly (readonly [string, number])[] = [["Kök", 90], ["Garderob", 210], ["Kyl/frys", 195], ["Städskåp", 210]];
 
 export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: string }; plans: PlanMeta[]; initialPlanId: string | null }) {
@@ -530,6 +531,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const drawnArea = useMemo(() => (walls && windows ? enclosedArea({ ...emptyPlan(), walls, windows }) : null), [walls, windows]);
   const drawnText = drawnArea === null ? "" : `Ritad golvyta ca ${areaText(drawnArea / 10_000)}`;
   const drawnHelp = "Golvet innanför ytterväggarna med nuvarande skala, innerväggar oräknade. Skiljer det sig mycket från boarean stämmer inte skalan.";
+  /** How far above the floor the single selected piece stands. */
+  const standing = (one && stack?.z.get(one.id)) ?? 0;
 
   return (
     <div className="grid w-full h-(--screen-height) grid-cols-[320px_1fr] max-md:grid-cols-1 max-md:grid-rows-[56%_1fr] text-gray-900">
@@ -678,8 +681,22 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                   {ITEM_MODELS.map((m) => <option key={m} value={m}>{MODEL_NAMES[m]}</option>)}
                 </select>
               </label>
+              {/* A fixed height decides where the piece stands on its own, so the stacking choice has nothing to say then. */}
+              <label className="flex flex-col gap-0.5 text-xs text-gray-600 font-normal">Stapling
+                <select className={inputClass} value={one.stack ?? ""} disabled={one.lift !== undefined}
+                  onChange={(e) => { const mode = STACK_MODES.find((m) => m === e.target.value); change((p) => patchItems(p, sel, { stack: mode })); }}>
+                  <option value="">Automatiskt</option>
+                  {STACK_MODES.map((m) => <option key={m} value={m}>{STACK_NAMES[m]}</option>)}
+                </select>
+              </label>
+              {/* Starts from where the piece stands now, so ticking the box doesn't move it. */}
+              <Check label="Egen höjd över golvet" checked={one.lift !== undefined}
+                onChange={(on) => change((p) => patchItems(p, sel, { lift: on ? Math.min(300, Math.round(standing)) : undefined }))} />
+              {one.lift !== undefined
+                ? <NumField label="Höjd över golvet (cm)" value={one.lift} min={0} max={300} onStart={editor.checkpoint} onChange={(lift) => editor.setPlan(patchItems(plan, sel, { lift }), true)} />
+                : standing > 0 && <p className="text-sm text-gray-600 font-normal">Står {Math.round(standing)} cm över golvet.</p>}
             </>}
-            {one && !mine && <p className="text-sm font-normal">{one.name}: {one.w} × {one.d} cm, {one.h} cm hög</p>}
+            {one && !mine && <p className="text-sm font-normal">{one.name}: {one.w} × {one.d} cm, {one.h} cm hög{standing > 0 && `, ${Math.round(standing)} cm över golvet`}</p>}
             {chosen.length > 1 && <p className="text-sm text-gray-600 font-normal">{chosen.length} möbler: {chosen.map((i) => i.name).join(", ")}</p>}
             {chosen.length > 0 && mine && <>
               <div className="flex gap-1.5 flex-wrap">
@@ -712,7 +729,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                     <span className="size-3 rounded-xs flex-none" style={{ background: i.color }} />
                     <span className="truncate">{i.name}</span>
                     {i.g && <span className="text-xs text-gray-500 border border-gray-300 rounded-full px-1.5 font-normal">grupp</span>}
-                    {(stack?.z.get(i.id) ?? 0) > 0 && <span className="text-xs text-gray-500 border border-gray-300 rounded-full px-1.5 font-normal">staplad</span>}
+                    {(stack?.z.get(i.id) ?? 0) > 0 && <span className="text-xs text-gray-500 border border-gray-300 rounded-full px-1.5 font-normal whitespace-nowrap" title={`${Math.round(stack?.z.get(i.id) ?? 0)} cm över golvet`}>
+                      {i.lift === undefined ? "staplad" : `${i.lift} cm upp`}
+                    </span>}
                     {isHit(plan, i, stack ?? undefined) && <span className="text-xs text-red-700 font-normal">överlappar</span>}
                     <span className="ml-auto text-gray-500 tabular-nums font-normal whitespace-nowrap">{i.w} × {i.d}</span>
                   </button>
@@ -756,6 +775,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />
           Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.<br />
           Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är en stol eller nästan lika hög som bordet.
+          Stämmer det inte går det att ställa in för varje möbel under Markerat, liksom en egen höjd över golvet för sådant som sitter på väggen.
         </p>}
       </aside>
 

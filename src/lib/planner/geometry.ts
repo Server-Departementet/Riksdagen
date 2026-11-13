@@ -44,7 +44,10 @@ export const solids = (plan: PlanData): Rect[] => [...plan.walls, ...plan.fixtur
 export const obstacles = (plan: PlanData, skip: Item[]): Rect[] =>
   [...solids(plan), ...plan.items.filter((o) => !skip.includes(o)).map(itemBox)];
 
-/** How furniture is stacked: the height each piece stands at, and which pairs of things are stacked rather than colliding. */
+/**
+ * How furniture is stacked: the height each piece stands at, and which pairs of things don't collide
+ * although their footprints overlap, because one stands on or under the other or hangs clear of it.
+ */
 export type Stacking = { z: Map<string, number>; pairs: Set<string> };
 const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 /** How much of a piece's footprint has to lie on something for it to count as standing on it, not bumping into it. */
@@ -61,35 +64,77 @@ const UNDER_SHARE = 0.7;
  * bench, a table on a rug. The piece with the smaller footprint goes on top; of two equal ones, the
  * later in the list. Something almost as high as a table (a drawer unit) stands under it instead,
  * and so does a chair. Fixed fittings can be stood on; walls can't.
+ *
+ * A piece's own settings overrule the guess. `stack`: "floor" keeps it on the floor, and it then collides
+ * with what it would have stood on; "top" puts it on what it overlaps a lot, never under; "under" puts it
+ * beneath any table it overlaps at all. A piece set to "top" or "under" can go on or under a smaller piece too.
+ * `lift` fixes the piece at that height whatever it overlaps. Other pieces still stand on it, and the
+ * room beneath it counts like the room under a table. It doesn't collide with things wholly below or above it.
  */
 export function stacking(plan: PlanData): Stacking {
   const z = new Map<string, number>(), pairs = new Set<string>();
   const area = (r: Rect) => r.w * r.h;
   const shared = (a: Rect, b: Rect) =>
     Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-  // `under` is the height of the free space beneath an open piece.
-  const placed: { id: string; box: Rect; floor: number; top: number; under: number }[] =
-    plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, floor: 0, top: f.height, under: 0 }));
-  const bySize = plan.items.map((it) => ({ it, box: itemBox(it) })).sort((a, b) => area(b.box) - area(a.box));
-  for (const { it, box } of bySize) {
-    const chair = it.model === "chair" || it.model === "office-chair";
-    let floor = 0;
-    for (const p of placed) {
-      // A chair at a table is pushed in under it, however little and however high its back is.
-      const pushedIn = chair && p.under > 0 && shared(box, p.box) > 0.25;
-      if (!pushedIn && shared(box, p.box) < STACK_SHARE * area(box)) continue;
-      pairs.add(pairKey(it.id, p.id));
-      const under = pushedIn || (it.h < p.under && it.h >= UNDER_SHARE * p.under);
-      floor = Math.max(floor, under ? p.floor : p.top);
+  // `rests` is what the thing stands on, or under. Fixtures have no `it` and always stand on the floor.
+  type Thing = { id: string; box: Rect; h: number; it?: Item; rests: { on: Thing; under: boolean }[] };
+  const fixtures: Thing[] = plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, h: f.height, rests: [] }));
+  const pieces: Thing[] = plan.items.map((it) => ({ id: it.id, box: itemBox(it), h: it.h, it, rests: [] })).sort((a, b) => area(b.box) - area(a.box));
+  /** The height of the free space beneath a thing: below a table's top, and below anything fixed above the floor. */
+  const room = (p: Thing) => (p.it?.lift ?? 0) + (p.it?.model === "table" ? p.h : 0);
+  const told = (t: Thing) => t.it?.stack === "top" || t.it?.stack === "under";
+
+  /** Make `t` stand on or under `p` if t's footprint and settings say so. */
+  const rest = (t: Thing, p: Thing): boolean => {
+    const it = t.it;
+    if (!it || it.stack === "floor" || it.lift !== undefined) return false;
+    const on = shared(t.box, p.box), free = room(p), chair = it.model === "chair" || it.model === "office-chair";
+    // A chair at a table is pushed in under it, however little and however high its back is. So is a piece told to stand under.
+    const pushedIn = free > 0 && on > 0.25 && (it.stack === "under" || (chair && it.stack !== "top"));
+    if (!pushedIn && on < STACK_SHARE * area(t.box)) return false;
+    pairs.add(pairKey(t.id, p.id));
+    t.rests.push({ on: p, under: it.stack !== "top" && (pushedIn || (it.h < free && it.h >= UNDER_SHARE * free)) });
+    return true;
+  };
+  pieces.forEach((t, i) => {
+    for (const p of fixtures) rest(t, p);
+    for (const p of pieces.slice(0, i)) {
+      // Of two pieces the smaller is the one that goes on or under the other, unless only the bigger was told where to stand.
+      const [first, second] = told(p) && !told(t) ? [p, t] : [t, p];
+      if (!rest(first, second) && told(p)) rest(second, first);
     }
-    z.set(it.id, floor);
-    placed.push({ id: it.id, box, floor, top: floor + it.h, under: it.model === "table" ? it.h : 0 });
+  });
+
+  const busy = new Set<string>();
+  const level = (t: Thing): number => {
+    const known = z.get(t.id);
+    if (!t.it || known !== undefined) return known ?? 0;
+    let floor = t.it.lift ?? 0;
+    busy.add(t.id);
+    for (const { on, under } of t.rests) {
+      // Settings can make pieces rest on each other in a circle. The link that would close the circle is left out.
+      if (busy.has(on.id)) continue;
+      // Under a table is where the table stands; under a piece fixed above the floor is the floor.
+      floor = Math.max(floor, under ? (on.it?.lift === undefined ? level(on) : 0) : level(on) + on.h);
+    }
+    busy.delete(t.id);
+    z.set(t.id, floor);
+    return floor;
+  };
+  for (const t of pieces) level(t);
+
+  for (const t of pieces) {
+    if (t.it?.lift === undefined) continue;
+    for (const o of [...fixtures, ...pieces]) {
+      if (o === t || shared(t.box, o.box) <= 0) continue;
+      if (level(t) >= level(o) + o.h || level(o) >= level(t) + t.h) pairs.add(pairKey(t.id, o.id));
+    }
   }
   return { z, pairs };
 }
 
 // Pieces in one group may overlap on purpose (a drawer unit under a desk), so they don't flag each other.
-// Neither do pieces that are stacked.
+// Neither do pieces that are stacked, or one above the other without touching.
 export function isHit(plan: PlanData, it: Item, stack: Stacking = stacking(plan)): boolean {
   const b = itemBox(it), mates = groupOf(plan.items, it);
   return plan.walls.some((w) => overlap(b, w))
