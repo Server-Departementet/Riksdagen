@@ -442,9 +442,10 @@ export function Stage(
         {/* Everything that is about editing rather than the plan: left out of exports */}
         <g data-noexport="" style={{ pointerEvents: "none" }}>
           {!drawing && plan.items.map((it) => ({ it, hit: isHit(plan, it, stack) })).filter(({ it, hit }) => hit || sel.has(it.id)).map(({ it, hit }) => {
-            const b = itemBox(it);
-            return <rect key={it.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={3} fill="none"
-              stroke={hit ? C.bad : C.text} strokeWidth={hit ? 3.5 : 3} strokeDasharray={hit ? "7 4" : undefined} />;
+            const b = itemBox(it), line = { fill: "none", stroke: hit ? C.bad : C.text, strokeWidth: hit ? 3.5 : 3, strokeDasharray: hit ? "7 4" : undefined };
+            return it.model === "cylinder"
+              ? <ellipse key={it.id} cx={it.x} cy={it.y} rx={b.w / 2} ry={b.h / 2} {...line} />
+              : <rect key={it.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={3} {...line} />;
           })}
           {guides.map((g, i) => ("v" in g
             ? <line key={i} x1={g.v} x2={g.v} y1={view.cy - 5000} y2={view.cy + 5000} stroke={C.accent} strokeWidth={px} strokeDasharray={`${4 * px} ${4 * px}`} />
@@ -550,13 +551,16 @@ function MeasureLine({ line: l, px, label }: { line: Line; px: number; label: st
 function ItemShape({ item: it, parked, movable }: { item: Item; parked: boolean; movable: boolean }) {
   const b = itemBox(it), small = Math.min(b.w, b.h) < 42, upright = b.h > b.w && b.w < 70;
   // Shrink the label until the name fits along the piece's long side.
-  const room = upright ? b.h : b.w;
+  // An ellipse is narrower than its box at the height where the two lines of text end.
+  const round = it.model === "cylinder", room = (upright ? b.h : b.w) * (round ? 0.85 : 1);
   const fs = clamp(room / (Math.max(it.name.length, 5) * 0.62), 6, small ? 10 : 12);
   // Chairs show which way they face: a darker band along the backrest.
   const back = it.model === "chair" || it.model === "office-chair" ? backStrip({ x: -b.w / 2, y: -b.h / 2, w: b.w, h: b.h }, it.a, Math.min(7, Math.min(b.w, b.h) / 4), 1.5) : null;
   return (
     <g data-id={it.id} {...(parked ? { "data-noexport": "" } : {})} transform={`translate(${it.x} ${it.y})`} style={{ cursor: movable ? "move" : "pointer" }}>
-      <rect x={-b.w / 2} y={-b.h / 2} width={b.w} height={b.h} rx={3} fill={it.color} fillOpacity={0.82} stroke={C.text} strokeWidth={1.5} />
+      {round
+        ? <ellipse rx={b.w / 2} ry={b.h / 2} fill={it.color} fillOpacity={0.82} stroke={C.text} strokeWidth={1.5} />
+        : <rect x={-b.w / 2} y={-b.h / 2} width={b.w} height={b.h} rx={3} fill={it.color} fillOpacity={0.82} stroke={C.text} strokeWidth={1.5} />}
       {back && <rect x={back.x} y={back.y} width={back.w} height={back.h} rx={1.5} fill="#000" fillOpacity={0.3} style={{ pointerEvents: "none" }} />}
       <g transform={upright ? "rotate(-90)" : undefined} style={{ pointerEvents: "none" }}>
         <text textAnchor="middle" y={-1} fontSize={fs} fill="#111" style={{ fontWeight: 600 }}>{it.name}</text>

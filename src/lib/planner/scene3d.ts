@@ -2,17 +2,25 @@ import type { PlanData, Rect } from "@/lib/planner/plan";
 import { backStrip, flatBox, inFlat, itemBox, stacking } from "@/lib/planner/geometry";
 
 /*
- * The crude 3D view: everything is an upright box. The camera is orthographic,
+ * The crude 3D view: everything is an upright box (or, drawn inside one, an upright cylinder). The camera is orthographic,
  * turned by `yaw` around the flat's centre and tilted `pitch` degrees down from
  * horizontal (90° would be the plan view).
  */
 
 export type View3d = { yaw: number; pitch: number; zoom: number; px: number; py: number; wallH: number };
 
-type Box3 = Rect & { z0: number; z1: number; color: string; top?: string; alpha?: number; id?: string; label?: string };
+type Box3 = Rect & {
+  z0: number; z1: number; color: string; top?: string; alpha?: number; id?: string; label?: string;
+  /** Drawn as the elliptical cylinder inscribed in the box. It is still ordered as the box. */
+  round?: boolean;
+};
 type Point = [number, number];
 
-export type Face = { points: string; fill: string; alpha?: number; picked: boolean };
+export type Face = {
+  points: string; fill: string; alpha?: number; picked: boolean;
+  /** Outline colour, for the strips of a curved surface, which must not show seams between them */
+  edge?: string;
+};
 export type Scene = {
   floor: string;
   /** Faces and labels in drawing order */
@@ -25,6 +33,9 @@ const tint = (hex: string, k: number) => {
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(Math.min(255, v * k))).join(",")})`;
 };
+
+/** Sides of the polygon a cylinder's top is drawn as; even, so that the visible half of the side is a whole number of strips. */
+const CYLINDER_SEGMENTS = 48;
 
 /** What is left of a box once another is cut out of it: up to four boxes, none overlapping. */
 function subtract(r: Rect, cut: Rect): Rect[] {
@@ -126,6 +137,8 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
       out.push({ ...pad, z0: seat - 8, z1: seat, ...common, label: it.name });
       out.push({ ...backStrip(pad, it.a, 5, pad.w * 0.08), z0: seat, z1: z + it.h, ...common });
     }
+    // However low or small: a round rug is a centimetre high.
+    else if (it.model === "cylinder") out.push({ ...b, z0: z, z1: z + it.h, ...common, label: it.name, round: true });
     else out.push({ ...b, z0: z, z1: z + it.h, ...common, label: it.name });
   }
   return out;
@@ -177,6 +190,26 @@ export function buildScene(plan: PlanData, view: View3d, selected: ReadonlySet<s
     floor: pts([P(flat.x, flat.y, 0), P(flat.x + flat.w, flat.y, 0), P(flat.x + flat.w, flat.y + flat.h, 0), P(flat.x, flat.y + flat.h, 0)]),
     parts: [], frame: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
   };
+  /**
+   * A cylinder: the half of its side that faces the camera, as strips shaded like a box's sides are
+   * (0.8 where the surface faces along x, 0.64 along y, blended in between), then the outline of that
+   * half and the top.
+   */
+  const cylinder = (b: Box3, picked: boolean): Face[] => {
+    const rx = b.w / 2, ry = b.h / 2, cx = b.x + rx, cy = b.y + ry, half = CYLINDER_SEGMENTS / 2;
+    // The side turns away from the camera where its normal, (ry cos t, rx sin t), is square to the view; `mid` is halfway between those two edges.
+    const mid = Math.atan2(rx * cam[1], ry * cam[0]);
+    const angle = (k: number) => mid - Math.PI / 2 + (k * Math.PI) / half;
+    const at = (k: number, z: number) => P(cx + rx * Math.cos(angle(k)), cy + ry * Math.sin(angle(k)), z);
+    const steps = (count: number) => Array.from({ length: count }, (_, k) => k);
+    const faces: Face[] = steps(half).map((k) => {
+      const t = angle(k + 0.5), nx = ry * Math.cos(t), ny = rx * Math.sin(t), fill = tint(b.color, (0.8 * nx * nx + 0.64 * ny * ny) / (nx * nx + ny * ny));
+      return { points: pts([at(k, b.z0), at(k + 1, b.z0), at(k + 1, b.z1), at(k, b.z1)]), fill, edge: fill, picked: false };
+    });
+    faces.push({ points: pts([...steps(half + 1).map((k) => at(k, b.z0)), ...steps(half + 1).map((k) => at(half - k, b.z1))]), fill: "none", picked });
+    faces.push({ points: pts(steps(CYLINDER_SEGMENTS).map((k) => at(k, b.z1))), fill: b.top ?? b.color, picked });
+    return faces;
+  };
   for (const i of order) {
     const b = all[i] as Box3, x0 = b.x, x1 = b.x + b.w, y0 = b.y, y1 = b.y + b.h;
     const picked = !!b.id && selected.has(b.id);
@@ -186,7 +219,8 @@ export function buildScene(plan: PlanData, view: View3d, selected: ReadonlySet<s
       [[P(x0, yf, b.z0), P(x1, yf, b.z0), P(x1, yf, b.z1), P(x0, yf, b.z1)], tint(b.color, 0.64)],
       [[P(x0, y0, b.z1), P(x1, y0, b.z1), P(x1, y1, b.z1), P(x0, y1, b.z1)], b.top ?? b.color],
     ];
-    for (const [q, fill] of faces) scene.parts.push({ kind: "face", points: pts(q), fill, picked, ...(b.alpha ? { alpha: b.alpha } : {}) });
+    if (b.round) for (const face of cylinder(b, picked)) scene.parts.push({ kind: "face", ...face });
+    else for (const [q, fill] of faces) scene.parts.push({ kind: "face", points: pts(q), fill, picked, ...(b.alpha ? { alpha: b.alpha } : {}) });
     if (b.label && Math.max(b.w, b.h) >= 40) {
       const [tx, ty] = P((x0 + x1) / 2, (y0 + y1) / 2, b.z1);
       scene.parts.push({ kind: "label", x: tx, y: ty + 4, text: b.label });

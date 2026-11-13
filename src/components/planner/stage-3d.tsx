@@ -81,7 +81,7 @@ export function Stage3d(
         <polygon points={scene.floor} fill="#f6f1e7" stroke="#f6f1e7" strokeWidth={1} />
         {scene.parts.map((p, i) => (p.kind === "face"
           ? <polygon key={i} points={p.points} fill={p.fill} fillOpacity={p.alpha} strokeLinejoin="round"
-            stroke={p.picked ? PALETTE.accent : "rgba(0,0,0,.28)"} strokeWidth={p.picked ? 2 : 0.7} />
+            stroke={p.picked ? PALETTE.accent : p.edge ?? "rgba(0,0,0,.28)"} strokeWidth={p.picked ? 2 : 0.7} />
           : <text key={i} x={p.x.toFixed(1)} y={p.y.toFixed(1)} textAnchor="middle" fontSize={11} fill="#111" style={{ fontWeight: 600, pointerEvents: "none" }}>{p.text}</text>))}
       </svg>
       <p className="absolute left-3 bottom-3.5 text-sm text-gray-600 pointer-events-none font-normal">Dra för att vrida · scrolla eller nyp för att zooma · Shift-dra för att panorera</p>

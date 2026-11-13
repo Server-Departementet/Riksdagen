@@ -20,9 +20,11 @@ export type Angle = 0 | 90 | 180 | 270;
 /**
  * The shapes a piece of furniture can have in the 3D view. A block is a solid box; a table is a top on
  * four legs, with room underneath. The chairs have their back along the edge that is at the top of the
- * plan before the piece is turned.
+ * plan before the piece is turned. A cylinder is an upright ellipse inscribed in the footprint (a round
+ * rug, a pouffe); only its drawing is round: collisions, snapping, gaps and stacking still go by the
+ * `w` × `d` box, so two round pieces can't nestle into each other's corners.
  */
-export const ITEM_MODELS = ["block", "table", "chair", "office-chair"] as const;
+export const ITEM_MODELS = ["block", "table", "chair", "office-chair", "cylinder"] as const;
 export type ItemModel = (typeof ITEM_MODELS)[number];
 export type Item = {
   id: string;
