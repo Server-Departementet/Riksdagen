@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { PlanResponse } from "@/lib/planner/plan";
+import { stripFurniture } from "@/lib/planner/variants";
 import { MAX_NAME_LENGTH, MAX_PLANS_PER_MINISTER, PLAN_ID_REGEX, sanitizePlan, uid } from "@/lib/planner/plan";
 
 /*
@@ -37,7 +38,8 @@ export async function POST(_req: NextRequest, { params }: Context) {
   }
 
   const data = sanitizePlan(source.data);
-  if (source.ownerId !== me) data.items = [];
+  // All of it: the arrangements in the owner's other furnishing variants are their furniture too.
+  if (source.ownerId !== me) stripFurniture(data);
   // The picture's URL is cached for a year by plan id and rev, so the copy gets a rev of its own.
   if (data.image) data.image.rev = Date.now();
   // The suffix is what tells the two apart in the plan picker, so a long name gives way to it.

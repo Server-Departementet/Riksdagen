@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import type { PlanData } from "@/lib/planner/plan";
 import { MAX_IMAGE_BYTES, cleanName, emptyPlan, sanitizePlan, sniffImageType, uid } from "@/lib/planner/plan";
+import { stripFurniture } from "@/lib/planner/variants";
 import type { TraceStatus } from "@/lib/planner/tracer/config";
 import { tracerIds, tracerLimits } from "@/lib/planner/tracer/config";
 
@@ -262,7 +263,7 @@ async function collect(client: Anthropic, sessionId: string, planId: string, own
   const data: PlanData = sanitizePlan(rawData);
   const dropped = (["walls", "windows", "doors", "fixtures", "dims", "labels"] as const)
     .map((k) => (Array.isArray(rawData[k]) ? rawData[k].length : 0) - (data[k]?.length ?? 0)).reduce((a, b) => a + b, 0);
-  data.items = [];
+  stripFurniture(data);
 
   const plan = await prisma.floorPlan.findFirst({ where: { id: planId, ownerId }, select: { image: true } });
   if (!plan) return { ok: false, note: "Planlösningen togs bort medan den ritades av." };
