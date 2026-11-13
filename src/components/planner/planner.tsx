@@ -74,7 +74,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [scaleAreas, setScaleAreas] = useState<Rect[]>([]);
   const [is3d, setIs3d] = useState(false);
   const [view3, setView3] = useState<View3d>({ yaw: -35, pitch: 48, zoom: 1, px: 0, py: 0, wallH: 130 });
-  const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false, sun: true });
+  const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false, sun: true, passages: false });
   const [cropFile, setCropFile] = useState<File | null>(null);
   // The AI tracer: what the server offers, the trace being followed, and the report of the last finished one.
   const [tracer, setTracer] = useState<TraceOverview | null>(null);
@@ -855,6 +855,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <Check label="Visa mått" checked={opts.dims} onChange={(dims) => setOpts({ ...opts, dims })} />
           <Check label="Visa avstånd runt markerad möbel" checked={opts.gaps} onChange={(gaps) => setOpts({ ...opts, gaps })} />
           {plan.bearing !== undefined && !is3d && <Check label="Visa väderstreck vid fönstren" checked={opts.sun} onChange={(sun) => setOpts({ ...opts, sun })} />}
+          <Check label="Visa trånga passager" checked={opts.passages} onChange={(passages) => setOpts({ ...opts, passages })} />
           {plan.image && !drawing && <>
             <Check label="Visa planritningen ovanpå" checked={opts.overlay} onChange={(overlay) => setOpts({ ...opts, overlay })} />
             {opts.overlay && <OpacitySlider value={opts.overlayOpacity} onChange={(v) => setOpts({ ...opts, overlayOpacity: v })} />}
