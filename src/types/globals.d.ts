@@ -5,4 +5,5 @@ import type { Defines } from "../../next.config";
 declare global {
   const PACKAGE_CONTRIBUTORS: Defines["PACKAGE_CONTRIBUTORS"];
   const COPYRIGHT_YEAR: Defines["COPYRIGHT_YEAR"];
+  const COMMIT_HASH: Defines["COMMIT_HASH"];
 }

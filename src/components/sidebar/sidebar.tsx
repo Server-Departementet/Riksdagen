@@ -115,6 +115,9 @@ export function Sidebar(
           {children}
         </nav>
 
+        {/* Which build this is */}
+        <p className="mt-auto px-5 py-3 text-xs font-mono text-gray-400 select-all" title="Commit">{COMMIT_HASH}</p>
+
         {/* Accessibility */}
         <SheetTitle className="hidden">Menu</SheetTitle>
       </SheetContent>

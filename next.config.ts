@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { execSync } from "node:child_process";
 import { env } from "node:process";
 import packageJson from "./package.json" with { type: "json" };
 import type { Json } from "./src/lib/json";
@@ -8,9 +9,21 @@ import type { Json } from "./src/lib/json";
 // survive - anything structured travels as a JSON string and is parsed with
 // parseJson. The global declarations in src/types/globals.d.ts take their
 // types from here.
+// The commit being built, for the sidebar footer. CI provides it; elsewhere ask git.
+function commitHash(): string {
+  if (env.GITHUB_SHA) return env.GITHUB_SHA.slice(0, 7);
+  try {
+    return execSync("git rev-parse --short=7 HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim() || "okänd";
+  }
+  catch {
+    return "okänd";
+  }
+}
+
 const defines = {
   PACKAGE_CONTRIBUTORS: JSON.stringify(packageJson.contributors) as Json<typeof packageJson.contributors>,
   COPYRIGHT_YEAR: new Date().getFullYear(),
+  COMMIT_HASH: commitHash(),
 };
 export type Defines = typeof defines;
 
