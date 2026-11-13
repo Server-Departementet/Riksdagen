@@ -18,6 +18,7 @@ import { Stage3d } from "@/components/planner/stage-3d";
 import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
 import { TraceDialog } from "@/components/planner/trace-dialog";
+import { PlanPresence } from "@/components/planner/presence";
 import type { TraceOverview, TraceStatus } from "@/lib/planner/tracer/config";
 import { download, fileSlug, picture, planFile, toPng } from "@/components/planner/export";
 import { Card, Check, NumField, Segments, TextField, buttonClass, inputClass, primaryClass } from "@/components/planner/controls";
@@ -540,6 +541,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
               ))}
             </select>
           )}
+          <PlanPresence me={me} planId={currentId} metas={metas} onOpen={(id) => void open(id)} />
           <div className="flex flex-wrap gap-2">
             <button type="button" className={primaryClass} onClick={createEmpty}>Ny planlösning</button>
             <button type="button" className={buttonClass} onClick={() => fileInput.current?.click()}>Importera</button>
