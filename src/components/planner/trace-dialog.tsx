@@ -50,7 +50,8 @@ export function TraceDialog({ overview, onStarted, onClose }: { overview: TraceO
     }
   }
 
-  if (file) return <CropDialog file={file} onCancel={() => setFile(null)} onDone={(img) => { setImage(img); setFile(null); }} />;
+  // The tracer wants the whole sheet: the scale bar, the stated area and the legend usually sit outside the plan itself.
+  if (file) return <CropDialog file={file} hint="Vrid bilden så att fönsterväggen hamnar uppåt och väggarna ligger vågrätt och lodrätt. Behåll hela bladet: skalstock, angiven yta och teckenförklaring hjälper AI:n att få måtten rätt." onCancel={() => setFile(null)} onDone={(img) => { setImage(img); setFile(null); }} />;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="Rita av med AI">
@@ -71,7 +72,7 @@ export function TraceDialog({ overview, onStarted, onClose }: { overview: TraceO
             <button type="button" className={buttonClass} onClick={() => input.current?.click()}>{image ? "Byt bild" : "Välj bild"}</button>
             {image && <button type="button" className={buttonClass} onClick={() => setImage(null)}>Ta bort</button>}
           </div>
-          <p className="text-xs text-gray-500 font-normal">Vrid bilden så att fönsterväggen hamnar uppåt när du beskär den.</p>
+          <p className="text-xs text-gray-500 font-normal">Ta med hela bladet, inte bara planlösningen: skalstocken och texten runt om behövs. Vrid bara så att fönsterväggen hamnar uppåt.</p>
           <input ref={input} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setFile(f); }} />
         </div>
 

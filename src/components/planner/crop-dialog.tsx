@@ -15,7 +15,13 @@ const MAX_SIDE = 2400;
  * drag the frame around the plan. The result is cropped and shrunk here in the
  * browser, so only the small final PNG is uploaded.
  */
-export function CropDialog({ file, onDone, onCancel }: { file: File; onDone: (image: CroppedImage) => void; onCancel: () => void }) {
+export function CropDialog({ file, hint, onDone, onCancel }: {
+  file: File;
+  /** What to keep in the frame, when it isn't the default "only the plan" */
+  hint?: string;
+  onDone: (image: CroppedImage) => void;
+  onCancel: () => void;
+}) {
   // The picture, already turned: cropping then happens in plain pixel coordinates.
   const [source, setSource] = useState<HTMLCanvasElement | null>(null);
   const [preview, setPreview] = useState("");
@@ -111,7 +117,7 @@ export function CropDialog({ file, onDone, onCancel }: { file: File; onDone: (im
       <div className="bg-white rounded-xl p-4 flex flex-col gap-3 max-w-full max-h-full">
         <div>
           <p className="text-lg font-semibold">Beskär planritningen</p>
-          <p className="text-sm text-gray-600 font-normal">Vrid bilden rätt och dra ramen så att bara planlösningen är kvar. Väggarna bör ligga vågrätt och lodrätt.</p>
+          <p className="text-sm text-gray-600 font-normal">{hint ?? "Vrid bilden rätt och dra ramen så att bara planlösningen är kvar. Väggarna bör ligga vågrätt och lodrätt."}</p>
         </div>
         {error && <p className="text-sm text-red-700 font-normal">{error}</p>}
         {source && preview && (

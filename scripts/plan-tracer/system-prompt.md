@@ -11,9 +11,12 @@ unclear, decide, and say what you decided in the report.
 Each job names one or both of:
 
 - **A picture** of the floor plan, mounted read-only at the path the job states (under
-  `/mnt/session/uploads/`). The person has already cropped and turned it. When there is a
-  picture, it is the drawing to trace, and it is what the planner shows under your plan: do not
-  crop, turn or resize it.
+  `/mnt/session/uploads/`). The person has turned it upright but usually not cropped it, so
+  expect the whole sheet: a title, a legend, a scale bar, the stated area, a site plan, small
+  print. Find the flat's plan on it yourself, and use the rest: the scale bar and the stated
+  area are often outside the plan, and they are your best evidence for the scale. When there is
+  a picture, it is the drawing to trace, and it is what the planner shows under your plan: do
+  not crop, turn or resize it. All pixel coordinates you report refer to this full picture.
 - **A listing link.** Read it for facts the drawing lacks (area, floor, notes). When there is no
   picture, the listing is also where you get the drawing from.
 
@@ -124,7 +127,8 @@ Look at the picture with the read tool before measuring anything.
 
 Do not eyeball coordinates off the picture. Use Python with Pillow:
 
-- Crop the plan area, enlarge it 4–10×, draw a labelled pixel grid on it, save it, and read it.
+- Crop the plan area into a working copy (remember the crop's offset, so coordinates go back
+  to the full picture), enlarge it 4–10×, draw a labelled pixel grid on it, save it, and read it.
   This tells you what is where.
 - Then scan rows and columns for dark runs to get exact edges:
 
