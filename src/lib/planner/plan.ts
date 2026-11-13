@@ -6,6 +6,8 @@
  * All shapes are axis-aligned rectangles; furniture turns in 90° steps.
  */
 
+import type { Fit } from "@/lib/planner/fit";
+
 export type Rect = { x: number; y: number; w: number; h: number };
 
 export type Wall = Rect & { id: string };
@@ -123,6 +125,8 @@ export type PlanMeta = {
   ownerName: string;
   /** ms epoch on the editing browser's clock */
   editedAt: number;
+  /** How the furnishing stands, see fit.ts. Absent until someone has worked it out (a plan just made in this browser). */
+  fit?: Fit;
 };
 
 export type PlanDoc = { name: string; data: PlanData; editedAt: number };

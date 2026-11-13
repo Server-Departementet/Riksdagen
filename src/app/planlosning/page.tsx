@@ -16,6 +16,6 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
 
   const { plan } = await searchParams;
   return <main className="px-0!">
-    <Planner me={{ id: session.userId, name: session.name }} plans={await listPlans()} initialPlanId={typeof plan === "string" ? plan : null} />
+    <Planner me={{ id: session.userId, name: session.name }} plans={await listPlans(session.userId)} initialPlanId={typeof plan === "string" ? plan : null} />
   </main>;
 }
