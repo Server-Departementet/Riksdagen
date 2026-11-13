@@ -7,7 +7,7 @@ import { sanitizeListing } from "@/lib/planner/listing";
 import { MAX_IMAGE_BYTES, cleanName, emptyPlan, sanitizePlan, sniffImageType, uid } from "@/lib/planner/plan";
 import { stripFurniture } from "@/lib/planner/variants";
 import type { TraceStatus } from "@/lib/planner/tracer/config";
-import { tracerIds, tracerLimits } from "@/lib/planner/tracer/config";
+import { TOOLKIT_FILE, tracerIds, tracerLimits } from "@/lib/planner/tracer/config";
 
 /*
  * Runs one floor plan trace: a Claude Managed Agents session whose agent (set up
@@ -40,6 +40,10 @@ const RUBRIC = `# Floor plan trace
 - All ids are unique within their list, and no rectangle has a width or height below 1.
 - /mnt/session/outputs/report.md exists, is in Swedish, and states the main measurements, how the scale was set with its tolerance, and what was assumed or left out.
 - If the job gave no picture, the drawing that was measured is saved as /mnt/session/outputs/plan-image.png, .jpg or .webp.
+`;
+// Added when the toolkit is mounted, so the grader reads its numbers instead of writing measuring code of its own.
+const RUBRIC_TOOLKIT = `
+To check the plan against the picture, run \`python3 /mnt/session/uploads/${TOOLKIT_FILE} check <picture> /mnt/session/outputs/plan.json\`: it prints the format rules that are broken, how much of each wall lies on ink, the drawn lines nothing covers, and the enclosed area. \`overlay <picture> /mnt/session/outputs/plan.json -o /tmp/overlay.png\` paints the plan over the picture for one look.
 `;
 
 export const toStatus = (t: { id: string; status: string; planId: string; step: number; note: string | null; costCents: number | null }): TraceStatus =>
@@ -81,7 +85,7 @@ export type TraceInput = {
  */
 export async function start(input: TraceInput): Promise<TraceStatus> {
   const client = new Anthropic();
-  const { agentId, environmentId } = tracerIds(), limits = tracerLimits();
+  const { agentId, environmentId, toolkitFileId } = tracerIds(), limits = tracerLimits();
   const planId = uid(), traceId = uid();
 
   let picture = "No picture was given: get the drawing from the listing and save it as plan-image.";
@@ -93,12 +97,26 @@ export async function start(input: TraceInput): Promise<TraceStatus> {
     resources.push({ type: "file", file_id: file.id, mount_path: `/${name}` });
     picture = `Picture: /mnt/session/uploads/${name} (${meta.width} × ${meta.height} px). Trace this picture; do not write plan-image.`;
   }
-  const description = [
+  const describe = (toolkit: boolean) => [
     "Trace this floor plan for the flat planner and write plan.json and report.md to /mnt/session/outputs/.",
     picture,
     input.listingUrl ? `Listing: ${input.listingUrl}` : "No listing link was given.",
+    toolkit ? `Toolkit: /mnt/session/uploads/${TOOLKIT_FILE}` : "No toolkit is mounted: measure with your own code.",
     input.note ? `Note from the person who asked: ${input.note}` : "",
   ].filter(Boolean).join("\n");
+  const create = (toolkit: boolean) => client.beta.sessions.create({
+    agent: agentId,
+    environment_id: environmentId,
+    title: `Planlösning ${traceId}`,
+    resources: toolkit ? [...resources, { type: "file", file_id: toolkitFileId, mount_path: `/${TOOLKIT_FILE}` }] : resources,
+    // The platform stops issuing model requests once the session has cost this much at list prices.
+    budget: { type: "limit", max_list_cost: { amount: String(limits.maxCostCents), currency: "USD" } },
+    initial_events: [limits.graderIterations > 0
+      // One deliverable, so the session is an outcome: a grader checks each attempt against the rubric.
+      ? { type: "user.define_outcome", description: describe(toolkit), rubric: { type: "text", content: RUBRIC + (toolkit ? RUBRIC_TOOLKIT : "") }, max_iterations: limits.graderIterations }
+      // No grader: the agent works until it considers the job done.
+      : { type: "user.message", content: [{ type: "text", text: describe(toolkit) }] }],
+  });
 
   await prisma.floorPlan.create({
     data: {
@@ -107,15 +125,11 @@ export async function start(input: TraceInput): Promise<TraceStatus> {
     },
   });
   try {
-    const session = await client.beta.sessions.create({
-      agent: agentId,
-      environment_id: environmentId,
-      title: `Planlösning ${traceId}`,
-      resources,
-      // The platform stops issuing model requests once the session has cost this much at list prices.
-      budget: { type: "limit", max_list_cost: { amount: String(limits.maxCostCents), currency: "USD" } },
-      // One deliverable, so the session is an outcome: a grader checks each attempt against the rubric.
-      initial_events: [{ type: "user.define_outcome", description, rubric: { type: "text", content: RUBRIC }, max_iterations: 2 }],
+    const session = await create(!!toolkitFileId).catch((err: unknown) => {
+      // A toolkit file that has expired or been deleted must not take the tracer down with it: the agent can measure without.
+      if (!toolkitFileId || !(err instanceof Anthropic.BadRequestError || err instanceof Anthropic.NotFoundError)) throw err;
+      console.error(`plan trace ${traceId}: could not start with the toolkit file ${toolkitFileId}, starting without it:`, err.message);
+      return create(false);
     });
     const trace = await prisma.planTrace.create({
       data: { id: traceId, ownerId: input.ownerId, status: "running", planId, sessionId: session.id, listingUrl: input.listingUrl, note: "Startar…" },
