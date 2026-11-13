@@ -10,5 +10,5 @@ export async function GET() {
   if (session?.role !== "minister") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-  return NextResponse.json({ plans: await listPlans() }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ plans: await listPlans(session.userId) }, { headers: { "Cache-Control": "no-store" } });
 }

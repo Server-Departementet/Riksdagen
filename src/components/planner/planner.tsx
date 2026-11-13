@@ -10,6 +10,7 @@ import {
   addItem, duplicateItems, unpackFurniture, unpacked, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
   rotateItems, ungroupItems,
 } from "@/lib/planner/edit";
+import { FIT_LABEL, FIT_LEGEND, FIT_SYMBOL, fitOf, fitText } from "@/lib/planner/fit";
 import { copyPlan, deletePlan, fetchPlan, fetchPlans, listLocal, readLocal, removeLocal, savePlan, uploadImage, writeLocal } from "@/lib/planner/client-store";
 import type { View3d } from "@/lib/planner/scene3d";
 import type { Editor, Line, Mode, Tool, ViewOptions } from "@/components/planner/stage";
@@ -85,7 +86,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [traceDialog, setTraceDialog] = useState(false);
   const [traceReport, setTraceReport] = useState("");
   // "Mina möbler": the minister's own furniture, unpacked into their plans.
-  const [furniture, setFurniture] = useState<Item[]>([]);
+  const [furniture, setFurnitureState] = useState<Item[]>([]);
+  // False until the list has arrived: an empty list would otherwise pass for "nothing left to unpack".
+  const [furnitureKnown, setFurnitureKnown] = useState(false);
   const [furnitureDialog, setFurnitureDialog] = useState(false);
   const [copying, setCopying] = useState(false);
 
@@ -93,6 +96,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const docRef = useRef<PlanDoc | null>(null);
   const idRef = useRef<string | null>(null);
   const metasRef = useRef(plans);
+  const furnitureRef = useRef<Item[] | undefined>(undefined);
   const dirty = useRef(false);
   const history = useRef<PlanData[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -103,8 +107,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const setDoc = (d: PlanDoc | null) => { docRef.current = d; setDocState(d); };
   const setMetas = (next: PlanMeta[]) => { metasRef.current = next; setMetaState(next); };
   const isMine = (id: string | null) => metasRef.current.find((m) => m.id === id)?.ownerId === me.id;
-  const touchMeta = (id: string, name: string, editedAt: number) =>
-    setMetas(metasRef.current.map((m) => (m.id === id ? { ...m, name, editedAt } : m)));
+  const setFurniture = (next: Item[]) => { furnitureRef.current = next; setFurnitureState(next); setFurnitureKnown(true); };
+  // The furnishing status goes with the plan's data, so the picker follows edits without asking the server.
+  const touchMeta = (id: string, name: string, editedAt: number, data: PlanData) =>
+    setMetas(metasRef.current.map((m) => (m.id === id ? { ...m, name, editedAt, fit: fitOf(data, m.ownerId === me.id ? furnitureRef.current : undefined) } : m)));
   const clearEditing = () => {
     history.current = []; setUndoable(0);
     setSelIds([]); setStaticSel(null); setScaleLine(null); setScaleAreas([]);
@@ -124,7 +130,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     dirty.current = false;
     history.current = []; setUndoable(0);
     if (remote.ownerId === me.id) writeLocal(remote.id, { ...d, ownerId: me.id, dirty: false });
-    touchMeta(remote.id, remote.name, remote.editedAt);
+    touchMeta(remote.id, remote.name, remote.editedAt, remote.data);
     setSync("saved");
   }
 
@@ -172,7 +178,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     if (!id) return;
     dirty.current = true;
     writeLocal(id, { ...d, ownerId: me.id, dirty: true });
-    touchMeta(id, d.name, d.editedAt);
+    touchMeta(id, d.name, d.editedAt, d.data);
     setSync("saving");
     schedule(700);
   }
@@ -311,7 +317,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
       const list = await fetchPlans();
       const unsynced = metasRef.current.filter((m) => m.ownerId === me.id && !list.some((l) => l.id === m.id) && readLocal(m.id)?.dirty);
       setMetas([...unsynced, ...list]);
-      const id = idRef.current;
+      const id = idRef.current, cur = docRef.current;
+      // The server hasn't seen the open plan's unsaved edits: its entry in the list stays as it is here.
+      if (id && dirty.current && cur) touchMeta(id, cur.name, cur.editedAt, cur.data);
       if (!id || dirty.current) return;
       const remote = await fetchPlan(id);
       if (idRef.current !== id || dirty.current) return;
@@ -326,7 +334,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     let list = plans;
     for (const { id, plan } of listLocal()) {
       if (plan.ownerId !== me.id || list.some((m) => m.id === id)) continue;
-      if (plan.dirty) list = [{ id, name: plan.name, ownerId: me.id, ownerName: me.name, editedAt: plan.editedAt }, ...list];
+      if (plan.dirty) list = [{ id, name: plan.name, ownerId: me.id, ownerName: me.name, editedAt: plan.editedAt, fit: fitOf(plan.data) }, ...list];
       else removeLocal(id);
     }
     setMetas(list);
@@ -367,6 +375,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setFurniture(((await res.json()) as FurnitureResponse).items);
+        void refresh(); // the list changed, and with it what every plan of ours lacks
       })
       .catch(() => { setFurniture(before); toast.error("Kunde inte spara Mina möbler. Försök igen."); });
   }
@@ -618,6 +627,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const drawnHelp = "Golvet innanför ytterväggarna med nuvarande skala, innerväggar oräknade. Skiljer det sig mycket från boarean stämmer inte skalan.";
   /** Pieces of "Mina möbler" that the open plan, if it is the minister's own, doesn't have yet. */
   const missing = mine && plan ? unpacked(plan, furniture).length : 0;
+  // Worked out here from the plan as it stands right now, so it follows every edit, also before "Mina möbler" has loaded or the list has caught up.
+  const fit = plan && stack && meta ? fitOf(plan, mine && furnitureKnown ? furniture : undefined, stack) : null;
+  const fitOfMeta = (m: PlanMeta) => (m.id === currentId && fit ? fit : m.fit);
   /** How far above the floor the single selected piece stands. */
   const standing = (one && stack?.z.get(one.id)) ?? 0;
 
@@ -628,10 +640,14 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
         <div className="flex flex-col gap-2">
           <p className="text-xl font-semibold title-font">Planlösningar</p>
           {groups.length > 0 && (
-            <select aria-label="Planlösning" className={inputClass} value={currentId ?? ""} onChange={(e) => void open(e.target.value)}>
+            <select aria-label="Planlösning" title={FIT_LEGEND} className={inputClass} value={currentId ?? ""} onChange={(e) => void open(e.target.value)}>
               {groups.map((g) => (
                 <optgroup key={g.label} label={g.label}>
-                  {g.list.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {g.list.map((m) => {
+                    // An option holds only text, so the status is a leading symbol; aria-label spells it out where a screen reader would read the symbol's name.
+                    const f = fitOfMeta(m);
+                    return <option key={m.id} value={m.id} aria-label={f ? `${m.name}, ${FIT_LABEL[f.verdict]}` : undefined}>{f ? `${FIT_SYMBOL[f.verdict]} ${m.name}` : m.name}</option>;
+                  })}
                 </optgroup>
               ))}
             </select>
@@ -652,6 +668,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
               <p className="text-sm text-gray-600 font-normal">{meta.ownerName}s planlösning. Du kan titta men inte ändra. Kopiera den för att få en egen att möblera: ritningen och bilden följer med, {meta.ownerName}s möbler gör det inte.</p>
               {doc && <button type="button" className={`${primaryClass} self-start`} disabled={copying} title="Ny planlösning hos dig med samma ritning och bild, utan möbler" onClick={() => void copy()}>{copying ? "Kopierar…" : "Kopiera till mina"}</button>}
             </>)}
+          {fit && <p className="text-sm font-normal"><span aria-hidden="true">{FIT_SYMBOL[fit.verdict]} </span>{fitText(fit)}</p>}
           {trace?.status === "running" && (
             <p className="text-sm font-normal border border-orange-200 bg-orange-50 rounded-md px-2 py-1.5" role="status">
               <span className="font-semibold">AI:n ritar av en planlösning</span> · steg {trace.step}
