@@ -17,6 +17,8 @@ import { Stage } from "@/components/planner/stage";
 import { Stage3d } from "@/components/planner/stage-3d";
 import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
+import { TraceDialog } from "@/components/planner/trace-dialog";
+import type { TraceOverview, TraceStatus } from "@/lib/planner/tracer/config";
 import { download, fileSlug, picture, planFile, toPng } from "@/components/planner/export";
 import { Card, Check, NumField, Segments, TextField, buttonClass, inputClass, primaryClass } from "@/components/planner/controls";
 
@@ -68,6 +70,11 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [view3, setView3] = useState<View3d>({ yaw: -35, pitch: 48, zoom: 1, px: 0, py: 0, wallH: 130 });
   const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false });
   const [cropFile, setCropFile] = useState<File | null>(null);
+  // The AI tracer: what the server offers, the trace being followed, and the report of the last finished one.
+  const [tracer, setTracer] = useState<TraceOverview | null>(null);
+  const [trace, setTrace] = useState<TraceStatus | null>(null);
+  const [traceDialog, setTraceDialog] = useState(false);
+  const [traceReport, setTraceReport] = useState("");
 
   // The latest values, for timers and for handlers that run several times between renders.
   const docRef = useRef<PlanDoc | null>(null);
@@ -247,6 +254,45 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   }
 
   /** Coming back to the tab: pick up plans and edits made elsewhere in the meantime. */
+  /** What the AI tracer offers this minister, and any trace of theirs that is still running. */
+  async function loadTracer() {
+    try {
+      const res = await fetch("/api/planlosning/trace", { cache: "no-store" });
+      if (!res.ok) return;
+      const overview = await res.json() as TraceOverview;
+      setTracer(overview);
+      if (overview.active) setTrace(overview.active);
+    }
+    catch { /* offline: the button just stays hidden */ }
+  }
+
+  // Follow a running trace. It takes minutes, so the server is asked every few seconds until it is over.
+  const followingId = trace?.status === "running" ? trace.id : null;
+  useEffect(() => {
+    if (!followingId) return;
+    const timer = setInterval(() => {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/planlosning/trace/${followingId}`, { cache: "no-store" });
+          if (!res.ok) return;
+          const next = await res.json() as TraceStatus;
+          setTrace(next);
+          if (next.status === "running") return;
+          void loadTracer();
+          await refresh();
+          if (next.status === "done") {
+            setTraceReport(next.note);
+            if (metasRef.current.some((m) => m.id === next.planId)) void open(next.planId);
+          }
+          else toast.error(next.note || "Ritningen kunde inte ritas av.", { duration: 15_000 });
+        }
+        catch { /* a missed poll; the next one will do */ }
+      })();
+    }, 4000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restarts only when another trace is followed; the rest reads refs
+  }, [followingId]);
+
   async function refresh() {
     try {
       const list = await fetchPlans();
@@ -273,6 +319,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     setMetas(list);
     const first = list.find((m) => m.id === initialPlanId) ?? list.find((m) => m.ownerId === me.id) ?? list[0];
     if (first) void open(first.id);
+    void loadTracer();
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") void refresh();
@@ -496,12 +543,19 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <div className="flex flex-wrap gap-2">
             <button type="button" className={primaryClass} onClick={createEmpty}>Ny planlösning</button>
             <button type="button" className={buttonClass} onClick={() => fileInput.current?.click()}>Importera</button>
+            {tracer?.configured && <button type="button" className={buttonClass} disabled={trace?.status === "running"} onClick={() => setTraceDialog(true)}>Rita av med AI</button>}
             {doc && <button type="button" className={buttonClass} onClick={() => void exportFile()}>Exportera</button>}
           </div>
           <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importFile(f); }} />
           {meta && (mine
             ? <p className="text-sm text-gray-600 font-normal" role="status">{SYNC_TEXT[sync]}</p>
             : <p className="text-sm text-gray-600 font-normal">{meta.ownerName}s planlösning. Du kan titta men inte ändra. Exportera och importera den för att få en egen kopia.</p>)}
+          {trace?.status === "running" && (
+            <p className="text-sm font-normal border border-orange-200 bg-orange-50 rounded-md px-2 py-1.5" role="status">
+              <span className="font-semibold">AI:n ritar av en planlösning</span> · steg {trace.step}
+              {trace.note && <span className="block text-gray-600 truncate">{trace.note}</span>}
+            </p>
+          )}
           {!meta && <p className="text-sm text-gray-600 font-normal">Ingen har ritat någon planlösning än. Skapa en ny, ladda upp planritningen som bild och rita av väggarna.</p>}
         </div>
 
@@ -700,6 +754,22 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           </div>}
       </div>
 
+      {traceDialog && tracer && <TraceDialog overview={tracer} onClose={() => setTraceDialog(false)} onStarted={(started) => {
+        setTraceDialog(false);
+        setTrace(started);
+        void refresh();
+        toast.info("AI:n har börjat rita av planlösningen. Det tar en stund.");
+      }} />}
+      {traceReport && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="AI-ritningen är klar">
+          <div className="bg-white rounded-xl p-4 flex flex-col gap-3 w-full max-w-2xl max-h-full">
+            <p className="text-lg font-semibold">AI-ritningen är klar</p>
+            <p className="text-sm text-gray-600 font-normal">Slå på &quot;Visa planritningen ovanpå&quot; och jämför med bilden innan du litar på måtten.</p>
+            <pre className="overflow-y-auto whitespace-pre-wrap text-sm font-normal bg-gray-50 border border-gray-200 rounded-md p-3">{traceReport}</pre>
+            <button type="button" className={`${primaryClass} self-end`} onClick={() => setTraceReport("")}>Stäng</button>
+          </div>
+        </div>
+      )}
       {cropFile && <CropDialog file={cropFile} onCancel={() => setCropFile(null)} onDone={(img) => void acceptCropped(img)} />}
     </div>
   );

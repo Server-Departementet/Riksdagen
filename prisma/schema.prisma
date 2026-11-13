@@ -19,6 +19,7 @@ model User {
   trackPlayFetches TrackPlayFetch[]
   importQueue      ImportQueueItem[]
   floorPlans       FloorPlan[]
+  planTraces       PlanTrace[]
 }
 
 // Takeout plays waiting for the server-side import. The import API only
@@ -198,4 +199,34 @@ model FloorPlan {
   createdAt DateTime @default(now())
 
   @@index([ownerId])
+}
+
+// One "trace this floor plan for me" job on /planlosning: a Claude Managed Agents
+// session that measures the plan picture and fills in a FloorPlan. The rows are
+// also what the rate limits are counted from, so they are kept after the job ends.
+model PlanTrace {
+  id      String @id
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String
+
+  status String // running | done | failed
+  /// The FloorPlan being filled in. No FK: the minister may delete the plan while the job runs.
+  planId String
+  /// The Managed Agents session, once it exists. Lets a job be picked up again after a restart.
+  sessionId String?
+  /// The listing link, if one was given
+  listingUrl String? @db.Text
+
+  /// Tool calls made so far, as a rough progress figure
+  step Int @default(0)
+  /// While running: what the agent last said. Done: its report. Failed: why.
+  note String? @db.Text
+  /// What the session cost at list prices, in US cents
+  costCents Int?
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([ownerId, createdAt])
+  @@index([status])
 }

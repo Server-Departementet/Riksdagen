@@ -31,6 +31,7 @@
     "make-users": "tsx scripts/make-users.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@prisma/client": "^7.10.1",
     "@prisma/client-runtime-utils": "^7.10.1",
     "@radix-ui/react-accordion": "^1.2.20",
