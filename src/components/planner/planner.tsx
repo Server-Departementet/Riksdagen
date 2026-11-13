@@ -590,6 +590,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             <button type="button" className={primaryClass} onClick={createEmpty}>Ny planlösning</button>
             <button type="button" className={buttonClass} onClick={() => fileInput.current?.click()}>Importera</button>
             {tracer?.configured && <button type="button" className={buttonClass} disabled={trace?.status === "running"} onClick={() => setTraceDialog(true)}>Rita av med AI</button>}
+            {tracer?.configured && <a href="/planlosning/ai" className="self-center text-sm font-normal text-gray-600 underline">AI-historik</a>}
             {doc && <button type="button" className={buttonClass} onClick={() => void exportFile()}>Exportera</button>}
           </div>
           <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importFile(f); }} />
