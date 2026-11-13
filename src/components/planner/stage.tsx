@@ -6,7 +6,7 @@ import type { Dim, Fixture, Item, Label, PlanData, PlanWindow, Rect } from "@/li
 import { DEFAULT_HEAD, DEFAULT_SILL, clamp, uid } from "@/lib/planner/plan";
 import type { Guide } from "@/lib/planner/geometry";
 import {
-  bounds, dimLength, drawingBox, fitWindowToWall, flatBox, gaps, groupOf, imageRect, inFlat, isHit, itemBox, obstacles,
+  backStrip, bounds, dimLength, drawingBox, fitWindowToWall, flatBox, gaps, groupOf, imageRect, inFlat, isHit, itemBox, obstacles,
   parkBox, rectFrom, snapBox, snapPoint, snapTolerance, stacking,
 } from "@/lib/planner/geometry";
 import type { StaticElement, StaticKind, StaticRef } from "@/lib/planner/edit";
@@ -552,9 +552,12 @@ function ItemShape({ item: it, parked, movable }: { item: Item; parked: boolean;
   // Shrink the label until the name fits along the piece's long side.
   const room = upright ? b.h : b.w;
   const fs = clamp(room / (Math.max(it.name.length, 5) * 0.62), 6, small ? 10 : 12);
+  // Chairs show which way they face: a darker band along the backrest.
+  const back = it.model === "chair" || it.model === "office-chair" ? backStrip({ x: -b.w / 2, y: -b.h / 2, w: b.w, h: b.h }, it.a, Math.min(7, Math.min(b.w, b.h) / 4), 1.5) : null;
   return (
     <g data-id={it.id} {...(parked ? { "data-noexport": "" } : {})} transform={`translate(${it.x} ${it.y})`} style={{ cursor: movable ? "move" : "pointer" }}>
       <rect x={-b.w / 2} y={-b.h / 2} width={b.w} height={b.h} rx={3} fill={it.color} fillOpacity={0.82} stroke={C.text} strokeWidth={1.5} />
+      {back && <rect x={back.x} y={back.y} width={back.w} height={back.h} rx={1.5} fill="#000" fillOpacity={0.3} style={{ pointerEvents: "none" }} />}
       <g transform={upright ? "rotate(-90)" : undefined} style={{ pointerEvents: "none" }}>
         <text textAnchor="middle" y={-1} fontSize={fs} fill="#111" style={{ fontWeight: 600 }}>{it.name}</text>
         <text textAnchor="middle" y={fs} fontSize={fs - 1} fill="#111" style={{ fontWeight: 400 }}>{it.w}×{it.d}</text>

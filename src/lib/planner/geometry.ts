@@ -1,4 +1,4 @@
-import type { Dim, Item, PlanData, Rect } from "@/lib/planner/plan";
+import type { Angle, Dim, Item, PlanData, Rect } from "@/lib/planner/plan";
 import { clamp } from "@/lib/planner/plan";
 
 /** A vertical (`v`, an x position) or horizontal (`h`, a y position) snapping guide. */
@@ -8,6 +8,19 @@ export type Guide = { v: number } | { h: number };
 export function itemBox(it: Item): Rect {
   const turned = it.a % 180 !== 0, w = turned ? it.d : it.w, h = turned ? it.w : it.d;
   return { x: it.x - w / 2, y: it.y - h / 2, w, h };
+}
+
+/**
+ * A strip `depth` thick along the back edge of a piece's box, `inset` in from each end. The back is the
+ * edge at the top of the plan before the piece is turned, and turns clockwise with it. Chairs have their backrest there.
+ */
+export function backStrip(b: Rect, a: Angle, depth: number, inset = 0): Rect {
+  switch (a) {
+    case 0: return { x: b.x + inset, y: b.y, w: b.w - 2 * inset, h: depth };
+    case 90: return { x: b.x + b.w - depth, y: b.y + inset, w: depth, h: b.h - 2 * inset };
+    case 180: return { x: b.x + inset, y: b.y + b.h - depth, w: b.w - 2 * inset, h: depth };
+    case 270: return { x: b.x, y: b.y + inset, w: depth, h: b.h - 2 * inset };
+  }
 }
 
 /** Smallest box around several, or null for none. */
@@ -46,8 +59,8 @@ const UNDER_SHARE = 0.7;
 /**
  * Pieces that overlap a lot are taken to be stacked: a lamp on a table, a microwave on the kitchen
  * bench, a table on a rug. The piece with the smaller footprint goes on top; of two equal ones, the
- * later in the list. Something almost as high as an open table (a drawer unit) stands under it
- * instead. Fixed fittings can be stood on; walls can't.
+ * later in the list. Something almost as high as a table (a drawer unit) stands under it instead,
+ * and so does a chair. Fixed fittings can be stood on; walls can't.
  */
 export function stacking(plan: PlanData): Stacking {
   const z = new Map<string, number>(), pairs = new Set<string>();
@@ -59,14 +72,18 @@ export function stacking(plan: PlanData): Stacking {
     plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, floor: 0, top: f.height, under: 0 }));
   const bySize = plan.items.map((it) => ({ it, box: itemBox(it) })).sort((a, b) => area(b.box) - area(a.box));
   for (const { it, box } of bySize) {
+    const chair = it.model === "chair" || it.model === "office-chair";
     let floor = 0;
     for (const p of placed) {
-      if (shared(box, p.box) < STACK_SHARE * area(box)) continue;
+      // A chair at a table is pushed in under it, however little and however high its back is.
+      const pushedIn = chair && p.under > 0 && shared(box, p.box) > 0.25;
+      if (!pushedIn && shared(box, p.box) < STACK_SHARE * area(box)) continue;
       pairs.add(pairKey(it.id, p.id));
-      floor = Math.max(floor, it.h < p.under && it.h >= UNDER_SHARE * p.under ? p.floor : p.top);
+      const under = pushedIn || (it.h < p.under && it.h >= UNDER_SHARE * p.under);
+      floor = Math.max(floor, under ? p.floor : p.top);
     }
     z.set(it.id, floor);
-    placed.push({ id: it.id, box, floor, top: floor + it.h, under: it.open ? it.h : 0 });
+    placed.push({ id: it.id, box, floor, top: floor + it.h, under: it.model === "table" ? it.h : 0 });
   }
   return { z, pairs };
 }

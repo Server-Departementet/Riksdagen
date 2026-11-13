@@ -1,5 +1,5 @@
 import type { PlanData, Rect } from "@/lib/planner/plan";
-import { flatBox, inFlat, itemBox, stacking } from "@/lib/planner/geometry";
+import { backStrip, flatBox, inFlat, itemBox, stacking } from "@/lib/planner/geometry";
 
 /*
  * The crude 3D view: everything is an upright box. The camera is orthographic,
@@ -97,12 +97,34 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
     if (!inFlat(plan, it)) continue;
     // Stacked pieces stand on whatever is under them.
     const b = itemBox(it), common = { color: it.color, id: it.id }, z = stack.z.get(it.id) ?? 0;
-    if (it.open && it.h > 12 && Math.min(b.w, b.h) > 16) {
-      // Table-like: a 4 cm top on four legs, so things can be seen (and placed) underneath.
+    // The models need some room for their parts; anything too small for that is drawn as a block.
+    const roomy = it.h > 12 && Math.min(b.w, b.h) > 16;
+    const corners = (r: Rect, t: number, inset: number): Rect[] =>
+      [[r.x + inset, r.y + inset], [r.x + r.w - inset - t, r.y + inset], [r.x + inset, r.y + r.h - inset - t], [r.x + r.w - inset - t, r.y + r.h - inset - t]]
+        .map(([x, y]) => ({ x: x as number, y: y as number, w: t, h: t }));
+    if (it.model === "table" && roomy) {
+      // A 4 cm top on four legs, so things can be seen (and placed) underneath.
       out.push({ ...b, z0: z + it.h - 4, z1: z + it.h, ...common, label: it.name });
-      for (const [lx, ly] of [[b.x + 2, b.y + 2], [b.x + b.w - 6, b.y + 2], [b.x + 2, b.y + b.h - 6], [b.x + b.w - 6, b.y + b.h - 6]] as Point[]) {
-        out.push({ x: lx, y: ly, w: 4, h: 4, z0: z, z1: z + it.h - 4, ...common });
+      for (const leg of corners(b, 4, 2)) out.push({ ...leg, z0: z, z1: z + it.h - 4, ...common });
+    }
+    else if (it.model === "chair" && roomy && it.h > 30) {
+      // Four legs, a seat a little over halfway up, and a backrest from the seat to the full height.
+      const seat = z + Math.round(it.h * 0.53);
+      for (const leg of corners(b, 4, 1)) out.push({ ...leg, z0: z, z1: seat - 4, ...common });
+      out.push({ ...b, z0: seat - 4, z1: seat, ...common, label: it.name });
+      out.push({ ...backStrip(b, it.a, 4), z0: seat, z1: z + it.h, ...common });
+    }
+    else if (it.model === "office-chair" && roomy && it.h > 40) {
+      // A star base (drawn as a cross), a gas spring, a padded seat and a slightly narrower backrest.
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2, seat = z + Math.round(it.h * 0.45);
+      const pad: Rect = { x: b.x + b.w * 0.08, y: b.y + b.h * 0.08, w: b.w * 0.84, h: b.h * 0.84 };
+      // The cross in three parts that don't overlap, so the drawing order can be worked out.
+      for (const bar of [{ x: b.x, y: cy - 3, w: b.w, h: 6 }, { x: cx - 3, y: b.y, w: 6, h: cy - 3 - b.y }, { x: cx - 3, y: cy + 3, w: 6, h: b.y + b.h - cy - 3 }]) {
+        out.push({ ...bar, z0: z, z1: z + 6, ...common });
       }
+      out.push({ x: cx - 3, y: cy - 3, w: 6, h: 6, z0: z + 6, z1: seat - 8, ...common });
+      out.push({ ...pad, z0: seat - 8, z1: seat, ...common, label: it.name });
+      out.push({ ...backStrip(pad, it.a, 5, pad.w * 0.08), z0: seat, z1: z + it.h, ...common });
     }
     else out.push({ ...b, z0: z, z1: z + it.h, ...common, label: it.name });
   }

@@ -17,6 +17,13 @@ export type Dim = { id: string; x1: number; y1: number; x2: number; y2: number; 
 export type Label = { id: string; x: number; y: number; text: string };
 
 export type Angle = 0 | 90 | 180 | 270;
+/**
+ * The shapes a piece of furniture can have in the 3D view. A block is a solid box; a table is a top on
+ * four legs, with room underneath. The chairs have their back along the edge that is at the top of the
+ * plan before the piece is turned.
+ */
+export const ITEM_MODELS = ["block", "table", "chair", "office-chair"] as const;
+export type ItemModel = (typeof ITEM_MODELS)[number];
 export type Item = {
   id: string;
   name: string;
@@ -25,8 +32,8 @@ export type Item = {
   d: number;
   /** Height, for the 3D view */
   h: number;
-  /** Open underneath (desk, table): drawn as a top on legs in 3D */
-  open: boolean;
+  /** How the piece is drawn in the 3D view, see ITEM_MODELS */
+  model: ItemModel;
   /** Centre */
   x: number;
   y: number;
@@ -185,7 +192,8 @@ export function sanitizePlan(input: unknown): PlanData {
     return {
       id: rid, name: str(r.name, 30),
       w: Math.round(num(r.w, 5, 600, 60)), d: Math.round(num(r.d, 5, 600, 60)), h: Math.round(num(r.h, 1, 300, 75)),
-      open: r.open === true, x, y, a,
+      // Plans saved before there were models only knew "open underneath", which was the table.
+      model: ITEM_MODELS.find((m) => m === r.model) ?? (r.open === true ? "table" : "block"), x, y, a,
       color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : COLORS[0],
       ...(g ? { g } : {}),
     };

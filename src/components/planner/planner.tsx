@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Fixture, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
-import { COLORS, MAX_NAME_LENGTH, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
+import type { Fixture, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
+import { COLORS, ITEM_MODELS, MAX_NAME_LENGTH, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
 import { dimLength, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
@@ -48,6 +48,7 @@ const TOOL_HELP: Record<Tool, string> = {
   area: "Dra rektanglar över hela golvytan, så många som behövs. Överlapp räknas bara en gång.",
   scale: "Dra en linje längs en sträcka du vet längden på, till exempel skalstocken eller en vägg med angivet mått.",
 };
+const MODEL_NAMES: Record<ItemModel, string> = { "block": "Block", "table": "Bord", "chair": "Matstol", "office-chair": "Kontorsstol" };
 const FIXTURE_PRESETS: readonly (readonly [string, number])[] = [["Kök", 90], ["Garderob", 210], ["Kyl/frys", 195], ["Städskåp", 210]];
 
 export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: string }; plans: PlanMeta[]; initialPlanId: string | null }) {
@@ -600,7 +601,11 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                 <NumField label="Djup" value={one.d} min={5} max={600} onStart={editor.checkpoint} onChange={(d) => editor.setPlan(patchItems(plan, sel, { d }), true)} />
                 <NumField label="Höjd" value={one.h} min={1} max={300} onStart={editor.checkpoint} onChange={(h) => editor.setPlan(patchItems(plan, sel, { h }), true)} />
               </div>
-              <Check label="Öppen undertill (skrivbord, bord)" checked={one.open} onChange={(open) => change((p) => patchItems(p, sel, { open }))} />
+              <label className="flex flex-col gap-0.5 text-xs text-gray-600 font-normal">Modell i 3D-vyn
+                <select className={inputClass} value={one.model} onChange={(e) => { const model = ITEM_MODELS.find((m) => m === e.target.value); if (model) change((p) => patchItems(p, sel, { model })); }}>
+                  {ITEM_MODELS.map((m) => <option key={m} value={m}>{MODEL_NAMES[m]}</option>)}
+                </select>
+              </label>
             </>}
             {one && !mine && <p className="text-sm font-normal">{one.name}: {one.w} × {one.d} cm, {one.h} cm hög</p>}
             {chosen.length > 1 && <p className="text-sm text-gray-600 font-normal">{chosen.length} möbler: {chosen.map((i) => i.name).join(", ")}</p>}
@@ -678,7 +683,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           R vrider · D kopierar · Del tar bort · piltangenter flyttar 1 cm (Shift 10)<br />
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />
           Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.<br />
-          Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är nästan lika hög som bordet.
+          Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är en stol eller nästan lika hög som bordet.
         </p>}
       </aside>
 
