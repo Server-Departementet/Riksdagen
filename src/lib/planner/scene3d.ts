@@ -26,19 +26,52 @@ const tint = (hex: string, k: number) => {
   return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(Math.min(255, v * k))).join(",")})`;
 };
 
+/** What is left of a box once another is cut out of it: up to four boxes, none overlapping. */
+function subtract(r: Rect, cut: Rect): Rect[] {
+  const x0 = Math.max(r.x, cut.x), x1 = Math.min(r.x + r.w, cut.x + cut.w), y0 = Math.max(r.y, cut.y), y1 = Math.min(r.y + r.h, cut.y + cut.h);
+  if (x0 >= x1 || y0 >= y1) return [r];
+  return [
+    { x: r.x, y: r.y, w: x0 - r.x, h: r.h }, { x: x1, y: r.y, w: r.x + r.w - x1, h: r.h },
+    { x: x0, y: r.y, w: x1 - x0, h: y0 - r.y }, { x: x0, y: y1, w: x1 - x0, h: r.y + r.h - y1 },
+  ].filter((p) => p.w > 0.05 && p.h > 0.05);
+}
+const without = (r: Rect, cuts: Rect[]): Rect[] => cuts.reduce((pieces, cut) => pieces.flatMap((p) => subtract(p, cut)), [r]);
+
+/**
+ * The same floor area as the given boxes, as boxes that don't overlap. Walls drawn by hand overlap at
+ * corners and where one was dragged a little into another, and the drawing order below can only be
+ * worked out for boxes that are apart: two that overlap have no right order, and a long wall then
+ * ends up in front of, or behind, everything near it. The biggest boxes are kept whole.
+ */
+function apart(rects: Rect[]): Rect[] {
+  const out: Rect[] = [];
+  for (const r of [...rects].sort((a, b) => b.w * b.h - a.w * a.h)) out.push(...without(r, out));
+  return out;
+}
+
 function boxes(plan: PlanData, wallH: number): Box3[] {
   const out: Box3[] = [];
   const wall = (r: Rect, z0: number, z1: number) => {
     if (z1 > z0 && r.w > 0 && r.h > 0) out.push({ ...r, z0, z1, color: "#d9d2c5", top: "#3a3733" });
   };
-  for (const w of plan.walls) {
-    // Cut the wall along its length wherever a window crosses it: solid piers between the
-    // windows, a parapet below each one, glass, and a lintel above (once the walls are tall enough).
+  /** A window opening: a parapet below, glass, and a lintel above (once the walls are tall enough). */
+  const opening = (r: Rect, along: boolean, sill: number, head: number) => {
+    wall(r, 0, Math.min(sill, wallH));
+    wall(r, head, wallH);
+    if (wallH <= sill) return;
+    const glass: Rect = along ? { ...r, y: r.y + r.h / 2 - Math.min(3, r.h / 2), h: Math.min(6, r.h) } : { ...r, x: r.x + r.w / 2 - Math.min(3, r.w / 2), w: Math.min(6, r.w) };
+    out.push({ ...glass, z0: sill, z1: Math.min(head, wallH), color: "#8fcdf0", alpha: 0.5 });
+  };
+  const touches = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+  const walls = apart(plan.walls);
+  for (const w of walls) {
+    // Cut the wall along its length wherever a window crosses it, leaving solid piers between the windows.
     const along = w.w >= w.h;
     const start = along ? w.x : w.y, end = start + (along ? w.w : w.h);
     const piece = (from: number, to: number): Rect => (along ? { x: from, y: w.y, w: to - from, h: w.h } : { x: w.x, y: from, w: w.w, h: to - from });
     const cuts = plan.windows
-      .filter((win) => win.x < w.x + w.w && win.x + win.w > w.x && win.y < w.y + w.h && win.y + win.h > w.y)
+      .filter((win) => touches(win, w))
       .map((win) => ({ from: Math.max(start, along ? win.x : win.y), to: Math.min(end, along ? win.x + win.w : win.y + win.h), sill: win.sill, head: win.head }))
       .sort((a, b) => a.from - b.from);
     let edge = start;
@@ -46,18 +79,19 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
       if (cut.to <= edge) continue;
       const from = Math.max(cut.from, edge);
       wall(piece(edge, from), 0, wallH);
-      wall(piece(from, cut.to), 0, Math.min(cut.sill, wallH));
-      wall(piece(from, cut.to), cut.head, wallH);
-      if (wallH > cut.sill) {
-        const glass = piece(from, cut.to);
-        const thin: Rect = along ? { ...glass, y: w.y + w.h / 2 - 3, h: 6 } : { ...glass, x: w.x + w.w / 2 - 3, w: 6 };
-        out.push({ ...thin, z0: cut.sill, z1: Math.min(cut.head, wallH), color: "#8fcdf0", alpha: 0.5 });
-      }
+      opening(piece(from, cut.to), along, cut.sill, cut.head);
       edge = cut.to;
     }
     wall(piece(edge, end), 0, wallH);
   }
-  for (const f of plan.fixtures) out.push({ x: f.x, y: f.y, w: f.w, h: f.h, z0: 0, z1: f.height, color: "#f1ece2" });
+  // A window drawn in a gap between walls, rather than across one, stands on its own.
+  for (const win of plan.windows) {
+    for (const part of without(win, walls)) opening(part, win.w >= win.h, win.sill, win.head);
+  }
+  // Fittings drawn a little into a wall give way to it, for the same reason the walls are pulled apart.
+  for (const f of plan.fixtures) {
+    for (const part of without(f, [...walls, ...plan.windows])) out.push({ ...part, z0: 0, z1: f.height, color: "#f1ece2" });
+  }
   for (const it of plan.items) {
     if (!inFlat(plan, it)) continue;
     const b = itemBox(it), common = { color: it.color, id: it.id };
