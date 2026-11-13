@@ -6,6 +6,9 @@
  * All shapes are axis-aligned rectangles; furniture turns in 90° steps.
  */
 
+import type { Listing, ListingBrief } from "@/lib/planner/listing";
+import { sanitizeListing } from "@/lib/planner/listing";
+
 export type Rect = { x: number; y: number; w: number; h: number };
 
 export type Wall = Rect & { id: string };
@@ -113,6 +116,8 @@ export type PlanData = {
    * clockwise from up. Left out when nobody has said which way north is: nothing about the sun is shown then.
    */
   bearing?: number;
+  /** The facts of the housing listing the flat came from (rent, deadline, link…), see listing.ts. Left out when none is known. */
+  listing?: Listing;
 };
 
 /** What the plan list knows about each plan */
@@ -123,6 +128,8 @@ export type PlanMeta = {
   ownerName: string;
   /** ms epoch on the editing browser's clock */
   editedAt: number;
+  /** Rent and application deadline from the plan's listing, for choosing between flats in the list. Left out when the plan has neither. */
+  listing?: ListingBrief;
 };
 
 export type PlanDoc = { name: string; data: PlanData; editedAt: number };
@@ -296,6 +303,8 @@ export function sanitizePlan(input: unknown): PlanData {
   if (typeof src.area === "number" && src.area >= MIN_AREA && src.area <= MAX_AREA) plan.area = Math.round(src.area * 10) / 10;
   // 360 is north again. Anything else out of range is no compass bearing, so the direction stays unknown.
   if (typeof src.bearing === "number" && src.bearing >= 0 && src.bearing <= 360) plan.bearing = Math.round(src.bearing) % 360;
+  const listing = sanitizeListing(src.listing);
+  if (listing) plan.listing = listing;
   return plan;
 }
 

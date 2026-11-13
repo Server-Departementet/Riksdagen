@@ -19,6 +19,8 @@ import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
 import { TraceDialog } from "@/components/planner/trace-dialog";
 import { NorthField, SunInfo } from "@/components/planner/north";
+import { ListingField, ListingInfo } from "@/components/planner/listing";
+import { briefText, listingMeta, today } from "@/lib/planner/listing";
 import { DoorFields } from "@/components/planner/door-fields";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
@@ -173,6 +175,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     dirty.current = true;
     writeLocal(id, { ...d, ownerId: me.id, dirty: true });
     touchMeta(id, d.name, d.editedAt);
+    // The picker's rent and deadline follow the edit; the server's list only says the same at the next refresh.
+    setMetas(metasRef.current.map((m) => { if (m.id !== id) return m; const { listing: _old, ...rest } = m; return { ...rest, ...listingMeta(d.data) }; }));
     setSync("saving");
     schedule(700);
   }
@@ -460,7 +464,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
       if (res.status === "missing") { toast.error("Planlösningen finns inte längre."); void refresh(); return; }
       const made = res.plan;
       // Listed before it is opened: open() goes by the list to tell that the copy is ours to edit.
-      setMetas([{ id: made.id, name: made.name, ownerId: me.id, ownerName: me.name, editedAt: made.editedAt }, ...metasRef.current.filter((m) => m.id !== made.id)]);
+      setMetas([{ id: made.id, name: made.name, ownerId: me.id, ownerName: me.name, editedAt: made.editedAt, ...listingMeta(made.data) }, ...metasRef.current.filter((m) => m.id !== made.id)]);
       void open(made.id);
       toast.success(own ? "Kopian är skapad." : `Kopian är din. ${owner ?? "Ägaren"}s möbler följde inte med – ställ in dina egna med Packa upp mina möbler.`);
     }
@@ -599,6 +603,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
 
   // ---------- panel
 
+  // For the picker's options. Sweden's date, so the server's render and the browser's agree.
+  const todayIso = today();
   const groups = [
     { label: "Mina", list: metas.filter((m) => m.ownerId === me.id) },
     ...[...new Set(metas.filter((m) => m.ownerId !== me.id).map((m) => m.ownerId))].map((owner) => {
@@ -631,7 +637,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             <select aria-label="Planlösning" className={inputClass} value={currentId ?? ""} onChange={(e) => void open(e.target.value)}>
               {groups.map((g) => (
                 <optgroup key={g.label} label={g.label}>
-                  {g.list.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {g.list.map((m) => <option key={m.id} value={m.id}>{[m.name, briefText(m.listing, todayIso, true)].filter(Boolean).join(" · ")}</option>)}
                 </optgroup>
               ))}
             </select>
@@ -665,6 +671,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <p className="text-sm font-normal">Boarea {areaText(plan.area)}{drawnText && <span className="text-gray-600" title={drawnHelp}> · {drawnText.toLowerCase()}</span>}</p>
         )}
 
+        {plan && !mine && <ListingInfo listing={plan.listing} />}
+
         {plan && !mine && <SunInfo plan={plan} />}
 
         {doc && plan && mine && <>
@@ -685,6 +693,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <NorthField value={plan.bearing} onStart={editor.checkpoint}
             onChange={(bearing) => { const { bearing: _old, ...rest } = plan; editor.setPlan(bearing === undefined ? rest : { ...rest, bearing }, true); }} />
           <SunInfo plan={plan} />
+          <ListingField value={plan.listing} onStart={editor.checkpoint}
+            onChange={(listing) => { const { listing: _old, ...rest } = plan; editor.setPlan(listing === undefined ? rest : { ...rest, listing }, true); }} />
           <Segments value={mode} options={[["furnish", "Möblera"], ["draw", "Rita planlösning"]]}
             onChange={(m) => { setMode(m); setTool("select"); setStaticSel(null); setScaleLine(null); setScaleAreas([]); if (m === "draw") setIs3d(false); }} />
         </>}

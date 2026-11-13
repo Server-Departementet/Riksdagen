@@ -3,6 +3,7 @@ import Anthropic, { toFile } from "@anthropic-ai/sdk";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import type { PlanData } from "@/lib/planner/plan";
+import { sanitizeListing } from "@/lib/planner/listing";
 import { MAX_IMAGE_BYTES, cleanName, emptyPlan, sanitizePlan, sniffImageType, uid } from "@/lib/planner/plan";
 import type { TraceStatus } from "@/lib/planner/tracer/config";
 import { tracerIds, tracerLimits } from "@/lib/planner/tracer/config";
@@ -29,6 +30,7 @@ const RUBRIC = `# Floor plan trace
 - data.image has the picture's real pixel size as w and h, a positive cmPerPx, and calibrated true.
 - If the listing or the drawing states the flat's total floor area, data.area is that number in m²; otherwise data.area is absent.
 - If the sheet shows a north arrow that applies to the flat's plan, data.bearing is the compass bearing of "up" on the picture in degrees clockwise from north (north arrow pointing up: 0, right: 270, down: 180, left: 90); otherwise data.bearing is absent.
+- If a listing link was given, data.listing holds the facts the listing states and nothing else: url (the listing link), rent (SEK per month, a number), rooms, floor, moveIn and deadline (YYYY-MM-DD), landlord. A fact the listing does not state is absent, not guessed. If no listing link was given, data.listing is absent.
 - Every wall line of the flat in the drawing is covered by a wall rectangle, and no wall rectangle lies across a door opening or on open floor.
 - Every kitchen unit, fridge/freezer and wardrobe drawn in the plan is a fixture that sits against its wall.
 - Every window in the drawing is a window rectangle lying in its wall.
@@ -213,7 +215,7 @@ async function drive(traceId: string): Promise<void> {
       }
       else {
         // end_turn, terminated, retries_exhausted, refusal: whatever the reason, take the plan if one was written.
-        const done = await collect(client, sessionId, trace.planId, trace.ownerId);
+        const done = await collect(client, sessionId, trace.planId, trace.ownerId, trace.listingUrl);
         await finish(traceId, done.ok ? "done" : "failed", done.note, spent);
       }
       return;
@@ -233,7 +235,7 @@ async function cost(client: Anthropic, sessionId: string): Promise<number | null
 }
 
 /** Read what the agent wrote to /mnt/session/outputs/ and put it in the plan. */
-async function collect(client: Anthropic, sessionId: string, planId: string, ownerId: string): Promise<{ ok: boolean; note: string }> {
+async function collect(client: Anthropic, sessionId: string, planId: string, ownerId: string, listingUrl: string | null): Promise<{ ok: boolean; note: string }> {
   const outputs = new Map<string, string>(); // file name -> file id
   // Output files take a moment to show up after the session goes idle.
   for (let attempt = 0; attempt < 5 && !outputs.has("plan.json"); attempt++) {
@@ -263,6 +265,12 @@ async function collect(client: Anthropic, sessionId: string, planId: string, own
   const dropped = (["walls", "windows", "doors", "fixtures", "dims", "labels"] as const)
     .map((k) => (Array.isArray(rawData[k]) ? rawData[k].length : 0) - (data[k]?.length ?? 0)).reduce((a, b) => a + b, 0);
   data.items = [];
+  // The link the trace was started with is the one link we know is the listing's, so it is the one the plan gets:
+  // whatever link the agent wrote was copied from, or steered by, a page we don't control. Without one, the agent's stays.
+  if (listingUrl) {
+    const listing = sanitizeListing({ ...data.listing, url: listingUrl });
+    if (listing) data.listing = listing;
+  }
 
   const plan = await prisma.floorPlan.findFirst({ where: { id: planId, ownerId }, select: { image: true } });
   if (!plan) return { ok: false, note: "Planlösningen togs bort medan den ritades av." };
