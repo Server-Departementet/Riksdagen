@@ -3,7 +3,7 @@
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { Dim, Fixture, Item, Label, PlanData, PlanWindow, Rect } from "@/lib/planner/plan";
-import { DEFAULT_HEAD, DEFAULT_SILL, clamp, uid } from "@/lib/planner/plan";
+import { DEFAULT_HEAD, DEFAULT_SILL, areaText, clamp, uid } from "@/lib/planner/plan";
 import type { Guide } from "@/lib/planner/geometry";
 import {
   backStrip, bounds, dimLength, drawingBox, fitWindowToWall, flatBox, gaps, groupOf, imageRect, inFlat, isHit, itemBox, obstacles,
@@ -392,6 +392,9 @@ export function Stage(
   const flat = flatBox(plan), park = parkBox(plan), image = imageRect(plan);
   const showPark = !readOnly || plan.items.some((i) => !inFlat(plan, i));
   const picked = drawing ? findStatic(plan, staticSel) : null;
+  // The stated area goes under the whole drawing, measurements included, so it never lands on the flat. Exports
+  // frame the same box with a margin this line fits in.
+  const frame = drawingBox(plan, false);
   const viewBox = size
     ? `${view.cx - size.w / 2 / view.scale} ${view.cy - size.h / 2 / view.scale} ${size.w / view.scale} ${size.h / view.scale}`
     : "0 0 100 100";
@@ -418,6 +421,9 @@ export function Stage(
             <text key={l.id} x={l.x} y={l.y} textAnchor="middle" fontSize={14} fill={C.text} {...staticProps("labels", l.id)}
               style={{ fontWeight: 600, ...(drawing && tool === "select" ? { cursor: "move" } : { pointerEvents: "none" }) }}>{l.text}</text>
           ))}
+          {plan.area !== undefined && (
+            <text x={frame.x} y={frame.y + frame.h + 15} fontSize={12} fill={C.muted} style={{ fontWeight: 400, pointerEvents: "none" }}>Boarea {areaText(plan.area)}</text>
+          )}
         </g>
 
         {showPark && <g data-noexport="">

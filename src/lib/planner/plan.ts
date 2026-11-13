@@ -64,6 +64,12 @@ export type PlanData = {
   dims: Dim[];
   labels: Label[];
   items: Item[];
+  /**
+   * The flat's stated floor area ("boarea") in m², to one decimal, MIN_AREA–MAX_AREA. Typed by the owner, taken
+   * from the listing by the AI tracer, or from the area the scale was set with. Left out when nobody has stated it:
+   * it is what the flat is said to be, never worked out from the drawing.
+   */
+  area?: number;
 };
 
 /** What the plan list knows about each plan */
@@ -98,6 +104,12 @@ export const MAX_PLANS_PER_MINISTER = 30;
 export const MAX_PLAN_JSON_BYTES = 400_000;
 export const MAX_IMAGE_BYTES = 5_000_000;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+/** Bounds of PlanData.area, in m² */
+export const MIN_AREA = 1;
+export const MAX_AREA = 2000;
+/** An area in m² as Swedes write it: "38 m²", "38,5 m²". */
+export const areaText = (m2: number) => `${m2.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} m²`;
 
 export const DEFAULT_SILL = 90;
 export const DEFAULT_HEAD = 210;
@@ -199,6 +211,8 @@ export function sanitizePlan(input: unknown): PlanData {
     };
   }));
   dropLoneGroups(plan.items);
+  // Out of bounds means a typo or another unit, so it is dropped rather than clamped to a number nobody stated.
+  if (typeof src.area === "number" && src.area >= MIN_AREA && src.area <= MAX_AREA) plan.area = Math.round(src.area * 10) / 10;
   return plan;
 }
 

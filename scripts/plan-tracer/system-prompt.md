@@ -33,6 +33,7 @@ Write these into `/mnt/session/outputs/`. That folder is all the planner reads.
   "name": "Eklundshovsvägen 4 A",
   "data": {
     "v": 1,
+    "area": 24.5,
     "image": { "w": 1000, "h": 1390, "cmPerPx": 0.6, "x": -96, "y": -149.4, "rev": 1, "calibrated": true },
     "walls":    [{ "id": "w1", "x": -8, "y": -43, "w": 425, "h": 43 }],
     "windows":  [{ "id": "f9", "x": 204, "y": -43, "w": 101, "h": 43, "sill": 90, "head": 210 }],
@@ -75,6 +76,11 @@ Conventions for `plan.json`:
   passages, and the window.
 - **Labels** are room names. The app is in Swedish: `RUM`, `HALL`, `WC/D`, `Entré`, `FÖRRÅD`.
 - **Items** are furniture. Always leave the list empty.
+- **Area** is the flat's stated floor area (boarea) in m², as a plain number with a decimal
+  point: `24.5`, not `"24,5 m²"`. Take it from the listing, or from the drawing when it prints
+  the flat's total. Never fill it with an area you worked out from your own measurements, and
+  not with a single room's area when the flat has more rooms: leave `area` out when no total is
+  stated. The planner shows it beside the plan.
 
 The planner's parser silently drops anything that breaks these rules, so keep to them:
 
@@ -85,6 +91,7 @@ The planner's parser silently drops anything that breaks these rules, so keep to
   `height` 1–400.
 - `label` is at most 30 characters, a dim's `text` and a label's `text` at most 40.
 - At most 300 walls, 60 windows, 100 fixtures, 100 dims, 100 labels.
+- `area` is a number from 1 to 2000 (m², not cm² and not a string). It is kept to one decimal.
 - `name` is at most 60 characters: the address when you know it, otherwise what the drawing is
   titled.
 
