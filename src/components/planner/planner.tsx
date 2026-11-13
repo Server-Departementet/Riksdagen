@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Fixture, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
-import { COLORS, ITEM_MODELS, MAX_NAME_LENGTH, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
-import { dimLength, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
+import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
+import { dimLength, enclosedArea, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
   addItem, duplicateItems, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
@@ -505,8 +505,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   function applyAreaScale(realM2: number) {
     const drawn = unionArea(scaleAreas);
     if (drawn < 1) return;
-    // Area grows with the square of the scale.
-    change((p) => rescale(p, Math.sqrt((realM2 * 10_000) / drawn), p.image?.x ?? 0, p.image?.y ?? 0));
+    // Area grows with the square of the scale. What was marked is the whole floor, so its size is the flat's stated area too.
+    change((p) => ({ ...rescale(p, Math.sqrt((realM2 * 10_000) / drawn), p.image?.x ?? 0, p.image?.y ?? 0), area: Math.round(realM2 * 10) / 10 }));
     setScaleAreas([]);
     setTool("wall");
     toast.success("Skalan är satt. Tryck på Visa allt om ritningen hamnade utanför bild.");
@@ -525,6 +525,11 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const oneGroup = chosen.length > 1 && chosen.every((i) => i.g && i.g === chosen[0]?.g);
   const stack = plan ? stacking(plan) : null;
   const hits = plan && stack ? chosen.some((i) => isHit(plan, i, stack)) : false;
+  // Beside the stated area, what the drawing itself comes to: far apart means the scale is off.
+  const walls = plan?.walls, windows = plan?.windows;
+  const drawnArea = useMemo(() => (walls && windows ? enclosedArea({ ...emptyPlan(), walls, windows }) : null), [walls, windows]);
+  const drawnText = drawnArea === null ? "" : `Ritad golvyta ca ${areaText(drawnArea / 10_000)}`;
+  const drawnHelp = "Golvet innanför ytterväggarna med nuvarande skala, innerväggar oräknade. Skiljer det sig mycket från boarean stämmer inte skalan.";
 
   return (
     <div className="grid w-full h-(--screen-height) grid-cols-[320px_1fr] max-md:grid-cols-1 max-md:grid-rows-[56%_1fr] text-gray-900">
@@ -561,6 +566,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           {!meta && <p className="text-sm text-gray-600 font-normal">Ingen har ritat någon planlösning än. Skapa en ny, ladda upp planritningen som bild och rita av väggarna.</p>}
         </div>
 
+        {plan?.area !== undefined && !mine && (
+          <p className="text-sm font-normal">Boarea {areaText(plan.area)}{drawnText && <span className="text-gray-600" title={drawnHelp}> · {drawnText.toLowerCase()}</span>}</p>
+        )}
+
         {doc && plan && mine && <>
           <div className="flex gap-2 items-end">
             <div className="flex-1 min-w-0">
@@ -568,6 +577,13 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                 onChange={(name) => { const d = docRef.current; if (!d) return; const edited = { ...d, name: cleanName(name), editedAt: stamp(d) }; setDoc({ ...edited, name }); persist(edited); }} />
             </div>
             <button type="button" className={`${buttonClass} text-red-700`} onClick={() => void remove()}>Ta bort</button>
+          </div>
+          <div className="flex gap-2 items-end">
+            <div className="w-28 flex-none">
+              <AreaField value={plan.area} onStart={editor.checkpoint}
+                onChange={(area) => { const { area: _old, ...rest } = plan; editor.setPlan(area === undefined ? rest : { ...rest, area }, true); }} />
+            </div>
+            {plan.area !== undefined && drawnText && <p className="text-sm text-gray-600 font-normal pb-1.5" title={drawnHelp}>{drawnText}</p>}
           </div>
           <Segments value={mode} options={[["furnish", "Möblera"], ["draw", "Rita planlösning"]]}
             onChange={(m) => { setMode(m); setTool("select"); setStaticSel(null); setScaleLine(null); setScaleAreas([]); if (m === "draw") setIs3d(false); }} />
@@ -590,7 +606,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             {(tool === "scale" || tool === "area") && <div className="border-t border-gray-200 pt-2">
               <Segments value={tool} options={[["scale", "Känd sträcka"], ["area", "Känd golvyta"]]} onChange={(t) => { setTool(t); setScaleLine(null); setScaleAreas([]); }} />
             </div>}
-            {tool === "area" && <AreaForm marked={unionArea(scaleAreas)} count={scaleAreas.length}
+            {tool === "area" && <AreaForm marked={unionArea(scaleAreas)} count={scaleAreas.length} known={plan.area}
               onUndo={() => setScaleAreas(scaleAreas.slice(0, -1))} onApply={applyAreaScale} />}
             {tool === "scale" && <ScaleForm key={scaleLine ? `${scaleLine.x1},${scaleLine.y1},${scaleLine.x2},${scaleLine.y2}` : "none"} ready={!!scaleLine} onApply={applyScale} />}
             {plan.image && <OpacitySlider value={opts.overlayOpacity} onChange={(v) => setOpts({ ...opts, overlayOpacity: v })} />}
@@ -800,10 +816,11 @@ function ScaleForm({ ready, onApply }: { ready: boolean; onApply: (cm: number) =
 }
 
 /** The real size of the floor just marked out with the area tool. */
-function AreaForm({ marked, count, onUndo, onApply }: { marked: number; count: number; onUndo: () => void; onApply: (m2: number) => void }) {
-  const [text, setText] = useState("");
+function AreaForm({ marked, count, known, onUndo, onApply }: { marked: number; count: number; known: number | undefined; onUndo: () => void; onApply: (m2: number) => void }) {
+  // Starts from the plan's stated area when there is one, which is usually the very number to type here.
+  const [text, setText] = useState(known === undefined ? "" : String(known).replace(".", ","));
   const m2 = Number(text.replace(",", "."));
-  const valid = marked >= 1 && Number.isFinite(m2) && m2 >= 1 && m2 <= 2000;
+  const valid = marked >= 1 && Number.isFinite(m2) && m2 >= MIN_AREA && m2 <= MAX_AREA;
   return <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); if (valid) onApply(m2); }}>
     <p className="text-sm text-gray-600 font-normal">{TOOL_HELP.area}</p>
     {count > 0 && <>
@@ -819,6 +836,28 @@ function AreaForm({ marked, count, onUndo, onApply }: { marked: number; count: n
       <button type="button" className={`${buttonClass} self-start`} onClick={onUndo}>Ta bort senaste rektangeln</button>
     </>}
   </form>;
+}
+
+/**
+ * The flat's stated floor area. Unlike NumField it takes a decimal comma and can be emptied, which removes the area
+ * from the plan. Half-typed and out-of-range values never reach the plan.
+ */
+function AreaField({ value, onChange, onStart }: { value: number | undefined; onChange: (m2: number | undefined) => void; onStart: () => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const armed = useRef(false);
+  const shown = value === undefined ? "" : String(value).replace(".", ",");
+  return <label className="flex flex-col gap-0.5 text-xs text-gray-600 font-normal min-w-0">Boarea (m²)
+    <input type="text" inputMode="decimal" maxLength={7} placeholder="okänd" className={inputClass} value={draft ?? shown}
+      onFocus={() => { setDraft(shown); armed.current = true; }}
+      onBlur={() => setDraft(null)}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const text = e.target.value.trim(), m2 = Number(text.replace(",", "."));
+        if (text !== "" && !(m2 >= MIN_AREA && m2 <= MAX_AREA)) return;
+        if (armed.current) { onStart(); armed.current = false; }
+        onChange(text === "" ? undefined : Math.round(m2 * 10) / 10);
+      }} />
+  </label>;
 }
 
 function AddForm({ onAdd }: { onAdd: (piece: { name: string; w: number; d: number; h: number }) => void }) {

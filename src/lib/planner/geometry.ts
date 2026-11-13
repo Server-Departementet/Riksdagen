@@ -245,3 +245,56 @@ export function unionArea(rects: Rect[]): number {
   }
   return area;
 }
+
+/** The widest gap in a wall that still counts as a doorway rather than as the outline being open, in cm. */
+const DOORWAY = 150;
+
+/**
+ * The floor inside the outer walls, in cm²: everything that can't be reached from outside the drawing without
+ * crossing a wall, a window or a doorway. Inner walls are not counted, so it comes out a few percent under the
+ * stated floor area. Null when the walls don't enclose most of the flat (nothing drawn yet, or an outline left
+ * open), where any figure would mislead.
+ */
+export function enclosedArea(plan: PlanData): number | null {
+  const shell: Rect[] = [...plan.walls, ...plan.windows], box = bounds(plan.walls);
+  if (!box) return null;
+  // Cut the plane along every edge, with a ring of open cells around it all for "outside" to start from.
+  const cuts = (vals: number[]) => { const s = [...new Set(vals)].sort((a, b) => a - b); return [(s[0] ?? 0) - 1, ...s, (s[s.length - 1] ?? 0) + 1]; };
+  const xs = cuts(shell.flatMap((r) => [r.x, r.x + r.w])), ys = cuts(shell.flatMap((r) => [r.y, r.y + r.h]));
+  const nx = xs.length - 1, ny = ys.length - 1, at = (i: number, j: number) => j * nx + i;
+  const xi = new Map(xs.map((v, i) => [v, i])), yi = new Map(ys.map((v, i) => [v, i]));
+  // Per cell: 0 open, 1 wall, 2 open but too narrow to pass (a doorway), 3 reached from outside.
+  const cell = new Uint8Array(nx * ny);
+  for (const r of shell) {
+    const i1 = xi.get(r.x + r.w) ?? 0, j1 = yi.get(r.y + r.h) ?? 0;
+    for (let j = yi.get(r.y) ?? 0; j < j1; j++) cell.fill(1, at(xi.get(r.x) ?? 0, j), at(i1, j));
+  }
+  // An open stretch between two walls no wider than a doorway is shut, along rows and then along columns.
+  const shut = (n: number, lines: number, edges: number[], index: (k: number, line: number) => number) => {
+    for (let line = 0; line < lines; line++) for (let k = 0, from = -1; k < n; k++) {
+      if (cell[index(k, line)] !== 1) continue;
+      if (from >= 0 && k > from + 1 && (edges[k] as number) - (edges[from + 1] as number) <= DOORWAY) {
+        for (let g = from + 1; g < k; g++) cell[index(g, line)] = 2;
+      }
+      from = k;
+    }
+  };
+  shut(nx, ny, xs, (i, j) => at(i, j));
+  shut(ny, nx, ys, (j, i) => at(i, j));
+  const todo = [0];
+  cell[0] = 3;
+  for (let c = todo.pop(); c !== undefined; c = todo.pop()) {
+    const i = c % nx, j = (c - i) / nx;
+    for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]] as const) {
+      if (a < 0 || b < 0 || a >= nx || b >= ny || cell[at(a, b)] !== 0) continue;
+      cell[at(a, b)] = 3;
+      todo.push(at(a, b));
+    }
+  }
+  let area = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    if (cell[at(i, j)] === 0 || cell[at(i, j)] === 2) area += ((xs[i + 1] as number) - (xs[i] as number)) * ((ys[j + 1] as number) - (ys[j] as number));
+  }
+  // An outline with a wide opening lets the outside in and leaves only scraps; even an L-shaped flat fills well over this share of its box.
+  return area >= 0.4 * box.w * box.h ? area : null;
+}
