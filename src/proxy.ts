@@ -5,6 +5,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 const ministerRoutes = [
   "/spotify",
   "/citat",
+  "/planlosning",
 ];
 
 export default async function proxy(req: NextRequest) {
@@ -36,6 +37,7 @@ export const config = {
     // Protected routes
     "/spotify(.*)",
     "/citat(.*)",
+    "/planlosning(.*)",
   ],
 };
 

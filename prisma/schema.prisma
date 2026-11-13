@@ -18,6 +18,7 @@ model User {
   spotifyAccount   SpotifyAccount?
   trackPlayFetches TrackPlayFetch[]
   importQueue      ImportQueueItem[]
+  floorPlans       FloorPlan[]
 }
 
 // Takeout plays waiting for the server-side import. The import API only
@@ -175,4 +176,26 @@ model QuizVote {
 
   @@id([roundNumber, userId]) // Polls are single choice
   @@index([userId])
+}
+
+// Flat layouts drawn by ministers on /planlosning. Every minister can read all
+// of them; only the owner writes. `editedAt` is the editing browser's clock: a
+// save is only accepted when it is newer than the stored one, so the latest
+// edit wins when the same plan is open on several devices.
+model FloorPlan {
+  id      String @id // Generated in the browser, so a plan can be created before it reaches the server
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String
+
+  name     String
+  data     Json // PlanData, see src/lib/planner/plan.ts
+  editedAt DateTime
+
+  /// The cropped plan image the walls are traced from, served by /api/planlosning/[id]/image
+  image     Bytes?  @db.MediumBlob
+  imageType String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
 }

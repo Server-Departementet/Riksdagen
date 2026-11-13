@@ -96,6 +96,7 @@ export default async function RootLayout({ children }: {
               <SidebarLink href="/statsskick">Statsskick</SidebarLink>
               <ProtectedLink href="/spotify" role="minister">Spotify-Statistik</ProtectedLink>
               <ProtectedLink href="/citat" role="minister">Citat-Statistik</ProtectedLink>
+              <ProtectedLink href="/planlosning" role="minister">Planlösningar</ProtectedLink>
               <ExternalLink href="https://fil.riksdagen.net/">Fil-Departementet</ExternalLink>
               <ExternalLink href="https://vr.venastrom.se/">Venas Radio</ExternalLink>
             </Sidebar>

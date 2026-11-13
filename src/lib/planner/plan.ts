@@ -1,0 +1,218 @@
+/*
+ * The flat planner's document format, shared by the browser and the API routes.
+ * Everything is in centimetres. The plan image, when there is one, sits at
+ * (image.x, image.y) and is image.w × image.h pixels at image.cmPerPx.
+ * All shapes are axis-aligned rectangles; furniture turns in 90° steps.
+ */
+
+export type Rect = { x: number; y: number; w: number; h: number };
+
+export type Wall = Rect & { id: string };
+/** Drawn across a wall. `sill` and `head` are heights above the floor, for the 3D view. */
+export type PlanWindow = Rect & { id: string; sill: number; head: number };
+/** Built-in things furniture can't overlap: kitchen units, wardrobes, fridge. */
+export type Fixture = Rect & { id: string; label: string; height: number };
+/** A measurement line. Shows its own length unless `text` says otherwise. */
+export type Dim = { id: string; x1: number; y1: number; x2: number; y2: number; text: string; flip: boolean };
+export type Label = { id: string; x: number; y: number; text: string };
+
+export type Angle = 0 | 90 | 180 | 270;
+export type Item = {
+  id: string;
+  name: string;
+  /** Width and depth before rotation */
+  w: number;
+  d: number;
+  /** Height, for the 3D view */
+  h: number;
+  /** Open underneath (desk, table): drawn as a top on legs in 3D */
+  open: boolean;
+  /** Centre */
+  x: number;
+  y: number;
+  a: Angle;
+  color: string;
+  /** Pieces sharing a group id move as one */
+  g?: string;
+};
+
+export type PlanImage = {
+  w: number;
+  h: number;
+  cmPerPx: number;
+  x: number;
+  y: number;
+  /** Changes with every upload, to get past the browser cache */
+  rev: number;
+  /** False until the owner has set the scale from a known distance */
+  calibrated: boolean;
+};
+
+export type PlanData = {
+  v: 1;
+  image: PlanImage | null;
+  walls: Wall[];
+  windows: PlanWindow[];
+  fixtures: Fixture[];
+  dims: Dim[];
+  labels: Label[];
+  items: Item[];
+};
+
+/** What the plan list knows about each plan */
+export type PlanMeta = {
+  id: string;
+  name: string;
+  ownerId: string;
+  ownerName: string;
+  /** ms epoch on the editing browser's clock */
+  editedAt: number;
+};
+
+export type PlanDoc = { name: string; data: PlanData; editedAt: number };
+/** GET /api/planlosning/[id] */
+export type PlanResponse = PlanDoc & { id: string; ownerId: string };
+
+/** A plan as a file: the export button writes it, the import button reads it. */
+export type PlanFile = {
+  format: typeof PLAN_FILE_FORMAT;
+  name: string;
+  data: PlanData;
+  /** The plan image as a data URL */
+  image?: string;
+};
+export const PLAN_FILE_FORMAT = "riksdagen-planlosning";
+
+export const COLORS = ["#6d8fd6", "#d69a4c", "#c9b458", "#b784d6", "#58b89a", "#d67a8f", "#8a9099", "#a98467", "#7fb3c8"] as const;
+
+export const PLAN_ID_REGEX = /^[a-z0-9]{6,40}$/;
+export const MAX_NAME_LENGTH = 60;
+export const MAX_PLANS_PER_MINISTER = 30;
+export const MAX_PLAN_JSON_BYTES = 400_000;
+export const MAX_IMAGE_BYTES = 5_000_000;
+export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+export const DEFAULT_SILL = 90;
+export const DEFAULT_HEAD = 210;
+
+export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+export const uid = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+export function emptyPlan(): PlanData {
+  return { v: 1, image: null, walls: [], windows: [], fixtures: [], dims: [], labels: [], items: [] };
+}
+
+export function cleanName(value: unknown): string {
+  const name = typeof value === "string" ? value.trim().slice(0, MAX_NAME_LENGTH) : "";
+  return name || "Namnlös planlösning";
+}
+
+// ---------- sanitizing
+// Anything read from the network, localStorage or an imported file goes through
+// here, on the server as well as in the browser.
+
+type Raw = Record<string, unknown>;
+const isObject = (v: unknown): v is Raw => typeof v === "object" && v !== null && !Array.isArray(v);
+const list = (v: unknown, max: number): Raw[] => (Array.isArray(v) ? v.filter(isObject).slice(0, max) : []);
+const num = (v: unknown, lo: number, hi: number, fallback: number) =>
+  typeof v === "number" && Number.isFinite(v) ? clamp(v, lo, hi) : fallback;
+const coord = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(clamp(v, -20_000, 20_000) * 10) / 10 : null);
+const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+const id = (v: unknown) => (typeof v === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(v) ? v : null);
+
+function rect(r: Raw): (Rect & { id: string }) | null {
+  const rid = id(r.id), x = coord(r.x), y = coord(r.y), w = coord(r.w), h = coord(r.h);
+  if (rid === null || x === null || y === null || w === null || h === null || w < 1 || h < 1) return null;
+  return { id: rid, x, y, w: Math.min(w, 5000), h: Math.min(h, 5000) };
+}
+
+function compact<T>(values: (T | null)[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const v of values) {
+    if (v === null) continue;
+    const key = (v as { id: string }).id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(v);
+  }
+  return out;
+}
+
+export function sanitizePlan(input: unknown): PlanData {
+  const src = isObject(input) ? input : {};
+  const plan = emptyPlan();
+
+  if (isObject(src.image)) {
+    const i = src.image;
+    const w = num(i.w, 1, 10_000, 0), h = num(i.h, 1, 10_000, 0), cmPerPx = num(i.cmPerPx, 0.001, 1000, 0);
+    if (w && h && cmPerPx) {
+      plan.image = {
+        w: Math.round(w), h: Math.round(h), cmPerPx,
+        x: coord(i.x) ?? 0, y: coord(i.y) ?? 0,
+        rev: Math.round(num(i.rev, 0, Number.MAX_SAFE_INTEGER, 0)),
+        calibrated: i.calibrated === true,
+      };
+    }
+  }
+
+  plan.walls = compact(list(src.walls, 300).map(rect));
+  plan.windows = compact(list(src.windows, 60).map((r) => {
+    const base = rect(r);
+    if (!base) return null;
+    const sill = Math.round(num(r.sill, 0, 300, DEFAULT_SILL));
+    return { ...base, sill, head: Math.round(num(r.head, sill + 1, 400, Math.max(DEFAULT_HEAD, sill + 1))) };
+  }));
+  plan.fixtures = compact(list(src.fixtures, 100).map((r) => {
+    const base = rect(r);
+    return base && { ...base, label: str(r.label, 30), height: Math.round(num(r.height, 1, 400, 210)) };
+  }));
+  plan.dims = compact(list(src.dims, 100).map((r) => {
+    const rid = id(r.id), x1 = coord(r.x1), y1 = coord(r.y1), x2 = coord(r.x2), y2 = coord(r.y2);
+    if (rid === null || x1 === null || y1 === null || x2 === null || y2 === null) return null;
+    return { id: rid, x1, y1, x2, y2, text: str(r.text, 40), flip: r.flip === true };
+  }));
+  plan.labels = compact(list(src.labels, 100).map((r) => {
+    const rid = id(r.id), x = coord(r.x), y = coord(r.y);
+    if (rid === null || x === null || y === null) return null;
+    return { id: rid, x, y, text: str(r.text, 40) };
+  }));
+  plan.items = compact(list(src.items, 200).map((r): Item | null => {
+    const rid = id(r.id), x = coord(r.x), y = coord(r.y);
+    if (rid === null || x === null || y === null) return null;
+    const a = r.a === 90 || r.a === 180 || r.a === 270 ? r.a : 0;
+    const g = id(r.g);
+    return {
+      id: rid, name: str(r.name, 30),
+      w: Math.round(num(r.w, 5, 600, 60)), d: Math.round(num(r.d, 5, 600, 60)), h: Math.round(num(r.h, 1, 300, 75)),
+      open: r.open === true, x, y, a,
+      color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : COLORS[0],
+      ...(g ? { g } : {}),
+    };
+  }));
+  dropLoneGroups(plan.items);
+  return plan;
+}
+
+/** A group needs at least two members; the tag comes off any piece left on its own. */
+export function dropLoneGroups(items: Item[]): void {
+  const size = new Map<string, number>();
+  for (const i of items) if (i.g) size.set(i.g, (size.get(i.g) ?? 0) + 1);
+  for (const i of items) if (i.g && (size.get(i.g) ?? 0) < 2) delete i.g;
+}
+
+/** A plan file from the export button (or converted from Hem-Scan), or null when it isn't one. */
+export function parsePlanFile(input: unknown): PlanFile | null {
+  if (!isObject(input) || input.format !== PLAN_FILE_FORMAT || !isObject(input.data)) return null;
+  const image = typeof input.image === "string" && input.image.startsWith("data:image/") ? input.image : undefined;
+  return { format: PLAN_FILE_FORMAT, name: cleanName(input.name), data: sanitizePlan(input.data), ...(image ? { image } : {}) };
+}
+
+/** The image type of a file by its first bytes, or null when it is none we accept. */
+export function sniffImageType(bytes: Uint8Array): (typeof IMAGE_TYPES)[number] | null {
+  const starts = (sig: number[], at = 0) => sig.every((b, i) => bytes[at + i] === b);
+  if (starts([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "image/png";
+  if (starts([0xff, 0xd8, 0xff])) return "image/jpeg";
+  if (starts([0x52, 0x49, 0x46, 0x46]) && starts([0x57, 0x45, 0x42, 0x50], 8)) return "image/webp";
+  return null;
+}
