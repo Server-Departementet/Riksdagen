@@ -12,11 +12,12 @@ import {
 import type { StaticElement, StaticKind, StaticRef } from "@/lib/planner/edit";
 import { findStatic, patchStatic } from "@/lib/planner/edit";
 import { imageUrl } from "@/lib/planner/client-store";
+import { PassageBands } from "@/components/planner/passages";
 
 export type Mode = "furnish" | "draw";
 export type Tool = "select" | "wall" | "window" | "fixture" | "dim" | "label" | "scale" | "area";
 export type Line = { x1: number; y1: number; x2: number; y2: number };
-export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean };
+export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean; passages: boolean };
 
 /** How the stage changes the plan. The planner owns the plan, its undo history and saving. */
 export type Editor = {
@@ -452,6 +453,7 @@ export function Stage(
 
         {/* Everything that is about editing rather than the plan: left out of exports */}
         <g data-noexport="" style={{ pointerEvents: "none" }}>
+          {!drawing && opts.passages && <PassageBands plan={plan} stack={stack} px={px} />}
           {!drawing && plan.items.map((it) => ({ it, hit: isHit(plan, it, stack) })).filter(({ it, hit }) => hit || sel.has(it.id)).map(({ it, hit }) => {
             const b = itemBox(it), line = { fill: "none", stroke: hit ? C.bad : C.text, strokeWidth: hit ? 3.5 : 3, strokeDasharray: hit ? "7 4" : undefined };
             return it.model === "cylinder"

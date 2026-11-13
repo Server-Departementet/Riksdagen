@@ -362,3 +362,100 @@ export function enclosedArea(plan: PlanData): number | null {
   // An outline with a wide opening lets the outside in and leaves only scraps; even an L-shaped flat fills well over this share of its box.
   return area >= 0.4 * box.w * box.h ? area : null;
 }
+
+/** Free floor narrower than this between two things is too tight to walk through comfortably, in cm. */
+export const NARROW_PASSAGE = 70;
+/** Up to this width a passage works but is felt as cramped; flagged more quietly. */
+export const COMFORT_PASSAGE = 90;
+/** Things closer together than this stand together on purpose (a bedside table by the bed), not with a passage between them. */
+const PASSAGE_MIN = 10;
+/** The two facing sides have to run alongside each other at least this far for the space between them to be somewhere one walks. */
+const PASSAGE_LENGTH = 30;
+/** What is fixed at least this high above the floor is walked under. */
+const HEADROOM = 200;
+
+const AXES = [0, 1] as const;
+
+/**
+ * A strip of free floor between two facing things. The box is the strip itself; `across` is the direction
+ * it is too narrow in (and so the direction it is crossed by its width, `width` cm, rounded).
+ * `tight` when under NARROW_PASSAGE, otherwise only under COMFORT_PASSAGE.
+ */
+export type Passage = Rect & { width: number; across: "x" | "y"; tight: boolean };
+
+/**
+ * Where furniture leaves too little floor to walk: every strip between a piece and a wall, a fitting or
+ * another piece that is PASSAGE_MIN up to under COMFORT_PASSAGE wide and at least PASSAGE_LENGTH long.
+ *
+ * What stands in the way is walls, fittings and the pieces inside the flat. Not rugs, not what is fixed
+ * above HEADROOM, and not a piece standing on another (the lower one covers it). Two walls or fittings
+ * close together are the building and not flagged; nor are two pieces of one group, which were put
+ * together on purpose. Where a third thing stands in the strip, the strip is cut short around it: the
+ * narrower gaps on either side of that thing are found as pairs of their own.
+ *
+ * Every pair of things is compared, and each pair that faces closely is checked against every thing:
+ * O(n²) for n things plus O(n) per close pair, so around 10⁴ cheap steps for 50 pieces and 100 walls,
+ * and O(k²) for the k strips found.
+ */
+export function narrowPassages(plan: PlanData, stack: Stacking = stacking(plan)): Passage[] {
+  // Boxes as [x, y] corners, so that one piece of code does both directions.
+  type Thing = { lo: [number, number]; hi: [number, number]; piece: boolean; g?: string };
+  const thing = (r: Rect, piece: boolean, g?: string): Thing => ({ lo: [r.x, r.y], hi: [r.x + r.w, r.y + r.h], piece, ...(g ? { g } : {}) });
+  const flat = flatBox(plan); // once, not per piece as `inFlat` would
+  const things: Thing[] = [
+    ...plan.walls.map((w) => thing(w, false)),
+    ...plan.fixtures.filter((f) => (f.lift ?? 0) < HEADROOM).map((f) => thing(f, false)),
+    ...plan.items.filter((it) => overlap(itemBox(it), flat) && (it.lift === undefined
+      // Standing on a rug is standing on the floor; standing on anything higher is standing on furniture.
+      ? it.h > RUG_HEIGHT && (stack.z.get(it.id) ?? 0) <= RUG_HEIGHT
+      : it.lift < HEADROOM)).map((it) => thing(itemBox(it), true, it.g)),
+  ];
+
+  // Strips with the same start and width lie in one line (along a wall drawn in several stretches, past
+  // two pieces standing side by side) and are joined before their length is judged.
+  const lines = new Map<string, { k: 0 | 1; at: number; gap: number; spans: [number, number][] }>();
+  for (let i = 0; i < things.length; i++) for (let j = i + 1; j < things.length; j++) {
+    const a = things[i] as Thing, b = things[j] as Thing;
+    if ((!a.piece && !b.piece) || (a.g && a.g === b.g)) continue;
+    for (const k of AXES) {
+      const o = k === 0 ? 1 : 0;
+      // The far pairs are nearly all of them, so they are dropped before anything is built.
+      const ahead = a.hi[k] <= b.lo[k], p = ahead ? a : b, q = ahead ? b : a;
+      const gap = q.lo[k] - p.hi[k];
+      if (gap < PASSAGE_MIN || gap >= COMFORT_PASSAGE) continue;
+      let spans: [number, number][] = [[Math.max(a.lo[o], b.lo[o]), Math.min(a.hi[o], b.hi[o])]];
+      if ((spans[0] as [number, number])[1] - (spans[0] as [number, number])[0] < 1) continue;
+      for (const c of things) {
+        // Half a centimetre of tolerance, as in `overlap`: what stands flush against either side isn't in the gap.
+        if (c === a || c === b || c.hi[k] <= p.hi[k] + 0.5 || c.lo[k] >= q.lo[k] - 0.5) continue;
+        spans = spans.flatMap(([s, e]): [number, number][] =>
+          (c.hi[o] <= s || c.lo[o] >= e ? [[s, e]] : [[s, Math.min(e, c.lo[o])], [Math.max(s, c.hi[o]), e]]));
+      }
+      // Rounded for the key only: positions are multiples of 0.05 that don't all come out exact in binary.
+      const key = `${k}|${Math.round(p.hi[k] * 100)}|${Math.round(gap * 100)}`;
+      const line = lines.get(key) ?? { k, at: p.hi[k], gap, spans: [] };
+      line.spans.push(...spans.filter(([s, e]) => e > s));
+      lines.set(key, line);
+    }
+  }
+
+  const out: Passage[] = [];
+  for (const { k, at, gap, spans } of lines.values()) {
+    spans.sort((s, t) => s[0] - t[0]);
+    const joined: [number, number][] = [];
+    for (const [s, e] of spans) {
+      const last = joined[joined.length - 1];
+      if (last && s <= last[1] + 0.5) last[1] = Math.max(last[1], e);
+      else joined.push([s, e]);
+    }
+    for (const [s, e] of joined) {
+      if (e - s < PASSAGE_LENGTH) continue;
+      const box = k === 0 ? { x: at, y: s, w: gap, h: e - s } : { x: s, y: at, w: e - s, h: gap };
+      out.push({ ...box, width: Math.round(gap), across: k === 0 ? "x" : "y", tight: gap < NARROW_PASSAGE });
+    }
+  }
+  // A strip lying wholly within a narrower one (the 80 cm from a stool to the wall, inside the 50 cm between
+  // bed and wall the stool stands in) says nothing new and would only put two figures on one bit of floor.
+  const within = (b: Rect, c: Rect) => b.x >= c.x - 0.5 && b.y >= c.y - 0.5 && b.x + b.w <= c.x + c.w + 0.5 && b.y + b.h <= c.y + c.h + 0.5;
+  return out.filter((b, i) => !out.some((c, j) => j !== i && within(b, c) && (c.width < b.width || (c.width === b.width && j < i))));
+}
