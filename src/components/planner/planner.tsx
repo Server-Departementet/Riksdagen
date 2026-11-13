@@ -22,6 +22,7 @@ import { TraceDialog } from "@/components/planner/trace-dialog";
 import { NorthField, SunInfo } from "@/components/planner/north";
 import { DoorFields } from "@/components/planner/door-fields";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
+import { VariantPicker } from "@/components/planner/variants";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
 import { PlanComments } from "@/components/planner/comments";
@@ -390,6 +391,20 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     editor.setPlan(result.plan, true);
     setSelIds(result.ids);
     setMode("furnish"); setIs3d(false);
+  }
+
+  /**
+   * Show another furnishing variant (or a new one, or what is left after one was removed). For the owner it is one
+   * undoable, saved change. A visitor can't edit, so for them it only changes what this browser shows, until the
+   * plan is fetched again.
+   */
+  function showVariant(next: PlanData) {
+    const d = docRef.current;
+    if (!d || next === d.data) return;
+    if (isMine(idRef.current)) { editor.checkpoint(); editor.setPlan(next, true); }
+    else setDoc({ ...d, data: next });
+    // The pieces on screen are another arrangement now, even where they share ids with the one before.
+    setSelIds([]);
   }
 
   function createEmpty() {
@@ -837,6 +852,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           </Card>
 
           <Card title="Möbler">
+            <VariantPicker key={currentId} plan={plan} editable={mine} onShow={showVariant} onStart={editor.checkpoint} onRename={(next) => editor.setPlan(next, true)} />
             {plan.items.length === 0 && <p className="text-sm text-gray-600 font-normal">Inga möbler än.</p>}
             <ul className="flex flex-col gap-0.5">
               {plan.items.map((i) => (

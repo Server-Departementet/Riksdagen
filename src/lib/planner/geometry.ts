@@ -328,6 +328,8 @@ export function rescaleXY(plan: PlanData, fx: number, fy: number, ox: number, oy
     ...(plan.doors ? { doors: plan.doors.map(box) } : {}),
     // Furniture is the size it is: only its place follows.
     items: plan.items.map(point),
+    // The furniture of the variants not being shown stands in the same flat, so it moves the same way.
+    ...(plan.variants ? { variants: plan.variants.map((v) => ({ ...v, items: v.items.map(point) })) } : {}),
   };
 }
 

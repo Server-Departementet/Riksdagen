@@ -72,6 +72,12 @@ export type Item = {
   lift?: number;
 };
 
+/**
+ * A furnishing variant: one named arrangement of the flat's furniture ("Säng vid fönstret"). A plan can hold
+ * several to flip between. Only the ones NOT being shown are stored like this, see PlanData.variants.
+ */
+export type Variant = { id: string; name: string; items: Item[] };
+
 export type PlanImage = {
   w: number;
   h: number;
@@ -102,6 +108,16 @@ export type PlanData = {
   dims: Dim[];
   labels: Label[];
   items: Item[];
+  /**
+   * Furnishing variants. `items` above is always the furniture of the variant being shown, so everything that reads
+   * a plan's furniture works without knowing variants exist. `variant` names the shown one; `variants` holds the
+   * others, at most MAX_VARIANTS - 1. `at` is where the shown one goes among them in the picker, so the order stays
+   * put when switching: the full list is variants[0..at), the shown one, variants[at..]. Both are left out in a
+   * plan with one unnamed arrangement, as every plan was before variants existed; `variants` is never present
+   * without `variant`, and never empty. The edit functions are in variants.ts.
+   */
+  variant?: { id: string; name: string; at: number };
+  variants?: Variant[];
   /**
    * The flat's stated floor area ("boarea") in m², to one decimal, MIN_AREA–MAX_AREA. Typed by the owner, taken
    * from the listing by the AI tracer, or from the area the scale was set with. Left out when nobody has stated it:
@@ -151,6 +167,12 @@ export const MAX_PLANS_PER_MINISTER = 30;
 export const MAX_PLAN_JSON_BYTES = 400_000;
 export const MAX_IMAGE_BYTES = 5_000_000;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+/** Furnishing variants per plan, the shown one included. See the size sums at `fitsSizeCap` in variants.ts. */
+export const MAX_VARIANTS = 8;
+export const MAX_VARIANT_NAME_LENGTH = 30;
+export const variantName = (value: unknown): string =>
+  (typeof value === "string" ? value.trim().slice(0, MAX_VARIANT_NAME_LENGTH).trim() : "") || "Namnlös variant";
 
 /** Bounds of PlanImage.stretch */
 export const MIN_STRETCH = 0.2;
@@ -296,11 +318,28 @@ export function sanitizePlan(input: unknown): PlanData {
     return { id: rid, x, y, text: str(r.text, 40) };
   }));
   plan.items = sanitizeItems(src.items);
+  Object.assign(plan, sanitizeVariants(src));
   // Out of bounds means a typo or another unit, so it is dropped rather than clamped to a number nobody stated.
   if (typeof src.area === "number" && src.area >= MIN_AREA && src.area <= MAX_AREA) plan.area = Math.round(src.area * 10) / 10;
   // 360 is north again. Anything else out of range is no compass bearing, so the direction stays unknown.
   if (typeof src.bearing === "number" && src.bearing >= 0 && src.bearing <= 360) plan.bearing = Math.round(src.bearing) % 360;
   return plan;
+}
+
+/** The furnishing variants of a raw plan: nothing at all for a plan without any, as plans were before variants. */
+function sanitizeVariants(src: Raw): Pick<PlanData, "variant" | "variants"> {
+  const shown = isObject(src.variant) ? src.variant : null, shownId = shown && id(shown.id);
+  // A stored variant sharing the shown one's id could never be switched to, so it goes. Read with some slack, so a
+  // few such duds don't push good variants out; the count is cut to size afterwards.
+  const hidden = compact(list(src.variants, MAX_VARIANTS * 4).map((r): Variant | null => {
+    const rid = id(r.id);
+    return rid === null || rid === shownId ? null : { id: rid, name: variantName(r.name), items: sanitizeItems(r.items) };
+  })).slice(0, MAX_VARIANTS - 1);
+  if (!shown && !hidden.length) return {};
+  // Stored variants need a shown one to switch back to. Its made-up id must come out the same every time the plan is read.
+  const fallback = ["v0", ...hidden.map((_, i) => `v${i + 1}`)].find((v) => hidden.every((h) => h.id !== v)) ?? "v0";
+  const at = Math.round(num(shown?.at, 0, hidden.length, 0));
+  return { variant: { id: shownId ?? fallback, name: variantName(shown?.name), at }, ...(hidden.length ? { variants: hidden } : {}) };
 }
 
 /** A group needs at least two members; the tag comes off any piece left on its own. */
