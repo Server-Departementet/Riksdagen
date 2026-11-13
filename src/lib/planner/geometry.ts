@@ -172,3 +172,16 @@ export function rescale(plan: PlanData, factor: number, ox: number, oy: number):
 }
 
 export const dimLength = (d: { x1: number; y1: number; x2: number; y2: number }) => Math.round(Math.hypot(d.x2 - d.x1, d.y2 - d.y1));
+
+/** The area covered by a set of boxes, in cm². Where boxes overlap, the overlap counts once. */
+export function unionArea(rects: Rect[]): number {
+  const xs = [...new Set(rects.flatMap((r) => [r.x, r.x + r.w]))].sort((a, b) => a - b);
+  const ys = [...new Set(rects.flatMap((r) => [r.y, r.y + r.h]))].sort((a, b) => a - b);
+  let area = 0;
+  // Cut the plane along every box edge; each resulting cell is either wholly inside some box or wholly outside all.
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
+    const x0 = xs[i] as number, x1 = xs[i + 1] as number, y0 = ys[j] as number, y1 = ys[j + 1] as number;
+    if (rects.some((r) => r.x <= x0 && r.x + r.w >= x1 && r.y <= y0 && r.y + r.h >= y1)) area += (x1 - x0) * (y1 - y0);
+  }
+  return area;
+}

@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Fixture, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow } from "@/lib/planner/plan";
+import type { Fixture, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
 import { COLORS, MAX_NAME_LENGTH, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
-import { dimLength, isHit, parkItems, rescale } from "@/lib/planner/geometry";
+import { dimLength, isHit, parkItems, rescale, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
   addItem, duplicateItems, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
@@ -45,6 +45,7 @@ const TOOL_HELP: Record<Tool, string> = {
   fixture: "Dra ut det som sitter fast: köksbänk, garderober, kyl och frys. Möbler kan inte ställas där.",
   dim: "Dra mellan två punkter för att sätta ut ett mått.",
   label: "Klicka där texten ska stå, till exempel rummets namn.",
+  area: "Dra rektanglar över hela golvytan, så många som behövs. Överlapp räknas bara en gång.",
   scale: "Dra en linje längs en sträcka du vet längden på, till exempel skalstocken eller en vägg med angivet mått.",
 };
 const FIXTURE_PRESETS: readonly (readonly [string, number])[] = [["Kök", 90], ["Garderob", 210], ["Kyl/frys", 195], ["Städskåp", 210]];
@@ -61,6 +62,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [selIds, setSelIds] = useState<string[]>([]);
   const [staticSel, setStaticSel] = useState<StaticRef | null>(null);
   const [scaleLine, setScaleLine] = useState<Line | null>(null);
+  const [scaleAreas, setScaleAreas] = useState<Rect[]>([]);
   const [is3d, setIs3d] = useState(false);
   const [view3, setView3] = useState<View3d>({ yaw: -35, pitch: 48, zoom: 1, px: 0, py: 0, wallH: 130 });
   const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false });
@@ -84,7 +86,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     setMetas(metasRef.current.map((m) => (m.id === id ? { ...m, name, editedAt } : m)));
   const clearEditing = () => {
     history.current = []; setUndoable(0);
-    setSelIds([]); setStaticSel(null); setScaleLine(null);
+    setSelIds([]); setStaticSel(null); setScaleLine(null); setScaleAreas([]);
   };
 
   // ---------- saving
@@ -408,7 +410,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
       const arrows: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
       const arrow = arrows[k];
       if (drawing) {
-        if (k === "Escape") { setStaticSel(null); setScaleLine(null); setTool("select"); }
+        if (k === "Escape") { setStaticSel(null); setScaleLine(null); setScaleAreas([]); setTool("select"); }
         else if (!staticSel || !picked) return;
         else if (k === "Delete" || k === "Backspace") { change((p) => removeStatic(p, staticSel)); setStaticSel(null); }
         else if (arrow) change((p) => nudgeStatic(p, staticSel, arrow[0], arrow[1]));
@@ -446,6 +448,17 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     if (drawn < 1) return;
     change((p) => rescale(p, realCm / drawn, p.image?.x ?? 0, p.image?.y ?? 0));
     setScaleLine(null);
+    setTool("wall");
+    toast.success("Skalan är satt. Tryck på Visa allt om ritningen hamnade utanför bild.");
+  }
+
+  /** The same, from the floor area: for plans that state the flat's size but have no scale bar or measurements. */
+  function applyAreaScale(realM2: number) {
+    const drawn = unionArea(scaleAreas);
+    if (drawn < 1) return;
+    // Area grows with the square of the scale.
+    change((p) => rescale(p, Math.sqrt((realM2 * 10_000) / drawn), p.image?.x ?? 0, p.image?.y ?? 0));
+    setScaleAreas([]);
     setTool("wall");
     toast.success("Skalan är satt. Tryck på Visa allt om ritningen hamnade utanför bild.");
   }
@@ -499,7 +512,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             <button type="button" className={`${buttonClass} text-red-700`} onClick={() => void remove()}>Ta bort</button>
           </div>
           <Segments value={mode} options={[["furnish", "Möblera"], ["draw", "Rita planlösning"]]}
-            onChange={(m) => { setMode(m); setTool("select"); setStaticSel(null); setScaleLine(null); if (m === "draw") setIs3d(false); }} />
+            onChange={(m) => { setMode(m); setTool("select"); setStaticSel(null); setScaleLine(null); setScaleAreas([]); if (m === "draw") setIs3d(false); }} />
         </>}
 
         {/* Drawing the flat itself */}
@@ -512,16 +525,21 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={plan.image ? buttonClass : primaryClass} onClick={() => imageInput.current?.click()}>{plan.image ? "Byt bild" : "Ladda upp bild"}</button>
-              {plan.image && <button type="button" className={tool === "scale" ? primaryClass : buttonClass} onClick={() => { setTool("scale"); setScaleLine(null); }}>Sätt skala</button>}
+              {plan.image && <button type="button" className={tool === "scale" || tool === "area" ? primaryClass : buttonClass} onClick={() => { setTool("scale"); setScaleLine(null); setScaleAreas([]); }}>Sätt skala</button>}
               {plan.image && <button type="button" className={buttonClass} onClick={() => change((p) => ({ ...p, image: null }))}>Ta bort bild</button>}
             </div>
             <input ref={imageInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setCropFile(f); }} />
+            {(tool === "scale" || tool === "area") && <div className="border-t border-gray-200 pt-2">
+              <Segments value={tool} options={[["scale", "Känd sträcka"], ["area", "Känd golvyta"]]} onChange={(t) => { setTool(t); setScaleLine(null); setScaleAreas([]); }} />
+            </div>}
+            {tool === "area" && <AreaForm marked={unionArea(scaleAreas)} count={scaleAreas.length}
+              onUndo={() => setScaleAreas(scaleAreas.slice(0, -1))} onApply={applyAreaScale} />}
             {tool === "scale" && <ScaleForm key={scaleLine ? `${scaleLine.x1},${scaleLine.y1},${scaleLine.x2},${scaleLine.y2}` : "none"} ready={!!scaleLine} onApply={applyScale} />}
             {plan.image && <OpacitySlider value={opts.overlayOpacity} onChange={(v) => setOpts({ ...opts, overlayOpacity: v })} />}
           </Card>
 
           <Card title="Rita">
-            <Segments value={tool} options={TOOLS} onChange={(t) => { setTool(t); setScaleLine(null); if (t !== "select") setStaticSel(null); }} />
+            <Segments value={tool} options={TOOLS} onChange={(t) => { setTool(t); setScaleLine(null); setScaleAreas([]); if (t !== "select") setStaticSel(null); }} />
             <p className="text-sm text-gray-600 font-normal">{TOOL_HELP[tool]}</p>
             <p className="text-xs text-gray-500 font-normal">Flytta vyn utan att byta verktyg: dra med mitten- eller högerknappen, eller håll Mellanslag och dra.</p>
           </Card>
@@ -655,7 +673,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           ? <>
             <Stage key={currentId} planId={currentId} plan={plan} readOnly={!mine} mode={mode} tool={tool} hidden={is3d}
               sel={sel} onSelect={setSelIds} staticSel={staticSel} onSelectStatic={setStaticSel} opts={opts} editor={editor}
-              scaleLine={scaleLine} onScaleLine={setScaleLine} svgRef={stage2d} />
+              scaleLine={scaleLine} onScaleLine={setScaleLine} scaleAreas={scaleAreas} onScaleAreas={setScaleAreas} svgRef={stage2d} />
             {is3d && <Stage3d plan={plan} view={view3} setView={setView3} sel={sel} svgRef={stage3d} />}
           </>
           : <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-600 font-normal p-6 text-center">
@@ -679,7 +697,7 @@ function ScaleForm({ ready, onApply }: { ready: boolean; onApply: (cm: number) =
   const [text, setText] = useState("");
   const cm = Number(text.replace(",", "."));
   const valid = ready && Number.isFinite(cm) && cm >= 10 && cm <= 10_000;
-  return <form className="flex flex-col gap-2 border-t border-gray-200 pt-2" onSubmit={(e) => { e.preventDefault(); if (valid) onApply(cm); }}>
+  return <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); if (valid) onApply(cm); }}>
     <p className="text-sm text-gray-600 font-normal">{ready ? "Hur lång är sträckan i verkligheten?" : TOOL_HELP.scale}</p>
     {ready && <div className="flex gap-2 items-end">
       <label className="flex-1 flex flex-col gap-0.5 text-xs text-gray-600 font-normal">Längd (cm)
@@ -687,6 +705,28 @@ function ScaleForm({ ready, onApply }: { ready: boolean; onApply: (cm: number) =
       </label>
       <button className={primaryClass} disabled={!valid}>Sätt skala</button>
     </div>}
+  </form>;
+}
+
+/** The real size of the floor just marked out with the area tool. */
+function AreaForm({ marked, count, onUndo, onApply }: { marked: number; count: number; onUndo: () => void; onApply: (m2: number) => void }) {
+  const [text, setText] = useState("");
+  const m2 = Number(text.replace(",", "."));
+  const valid = marked >= 1 && Number.isFinite(m2) && m2 >= 1 && m2 <= 2000;
+  return <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); if (valid) onApply(m2); }}>
+    <p className="text-sm text-gray-600 font-normal">{TOOL_HELP.area}</p>
+    {count > 0 && <>
+      <p className="text-sm text-gray-600 font-normal">
+        {count} {count === 1 ? "rektangel" : "rektanglar"} markerade. Med nuvarande skala är det {(marked / 10_000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} m².
+      </p>
+      <div className="flex gap-2 items-end">
+        <label className="flex-1 flex flex-col gap-0.5 text-xs text-gray-600 font-normal">Verklig golvyta (m²)
+          <input type="text" inputMode="decimal" className={inputClass} value={text} placeholder="t.ex. 24" onChange={(e) => setText(e.target.value)} />
+        </label>
+        <button className={primaryClass} disabled={!valid}>Sätt skala</button>
+      </div>
+      <button type="button" className={`${buttonClass} self-start`} onClick={onUndo}>Ta bort senaste rektangeln</button>
+    </>}
   </form>;
 }
 

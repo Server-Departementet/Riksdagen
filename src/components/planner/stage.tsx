@@ -14,7 +14,7 @@ import { findStatic, patchStatic } from "@/lib/planner/edit";
 import { imageUrl } from "@/lib/planner/client-store";
 
 export type Mode = "furnish" | "draw";
-export type Tool = "select" | "wall" | "window" | "fixture" | "dim" | "label" | "scale";
+export type Tool = "select" | "wall" | "window" | "fixture" | "dim" | "label" | "scale" | "area";
 export type Line = { x1: number; y1: number; x2: number; y2: number };
 export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean };
 
@@ -53,7 +53,7 @@ const straight = (ax: number, ay: number, x: number, y: number) => (Math.abs(x -
 
 export function Stage(
   {
-    planId, plan, readOnly, mode, tool, hidden, sel, onSelect, staticSel, onSelectStatic, opts, editor, scaleLine, onScaleLine, svgRef,
+    planId, plan, readOnly, mode, tool, hidden, sel, onSelect, staticSel, onSelectStatic, opts, editor, scaleLine, onScaleLine, scaleAreas, onScaleAreas, svgRef,
   }: {
     planId: string;
     plan: PlanData;
@@ -71,6 +71,9 @@ export function Stage(
     /** The known distance marked on the image, waiting for its real length */
     scaleLine: Line | null;
     onScaleLine: (line: Line | null) => void;
+    /** The floor marked out with the area tool, waiting for its real size */
+    scaleAreas: Rect[];
+    onScaleAreas: (areas: Rect[]) => void;
     svgRef: RefObject<SVGSVGElement | null>;
   },
 ) {
@@ -372,6 +375,7 @@ export function Stage(
         }
         const r = rectFrom(d.ax, d.ay, s.x, s.y);
         if (r.w < 2 || r.h < 2) break;
+        if (d.tool === "area") { onScaleAreas([...scaleAreas, r]); break; }
         if (d.tool === "wall") add("walls", { ...plan, walls: [...plan.walls, { id, ...r }] });
         else if (d.tool === "fixture") add("fixtures", { ...plan, fixtures: [...plan.fixtures, { id, ...r, label: "", height: 210 }] });
         else add("windows", { ...plan, windows: [...plan.windows, { id, ...fitWindowToWall(r, plan.walls), sill: DEFAULT_SILL, head: DEFAULT_HEAD }] });
@@ -461,6 +465,9 @@ export function Stage(
           {draft?.kind === "rect" && <rect x={draft.r.x} y={draft.r.y} width={draft.r.w} height={draft.r.h} fill={C.accent} fillOpacity={0.25} stroke={C.accent} strokeWidth={1.5 * px} />}
           {draft?.kind === "line" && <MeasureLine line={draft.l} px={px} label={tool === "dim" ? String(dimLength(draft.l)) : ""} />}
           {drawing && scaleLine && <MeasureLine line={scaleLine} px={px} label="?" />}
+          {drawing && tool === "area" && scaleAreas.map((r, i) => (
+            <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} fill={C.gap} fillOpacity={0.3} stroke={C.gap} strokeWidth={1.5 * px} />
+          ))}
         </g>
 
         {/* Handles of the selected drawn thing */}
