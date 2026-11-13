@@ -288,10 +288,6 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           setTrace(next);
           if (next.status === "running") return;
           void loadTracer();
-    void fetch("/api/planlosning/furniture", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() as Promise<FurnitureResponse> : null))
-      .then((body) => { if (body) setFurniture(body.items); })
-      .catch(() => undefined); // offline: the unpack button just stays away
           await refresh();
           if (next.status === "done") {
             setTraceReport(next.note);
@@ -333,6 +329,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     const first = list.find((m) => m.id === initialPlanId) ?? list.find((m) => m.ownerId === me.id) ?? list[0];
     if (first) void open(first.id);
     void loadTracer();
+    void fetch("/api/planlosning/furniture", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() as Promise<FurnitureResponse> : null))
+      .then((body) => { if (body) setFurniture(body.items); })
+      .catch(() => undefined); // offline: the unpack button just stays away
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") void refresh();
