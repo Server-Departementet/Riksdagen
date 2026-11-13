@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Fixture, Item, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
+import type { Dim, Fixture, Item, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
 import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, STACK_MODES, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
-import { dimLength, enclosedArea, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
+import { dimAxis, dimCorrection, dimLength, enclosedArea, isHit, parkItems, rescale, rescaleXY, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
   addItem, duplicateItems, unpackFurniture, unpacked, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
@@ -432,7 +432,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
       const old = plan.image;
       // A replacement keeps the old picture's place and real-world width; a first picture is assumed to be 10 m wide until the scale is set.
       const cmPerPx = old ? (old.w * old.cmPerPx) / img.w : 1000 / img.w;
-      return { ...plan, image: { w: img.w, h: img.h, cmPerPx, x: old?.x ?? 0, y: old?.y ?? 0, rev: Date.now(), calibrated: false } };
+      // The old picture's stretch stays too: a new crop of the same drawing is squeezed the same way.
+      return { ...plan, image: { w: img.w, h: img.h, cmPerPx, x: old?.x ?? 0, y: old?.y ?? 0, rev: Date.now(), calibrated: false, ...(old?.stretch ? { stretch: old.stretch } : {}) } };
     });
     setMode("draw"); setTool("scale"); setIs3d(false);
     toast.success("Bilden är uppladdad. Sätt skalan härnäst.");
@@ -575,6 +576,21 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     setScaleAreas([]);
     setTool("wall");
     toast.success("Skalan är satt. Tryck på Visa allt om ritningen hamnade utanför bild.");
+  }
+
+  /**
+   * Fine-tune the scale of a finished plan from one of its measurement lines: the whole drawing is stretched until
+   * the line is `realCm` long, in both directions or only in the one the line runs in.
+   */
+  function applyDimLength(dimId: string, realCm: number, mode: "all" | "axis") {
+    change((p) => {
+      const dim = p.dims.find((d) => d.id === dimId), f = dim && dimCorrection(dim, realCm, mode);
+      if (!f) return p;
+      const next = rescaleXY(p, f.fx, f.fy, p.image?.x ?? 0, p.image?.y ?? 0);
+      // A text that was just the old length would now contradict the line, so it goes; any other text is the owner's and stays.
+      return { ...next, dims: next.dims.map((d) => (d.id === dimId && /^\s*\d+([.,]\d+)?\s*(cm|m)?\s*$/i.test(d.text) ? { ...d, text: "" } : d)) };
+    });
+    toast.success(mode === "all" ? "Hela ritningen är omskalad. Ångra tar tillbaka det." : "Ritningen är omskalad i linjens riktning. Ångra tar tillbaka det.");
   }
 
   // ---------- panel
@@ -728,6 +744,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             {"x1" in picked && <>
               <TextField label={`Text (tomt visar längden, ${dimLength(picked)} cm)`} value={picked.text} maxLength={40} onStart={editor.checkpoint} onChange={(text) => editor.setPlan(patchStatic(plan, staticSel, { text }), true)} />
               <Check label="Texten på andra sidan linjen" checked={picked.flip} onChange={(flip) => change((p) => patchStatic(p, staticSel, { flip }))} />
+              <DimScaleForm key={`${picked.id}:${picked.x1},${picked.y1},${picked.x2},${picked.y2}`} dim={picked} onApply={(cm, m) => applyDimLength(picked.id, cm, m)} />
             </>}
             {staticSel.kind === "labels" && "text" in picked && (
               <TextField label="Text" value={picked.text} maxLength={40} onStart={editor.checkpoint} onChange={(text) => editor.setPlan(patchStatic(plan, staticSel, { text }), true)} />
@@ -908,6 +925,39 @@ function ScaleForm({ ready, onApply }: { ready: boolean; onApply: (cm: number) =
       </label>
       <button className={primaryClass} disabled={!valid}>Sätt skala</button>
     </div>}
+  </form>;
+}
+
+/**
+ * The true length of a measurement line, for correcting a drawing that is a few percent off. Nothing happens
+ * until the button is pressed: a half-typed number would otherwise rescale the whole plan.
+ */
+function DimScaleForm({ dim, onApply }: { dim: Dim; onApply: (cm: number, mode: "all" | "axis") => void }) {
+  const drawn = dimLength(dim), across = dimAxis(dim) === "x";
+  const [text, setText] = useState(String(drawn));
+  const [mode, setMode] = useState<"all" | "axis">("all");
+  const cm = Number(text.replace(",", "."));
+  const typed = text.trim() !== "" && Number.isFinite(cm);
+  // Typing the length the line already shows asks for nothing.
+  const same = typed && Math.round(cm) === drawn;
+  const valid = typed && !same && dimCorrection(dim, cm, mode) !== null;
+  return <form className="flex flex-col gap-2 border-t border-gray-200 pt-2.5" onSubmit={(e) => { e.preventDefault(); if (valid) onApply(cm, mode); }}>
+    <p className="text-sm font-semibold">Rätta skalan efter linjen</p>
+    <div className="flex gap-2 items-end">
+      <label className="flex-1 flex flex-col gap-0.5 text-xs text-gray-600 font-normal min-w-0">Verklig längd (cm)
+        <input type="text" inputMode="decimal" className={inputClass} value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      <button className={primaryClass} disabled={!valid}>Skala om</button>
+    </div>
+    <Segments value={mode} options={[["all", "Hela ritningen"], ["axis", across ? "Bara på bredden" : "Bara på höjden"]] as const} onChange={setMode} />
+    <p className="text-xs text-gray-500 font-normal">
+      {mode === "all"
+        ? "Skalar om allt, inte bara linjen: väggar, fönster, fast inredning, mått och bilden under, lika mycket åt båda håll. Möblerna behåller sin storlek och flyttas med."
+        : across
+          ? "Skalar om allt på bredden (vänster–höger), inte bara linjen: väggar, fönster, fast inredning, mått och bilden under. Måtten på höjden rörs inte. Möblerna behåller sin storlek och flyttas med."
+          : "Skalar om allt på höjden (uppåt–nedåt), inte bara linjen: väggar, fönster, fast inredning, mått och bilden under. Måtten på bredden rörs inte. Möblerna behåller sin storlek och flyttas med."}
+    </p>
+    {typed && !same && !valid && <p className="text-xs text-red-700 font-normal">Längden ligger för långt från den ritade ({drawn} cm) för att vara en rättning.</p>}
   </form>;
 }
 

@@ -1,5 +1,5 @@
-import type { Angle, Dim, Item, PlanData, Rect } from "@/lib/planner/plan";
-import { clamp } from "@/lib/planner/plan";
+import type { Angle, Dim, Item, PlanData, PlanImage, Rect } from "@/lib/planner/plan";
+import { clamp, cleanStretch } from "@/lib/planner/plan";
 
 /** A vertical (`v`, an x position) or horizontal (`h`, a y position) snapping guide. */
 export type Guide = { v: number } | { h: number };
@@ -162,7 +162,7 @@ export function isHit(plan: PlanData, it: Item, stack: Stacking = stacking(plan)
 }
 
 export const imageRect = (plan: PlanData): Rect | null =>
-  plan.image && { x: plan.image.x, y: plan.image.y, w: plan.image.w * plan.image.cmPerPx, h: plan.image.h * plan.image.cmPerPx };
+  plan.image && { x: plan.image.x, y: plan.image.y, w: plan.image.w * plan.image.cmPerPx, h: plan.image.h * plan.image.cmPerPx * (plan.image.stretch ?? 1) };
 
 const dimRect = (d: Dim): Rect => ({ x: Math.min(d.x1, d.x2), y: Math.min(d.y1, d.y2), w: Math.abs(d.x2 - d.x1), h: Math.abs(d.y2 - d.y1) });
 
@@ -280,20 +280,62 @@ export function fitWindowToWall(win: Rect, walls: Rect[]): Rect {
  * Stretch the drawing around a fixed point, after the image's scale was corrected.
  * Furniture keeps its real size and only moves along.
  */
-export function rescale(plan: PlanData, factor: number, ox: number, oy: number): PlanData {
-  const px = (v: number) => Math.round((ox + (v - ox) * factor) * 10) / 10;
-  const py = (v: number) => Math.round((oy + (v - oy) * factor) * 10) / 10;
-  const len = (v: number) => Math.max(1, Math.round(v * factor * 10) / 10);
-  const box = <T extends Rect>(r: T): T => ({ ...r, x: px(r.x), y: py(r.y), w: len(r.w), h: len(r.h) });
+export const rescale = (plan: PlanData, factor: number, ox: number, oy: number): PlanData => rescaleXY(plan, factor, factor, ox, oy);
+
+/**
+ * The same with a factor of its own for each direction, for a drawing that is right one way and off the other,
+ * or squeezed. The image is stretched along: its horizontal scale follows `fx`, and `stretch` takes up the difference.
+ */
+export function rescaleXY(plan: PlanData, fx: number, fy: number, ox: number, oy: number): PlanData {
+  const round = (v: number) => Math.round(v * 10) / 10;
+  const px = (v: number) => round(ox + (v - ox) * fx), py = (v: number) => round(oy + (v - oy) * fy);
+  const lenX = (v: number) => Math.max(1, round(v * fx)), lenY = (v: number) => Math.max(1, round(v * fy));
+  // Every kind of thing in a plan is one of these three shapes. A new kind is one more line in the list below.
+  const box = <T extends Rect>(r: T): T => ({ ...r, x: px(r.x), y: py(r.y), w: lenX(r.w), h: lenY(r.h) });
+  const point = <T extends { x: number; y: number }>(p: T): T => ({ ...p, x: px(p.x), y: py(p.y) });
+  const line = <T extends { x1: number; y1: number; x2: number; y2: number }>(l: T): T => ({ ...l, x1: px(l.x1), y1: py(l.y1), x2: px(l.x2), y2: py(l.y2) });
+  const image = (i: PlanImage): PlanImage => {
+    // Equal factors leave the stretch exactly as it was, so a uniform correction never picks up rounding noise.
+    const { stretch: old, ...rest } = i, stretch = fx === fy ? old : cleanStretch(((old ?? 1) * fy) / fx);
+    return { ...rest, cmPerPx: i.cmPerPx * fx, x: px(i.x), y: py(i.y), calibrated: true, ...(stretch === undefined ? {} : { stretch }) };
+  };
   return {
     ...plan,
-    image: plan.image && { ...plan.image, cmPerPx: plan.image.cmPerPx * factor, x: px(plan.image.x), y: py(plan.image.y), calibrated: true },
-    walls: plan.walls.map(box), windows: plan.windows.map(box), fixtures: plan.fixtures.map(box),
-    dims: plan.dims.map((d) => ({ ...d, x1: px(d.x1), y1: py(d.y1), x2: px(d.x2), y2: py(d.y2) })),
-    labels: plan.labels.map((l) => ({ ...l, x: px(l.x), y: py(l.y) })),
-    items: plan.items.map((i) => ({ ...i, x: px(i.x), y: py(i.y) })),
+    image: plan.image && image(plan.image),
+    walls: plan.walls.map(box),
+    windows: plan.windows.map(box),
+    fixtures: plan.fixtures.map(box),
+    dims: plan.dims.map(line),
+    labels: plan.labels.map(point),
+    // Furniture is the size it is: only its place follows.
+    items: plan.items.map(point),
   };
 }
+
+/** How far off a drawing can be and still be corrected from one measurement: beyond this the number typed is a slip. */
+export const MIN_CORRECTION = 0.2;
+export const MAX_CORRECTION = 5;
+
+/**
+ * The factors that make a measurement line `realCm` long. "all" scales both directions alike. "axis" scales only
+ * the direction the line runs in (see `dimAxis`) and leaves the other alone; a slanted line then gets the factor
+ * that brings its whole length to `realCm`. Null when no sensible factor does it.
+ */
+export function dimCorrection(d: Line4, realCm: number, mode: "all" | "axis"): { fx: number; fy: number } | null {
+  const dx = Math.abs(d.x2 - d.x1), dy = Math.abs(d.y2 - d.y1), drawn = Math.hypot(dx, dy);
+  if (!Number.isFinite(realCm) || realCm <= 0 || drawn < 1) return null;
+  const ok = (f: number) => Number.isFinite(f) && f >= MIN_CORRECTION && f <= MAX_CORRECTION;
+  if (mode === "all") { const f = realCm / drawn; return ok(f) ? { fx: f, fy: f } : null; }
+  const along = dimAxis(d) === "x" ? dx : dy, across = dimAxis(d) === "x" ? dy : dx;
+  // The part of the line across its axis stays as long as it is; the rest of the new length has to come from along it.
+  const f = Math.sqrt(realCm * realCm - across * across) / along;
+  if (!ok(f)) return null;
+  return dimAxis(d) === "x" ? { fx: f, fy: 1 } : { fx: 1, fy: f };
+}
+
+type Line4 = { x1: number; y1: number; x2: number; y2: number };
+/** The direction a measurement line mostly runs in: "x" across the plan, "y" up and down it. */
+export const dimAxis = (d: Line4): "x" | "y" => (Math.abs(d.x2 - d.x1) >= Math.abs(d.y2 - d.y1) ? "x" : "y");
 
 export const dimLength = (d: { x1: number; y1: number; x2: number; y2: number }) => Math.round(Math.hypot(d.x2 - d.x1, d.y2 - d.y1));
 
