@@ -93,6 +93,18 @@ export async function deletePlan(id: string): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
+/**
+ * Copy a plan on the server into a new one of the caller's own. "missing": the plan is gone;
+ * "full": the caller already has as many plans as allowed. Throws when the server can't be reached.
+ */
+export async function copyPlan(id: string): Promise<{ status: "copied"; plan: PlanResponse } | { status: "missing" } | { status: "full" }> {
+  const res = await fetch(`${api(id)}/copy`, { method: "POST" });
+  if (res.status === 404) return { status: "missing" };
+  if (res.status === 400) return { status: "full" };
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { status: "copied", plan: toResponse(await res.json()) };
+}
+
 export async function uploadImage(id: string, image: Blob): Promise<void> {
   const res = await fetch(`${api(id)}/image`, { method: "PUT", headers: { "content-type": image.type || "application/octet-stream" }, body: image });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
