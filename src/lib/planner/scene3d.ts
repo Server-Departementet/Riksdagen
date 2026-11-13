@@ -1,4 +1,5 @@
 import type { PlanData, Rect } from "@/lib/planner/plan";
+import { DOOR_HEIGHT } from "@/lib/planner/doors";
 import { backStrip, flatBox, inFlat, itemBox, stacking } from "@/lib/planner/geometry";
 
 /*
@@ -66,31 +67,34 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
     if (z1 > z0 && r.w > 0 && r.h > 0) out.push({ ...r, z0, z1, color: "#d9d2c5", top: "#3a3733" });
   };
   /** A window opening: a parapet below, glass, and a lintel above (once the walls are tall enough). */
-  const opening = (r: Rect, along: boolean, sill: number, head: number) => {
+  const opening = (r: Rect, along: boolean, sill: number, head: number, glazed = true) => {
     wall(r, 0, Math.min(sill, wallH));
     wall(r, head, wallH);
-    if (wallH <= sill) return;
+    if (wallH <= sill || !glazed) return;
     const glass: Rect = along ? { ...r, y: r.y + r.h / 2 - Math.min(3, r.h / 2), h: Math.min(6, r.h) } : { ...r, x: r.x + r.w / 2 - Math.min(3, r.w / 2), w: Math.min(6, r.w) };
     out.push({ ...glass, z0: sill, z1: Math.min(head, wallH), color: "#8fcdf0", alpha: 0.5 });
   };
   const touches = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
   const walls = apart(plan.walls);
+  // A door is an opening from the floor up, with the wall carrying on above it. Drawn over solid wall, it cuts the wall open.
+  const doors = (plan.doors ?? []).map((d) => ({ ...d, sill: 0, head: DOOR_HEIGHT, glazed: false }));
+  const holes = [...plan.windows.map((win) => ({ ...win, glazed: true })), ...doors];
   for (const w of walls) {
     // Cut the wall along its length wherever a window crosses it, leaving solid piers between the windows.
     const along = w.w >= w.h;
     const start = along ? w.x : w.y, end = start + (along ? w.w : w.h);
     const piece = (from: number, to: number): Rect => (along ? { x: from, y: w.y, w: to - from, h: w.h } : { x: w.x, y: from, w: w.w, h: to - from });
-    const cuts = plan.windows
+    const cuts = holes
       .filter((win) => touches(win, w))
-      .map((win) => ({ from: Math.max(start, along ? win.x : win.y), to: Math.min(end, along ? win.x + win.w : win.y + win.h), sill: win.sill, head: win.head }))
+      .map((win) => ({ from: Math.max(start, along ? win.x : win.y), to: Math.min(end, along ? win.x + win.w : win.y + win.h), sill: win.sill, head: win.head, glazed: win.glazed }))
       .sort((a, b) => a.from - b.from);
     let edge = start;
     for (const cut of cuts) {
       if (cut.to <= edge) continue;
       const from = Math.max(cut.from, edge);
       wall(piece(edge, from), 0, wallH);
-      opening(piece(from, cut.to), along, cut.sill, cut.head);
+      opening(piece(from, cut.to), along, cut.sill, cut.head, cut.glazed);
       edge = cut.to;
     }
     wall(piece(edge, end), 0, wallH);
@@ -98,6 +102,10 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
   // A window drawn in a gap between walls, rather than across one, stands on its own.
   for (const win of plan.windows) {
     for (const part of without(win, walls)) opening(part, win.w >= win.h, win.sill, win.head);
+  }
+  // A door in a gap between walls: only the wall above it, once the walls are drawn taller than the door.
+  for (const d of doors) {
+    for (const part of without(d, [...walls, ...plan.windows])) wall(part, d.head, wallH);
   }
   // Fittings drawn a little into a wall give way to it, for the same reason the walls are pulled apart.
   for (const f of plan.fixtures) {

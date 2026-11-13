@@ -10,6 +10,16 @@ export type Rect = { x: number; y: number; w: number; h: number };
 export type Wall = Rect & { id: string };
 /** Drawn across a wall. `sill` and `head` are heights above the floor, for the 3D view. */
 export type PlanWindow = Rect & { id: string; sill: number; head: number };
+/**
+ * A door or doorway. The rectangle is the opening, lying in the wall line like a window: as thick as the wall,
+ * as long as the opening is wide. The wall runs along the rectangle's longer side.
+ * `hinge` is the end of the opening the leaf hangs at: "start" is the left end in a wall running left–right and
+ * the top end in a wall running up–down; "end" is the right or bottom end.
+ * `swing` is the side of the wall the leaf opens to: "neg" towards smaller coordinates (up from a left–right
+ * wall, left from an up–down wall), "pos" the other way. "none" is a sliding door or an open doorway: it marks
+ * the passage but sweeps over no floor.
+ */
+export type Door = Rect & { id: string; hinge: "start" | "end"; swing: "neg" | "pos" | "none" };
 /** Built-in things furniture can't overlap: kitchen units, wardrobes, fridge. */
 /**
  * `height` is the fitting's own height. `lift` is how far above the floor it starts, for what hangs on
@@ -76,6 +86,8 @@ export type PlanData = {
   image: PlanImage | null;
   walls: Wall[];
   windows: PlanWindow[];
+  /** Absent in plans drawn before there were doors, where a doorway is only a gap between two walls. */
+  doors?: Door[];
   fixtures: Fixture[];
   dims: Dim[];
   labels: Label[];
@@ -232,6 +244,12 @@ export function sanitizePlan(input: unknown): PlanData {
     const sill = Math.round(num(r.sill, 0, 300, DEFAULT_SILL));
     return { ...base, sill, head: Math.round(num(r.head, sill + 1, 400, Math.max(DEFAULT_HEAD, sill + 1))) };
   }));
+  const doors = compact(list(src.doors, 100).map((r): Door | null => {
+    const base = rect(r);
+    // A door that doesn't say which way it opens is taken not to swing, rather than flagging furniture on a guess.
+    return base && { ...base, hinge: r.hinge === "end" ? "end" : "start", swing: r.swing === "neg" || r.swing === "pos" ? r.swing : "none" };
+  }));
+  if (doors.length) plan.doors = doors;
   plan.fixtures = compact(list(src.fixtures, 100).map((r) => {
     const base = rect(r);
     const lift = Math.round(num(r.lift, 0, 300, 0));

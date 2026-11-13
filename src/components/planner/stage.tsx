@@ -2,9 +2,11 @@
 
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { Dim, Fixture, Item, Label, PlanData, PlanWindow, Rect } from "@/lib/planner/plan";
+import type { Dim, Door, Fixture, Item, Label, PlanData, PlanWindow, Rect } from "@/lib/planner/plan";
 import { DEFAULT_HEAD, DEFAULT_SILL, areaText, clamp, uid } from "@/lib/planner/plan";
 import type { Guide } from "@/lib/planner/geometry";
+import { blockedDoors, blocksDoor } from "@/lib/planner/geometry";
+import { doorPath, doorSwing, drawnDoor } from "@/lib/planner/doors";
 import {
   backStrip, bounds, dimLength, drawingBox, fitWindowToWall, flatBox, gaps, groupOf, imageRect, inFlat, isHit, itemBox, obstacles,
   parkBox, rectFrom, snapBox, snapPoint, snapTolerance, stacking,
@@ -14,7 +16,7 @@ import { findStatic, patchStatic } from "@/lib/planner/edit";
 import { imageUrl } from "@/lib/planner/client-store";
 
 export type Mode = "furnish" | "draw";
-export type Tool = "select" | "wall" | "window" | "fixture" | "dim" | "label" | "scale" | "area";
+export type Tool = "select" | "wall" | "window" | "door" | "fixture" | "dim" | "label" | "scale" | "area";
 export type Line = { x1: number; y1: number; x2: number; y2: number };
 export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean };
 
@@ -30,11 +32,11 @@ export type Editor = {
 
 export const PALETTE = {
   bg: "#f4f1ec", floor: "#fffdf8", wall: "#2b2926", fix: "#e3ddd2", fixLine: "#8c857a", dim: "#2a6f97", win: "#7cc0e8",
-  bad: "#d92d20", gap: "#0f7b4f", accent: "#c2410c", muted: "#6b655c", text: "#1d1b18", line: "#dcd5ca",
+  bad: "#d92d20", block: "#b45309", gap: "#0f7b4f", accent: "#c2410c", muted: "#6b655c", text: "#1d1b18", line: "#dcd5ca",
 } as const;
 const C = PALETTE;
 
-const STATIC_KINDS: StaticKind[] = ["walls", "windows", "fixtures", "dims", "labels"];
+const STATIC_KINDS: StaticKind[] = ["walls", "windows", "fixtures", "dims", "labels", "doors"];
 type Handle = "nw" | "ne" | "sw" | "se" | "p1" | "p2";
 type Drag =
   | { kind: "pan"; x: number; y: number; moved: boolean }
@@ -381,7 +383,8 @@ export function Stage(
         const r = rectFrom(d.ax, d.ay, s.x, s.y);
         if (r.w < 2 || r.h < 2) break;
         if (d.tool === "area") { onScaleAreas([...scaleAreas, r]); break; }
-        if (d.tool === "wall") add("walls", { ...plan, walls: [...plan.walls, { id, ...r }] });
+        if (d.tool === "door") add("doors", { ...plan, doors: [...(plan.doors ?? []), { id, ...drawnDoor({ x: d.ax, y: d.ay }, s, plan.walls) }] });
+        else if (d.tool === "wall") add("walls", { ...plan, walls: [...plan.walls, { id, ...r }] });
         else if (d.tool === "fixture") add("fixtures", { ...plan, fixtures: [...plan.fixtures, { id, ...r, label: "", height: 210 }] });
         else add("windows", { ...plan, windows: [...plan.windows, { id, ...fitWindowToWall(r, plan.walls), sill: DEFAULT_SILL, head: DEFAULT_HEAD }] });
         break;
@@ -421,6 +424,7 @@ export function Stage(
           {plan.walls.length > 0 && <rect x={flat.x} y={flat.y} width={flat.w} height={flat.h} fill={C.floor} />}
           {plan.walls.map((w) => <rect key={w.id} x={w.x} y={w.y} width={w.w} height={w.h} fill={C.wall} {...staticProps("walls", w.id)} />)}
           {plan.windows.map((w) => <WindowShape key={w.id} win={w} hit={staticProps("windows", w.id)} />)}
+          {plan.doors?.map((d) => <DoorShape key={d.id} door={d} hit={staticProps("doors", d.id)} />)}
           {plan.fixtures.map((f) => <FixtureShape key={f.id} fixture={f} hit={staticProps("fixtures", f.id)} />)}
           {plan.labels.map((l) => (
             <text key={l.id} x={l.x} y={l.y} textAnchor="middle" fontSize={14} fill={C.text} {...staticProps("labels", l.id)}
@@ -452,8 +456,12 @@ export function Stage(
 
         {/* Everything that is about editing rather than the plan: left out of exports */}
         <g data-noexport="" style={{ pointerEvents: "none" }}>
-          {!drawing && plan.items.map((it) => ({ it, hit: isHit(plan, it, stack) })).filter(({ it, hit }) => hit || sel.has(it.id)).map(({ it, hit }) => {
-            const b = itemBox(it), line = { fill: "none", stroke: hit ? C.bad : C.text, strokeWidth: hit ? 3.5 : 3, strokeDasharray: hit ? "7 4" : undefined };
+          {/* The swing of every door that something stands in the way of, so it shows what the piece has to clear. */}
+          {!drawing && blockedDoors(plan, stack).map((d) => <DoorZone key={d.id} door={d} />)}
+          {!drawing && plan.items.map((it) => ({ it, hit: isHit(plan, it, stack) })).filter(({ it, hit }) => hit || sel.has(it.id) || blocksDoor(plan, it, stack)).map(({ it, hit }) => {
+            // Red for a collision; in a door's way is a warning of its own, in another colour.
+            const warn = hit ? C.bad : blocksDoor(plan, it, stack) ? C.block : null;
+            const b = itemBox(it), line = { fill: "none", stroke: warn ?? C.text, strokeWidth: warn ? 3.5 : 3, strokeDasharray: warn ? "7 4" : undefined };
             return it.model === "cylinder"
               ? <ellipse key={it.id} cx={it.x} cy={it.y} rx={b.w / 2} ry={b.h / 2} {...line} />
               : <rect key={it.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={3} {...line} />;
@@ -528,6 +536,36 @@ function WindowShape({ win, hit }: { win: PlanWindow; hit: HitProps }) {
     {along
       ? <line x1={win.x} x2={win.x + win.w} y1={win.y + win.h / 2} y2={win.y + win.h / 2} stroke={C.win} strokeWidth={thick} />
       : <line y1={win.y} y2={win.y + win.h} x1={win.x + win.w / 2} x2={win.x + win.w / 2} stroke={C.win} strokeWidth={thick} />}
+  </g>;
+}
+
+/**
+ * A door as floor plans draw it: the opening left clear, the leaf standing open at 90° and the arc of its swing,
+ * in thin lines. One that doesn't swing is only the opening, with a thin line through it for the sliding leaf or threshold.
+ */
+function DoorShape({ door: d, hit }: { door: Door; hit: HitProps }) {
+  const path = doorPath(d), along = d.w >= d.h;
+  return <g {...hit}>
+    {/* Floor-coloured, so a door drawn over solid wall still reads as an opening. */}
+    <rect x={d.x} y={d.y} width={d.w} height={d.h} fill={C.floor} />
+    {path
+      ? <>
+        {/* A wide invisible stroke, so the thin lines can be grabbed. */}
+        {hit["data-static"] && <path d={path} fill="none" stroke="transparent" strokeWidth={12} />}
+        <path d={path} fill="none" stroke={C.muted} strokeWidth={1.2} strokeLinecap="round" />
+      </>
+      : along
+        ? <line x1={d.x} x2={d.x + d.w} y1={d.y + d.h / 2} y2={d.y + d.h / 2} stroke={C.muted} strokeWidth={1.2} strokeDasharray="5 4" />
+        : <line y1={d.y} y2={d.y + d.h} x1={d.x + d.w / 2} x2={d.x + d.w / 2} stroke={C.muted} strokeWidth={1.2} strokeDasharray="5 4" />}
+  </g>;
+}
+
+/** The floor a blocked door needs free: its opening and the quarter disc the leaf sweeps over. */
+function DoorZone({ door: d }: { door: Door }) {
+  const s = doorSwing(d);
+  return <g fill={C.block} fillOpacity={0.22}>
+    <rect x={d.x} y={d.y} width={d.w} height={d.h} />
+    {s && <path d={`${doorPath(d)}Z`} />}
   </g>;
 }
 

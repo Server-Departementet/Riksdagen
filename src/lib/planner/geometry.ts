@@ -1,5 +1,6 @@
 import type { Angle, Dim, Item, PlanData, Rect } from "@/lib/planner/plan";
 import { clamp } from "@/lib/planner/plan";
+import { DOOR_HEIGHT, doorBox, inDoorWay } from "@/lib/planner/doors";
 
 /** A vertical (`v`, an x position) or horizontal (`h`, a y position) snapping guide. */
 export type Guide = { v: number } | { h: number };
@@ -161,6 +162,21 @@ export function isHit(plan: PlanData, it: Item, stack: Stacking = stacking(plan)
     || plan.items.some((o) => !mates.includes(o) && overlap(b, itemBox(o)) && !stack.pairs.has(pairKey(it.id, o.id)));
 }
 
+/**
+ * Whether a piece keeps a door from opening or stands in a doorway. A warning of its own, apart from isHit: the
+ * piece collides with nothing, it is only in the way. Rugs never are, and neither is what hangs or stands
+ * above the door leaf. Fixed fittings are not checked: the door was built to clear them.
+ */
+export function blocksDoor(plan: PlanData, it: Item, stack: Stacking = stacking(plan), doors = plan.doors ?? []): boolean {
+  if (!doors.length || (it.lift === undefined && it.h <= RUG_HEIGHT) || (stack.z.get(it.id) ?? 0) >= DOOR_HEIGHT) return false;
+  const b = itemBox(it);
+  return doors.some((d) => inDoorWay(d, b));
+}
+
+/** The doors that some piece of furniture is in the way of. */
+export const blockedDoors = (plan: PlanData, stack: Stacking = stacking(plan)) =>
+  (plan.doors ?? []).filter((d) => plan.items.some((it) => blocksDoor(plan, it, stack, [d])));
+
 export const imageRect = (plan: PlanData): Rect | null =>
   plan.image && { x: plan.image.x, y: plan.image.y, w: plan.image.w * plan.image.cmPerPx, h: plan.image.h * plan.image.cmPerPx };
 
@@ -178,6 +194,8 @@ export function drawingBox(plan: PlanData, withImage: boolean): Rect {
     flatBox(plan), ...(image ? [image] : []),
     ...plan.dims.map(dimRect).map((r) => ({ x: r.x - 22, y: r.y - 22, w: r.w + 44, h: r.h + 44 })),
     ...plan.labels.map((l) => ({ x: l.x - 60, y: l.y - 16, w: 120, h: 24 })),
+    // A door opening outwards swings beyond the walls.
+    ...(plan.doors ?? []).map(doorBox),
   ];
   return bounds(all) ?? flatBox(plan);
 }
@@ -291,6 +309,7 @@ export function rescale(plan: PlanData, factor: number, ox: number, oy: number):
     walls: plan.walls.map(box), windows: plan.windows.map(box), fixtures: plan.fixtures.map(box),
     dims: plan.dims.map((d) => ({ ...d, x1: px(d.x1), y1: py(d.y1), x2: px(d.x2), y2: py(d.y2) })),
     labels: plan.labels.map((l) => ({ ...l, x: px(l.x), y: py(l.y) })),
+    ...(plan.doors ? { doors: plan.doors.map(box) } : {}),
     items: plan.items.map((i) => ({ ...i, x: px(i.x), y: py(i.y) })),
   };
 }
@@ -315,12 +334,12 @@ const DOORWAY = 150;
 
 /**
  * The floor inside the outer walls, in cm²: everything that can't be reached from outside the drawing without
- * crossing a wall, a window or a doorway. Inner walls are not counted, so it comes out a few percent under the
+ * crossing a wall, a window, a door or a doorway. Inner walls are not counted, so it comes out a few percent under the
  * stated floor area. Null when the walls don't enclose most of the flat (nothing drawn yet, or an outline left
  * open), where any figure would mislead.
  */
 export function enclosedArea(plan: PlanData): number | null {
-  const shell: Rect[] = [...plan.walls, ...plan.windows], box = bounds(plan.walls);
+  const shell: Rect[] = [...plan.walls, ...plan.windows, ...(plan.doors ?? [])], box = bounds(plan.walls);
   if (!box) return null;
   // Cut the plane along every edge, with a ring of open cells around it all for "outside" to start from.
   const cuts = (vals: number[]) => { const s = [...new Set(vals)].sort((a, b) => a - b); return [(s[0] ?? 0) - 1, ...s, (s[s.length - 1] ?? 0) + 1]; };

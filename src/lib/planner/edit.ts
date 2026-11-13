@@ -1,4 +1,4 @@
-import type { Dim, Fixture, Item, Label, PlanData, PlanWindow, Wall } from "@/lib/planner/plan";
+import type { Dim, Door, Fixture, Item, Label, PlanData, PlanWindow, Wall } from "@/lib/planner/plan";
 import { COLORS, clamp, dropLoneGroups, uid } from "@/lib/planner/plan";
 import { bounds, itemBox, parkBox, parkItems } from "@/lib/planner/geometry";
 
@@ -8,9 +8,9 @@ import { bounds, itemBox, parkBox, parkItems } from "@/lib/planner/geometry";
  */
 
 /** One of the drawn (non-furniture) things in a plan. */
-export type StaticKind = "walls" | "windows" | "fixtures" | "dims" | "labels";
+export type StaticKind = "walls" | "windows" | "fixtures" | "dims" | "labels" | "doors";
 export type StaticRef = { kind: StaticKind; id: string };
-export type StaticElement = Wall | PlanWindow | Fixture | Dim | Label;
+export type StaticElement = Wall | PlanWindow | Fixture | Dim | Label | Door;
 
 const withItems = (plan: PlanData, items: Item[]): PlanData => {
   const copy = items.map((i) => ({ ...i }));
@@ -96,7 +96,7 @@ export const unpacked = (plan: PlanData, furniture: Item[]) => { const have = ne
 
 export function findStatic(plan: PlanData, ref: StaticRef | null): StaticElement | null {
   if (!ref) return null;
-  const all: StaticElement[] = plan[ref.kind];
+  const all: StaticElement[] = plan[ref.kind] ?? [];
   return all.find((e) => e.id === ref.id) ?? null;
 }
 
@@ -107,11 +107,12 @@ export function removeStatic(plan: PlanData, ref: StaticRef): PlanData {
     case "fixtures": return { ...plan, fixtures: plan.fixtures.filter((e) => e.id !== ref.id) };
     case "dims": return { ...plan, dims: plan.dims.filter((e) => e.id !== ref.id) };
     case "labels": return { ...plan, labels: plan.labels.filter((e) => e.id !== ref.id) };
+    case "doors": return { ...plan, doors: (plan.doors ?? []).filter((e) => e.id !== ref.id) };
   }
 }
 
 /** Change fields of one drawn thing. Fields the thing doesn't have are the caller's mistake and simply ride along unused. */
-export function patchStatic(plan: PlanData, ref: StaticRef, patch: Partial<Wall & PlanWindow & Fixture & Dim & Label>): PlanData {
+export function patchStatic(plan: PlanData, ref: StaticRef, patch: Partial<Wall & PlanWindow & Fixture & Dim & Label & Door>): PlanData {
   const { id: _id, ...rest } = patch;
   const apply = <T extends { id: string }>(list: T[]): T[] => list.map((e) => (e.id === ref.id ? { ...e, ...rest } : e));
   switch (ref.kind) {
@@ -120,6 +121,7 @@ export function patchStatic(plan: PlanData, ref: StaticRef, patch: Partial<Wall 
     case "fixtures": return { ...plan, fixtures: apply(plan.fixtures) };
     case "dims": return { ...plan, dims: apply(plan.dims) };
     case "labels": return { ...plan, labels: apply(plan.labels) };
+    case "doors": return { ...plan, doors: apply(plan.doors ?? []) };
   }
 }
 

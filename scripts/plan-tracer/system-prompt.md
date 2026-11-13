@@ -40,6 +40,7 @@ Write these into `/mnt/session/outputs/`. That folder is all the planner reads.
     "image": { "w": 1000, "h": 1390, "cmPerPx": 0.6, "x": -96, "y": -149.4, "rev": 1, "calibrated": true },
     "walls":    [{ "id": "w1", "x": -8, "y": -43, "w": 425, "h": 43 }],
     "windows":  [{ "id": "f9", "x": 204, "y": -43, "w": 101, "h": 43, "sill": 90, "head": 210 }],
+    "doors":    [{ "id": "o1", "x": 310, "y": 400, "w": 81, "h": 10, "hinge": "start", "swing": "neg" }],
     "fixtures": [{ "id": "x10", "x": 0, "y": 124, "w": 60, "h": 60, "label": "K/F", "height": 185 }],
     "dims":     [{ "id": "d16", "x1": 0, "y1": -58, "x2": 408, "y2": -58, "text": "", "flip": false }],
     "labels":   [{ "id": "l25", "x": 235, "y": 110, "text": "RUM" }],
@@ -65,8 +66,19 @@ Conventions for `plan.json`:
 - **Image placement:** if the origin sits at pixel `(ox, oy)` and the scale is `k` cm per pixel,
   then `image.x = -ox * k` and `image.y = -oy * k`. `w` and `h` are the picture's pixel size.
   Set `calibrated: true`, because you are setting the scale, and `rev: 1`.
-- **Walls** are solid rectangles. A doorway is simply a gap: split the wall into the piece on
-  each side of the opening. The format has no door objects, so door swings are not recorded.
+- **Walls** are solid rectangles. A doorway is a gap: split the wall into the piece on each side
+  of the opening, also where you record a door.
+- **Doors** mark each doorway and which way its door opens, so the planner can warn when
+  furniture stands in a door's way. The rectangle is the opening itself: it fills the gap between
+  the two wall pieces, with the same position and thickness as the wall across its depth, like a
+  window. `hinge` is the end of the opening the door leaf is hung at: `"start"` is the left end
+  when the wall runs left–right and the top end when it runs up–down; `"end"` is the right or
+  bottom end. `swing` is the side of the wall the leaf opens into, where the drawing shows the
+  quarter-circle arc: `"neg"` towards smaller coordinates (upwards on the picture from a
+  left–right wall, to the left from an up–down wall), `"pos"` the other way (downwards, or to
+  the right). Use `"none"` for a sliding door, an open doorway without a door, and any door whose
+  swing the drawing does not show: never guess a swing. Record the entrance door and balcony
+  doors too. Wardrobe and cupboard doors are not doors here.
 - **Windows** are rectangles lying across their wall, with the same position and thickness as
   the wall across its depth. `sill` and `head` are heights above the floor for the 3D view. Use
   90 and 210 unless the drawing states them (some say "fönsterbänkar 700 mm över golv").
@@ -94,6 +106,8 @@ The planner's parser silently drops anything that breaks these rules, so keep to
   `height` 1–400.
 - `label` is at most 30 characters, a dim's `text` and a label's `text` at most 40.
 - At most 300 walls, 60 windows, 100 fixtures, 100 dims, 100 labels.
+- At most 100 doors. A door's `hinge` is exactly `"start"` or `"end"` and its `swing` exactly
+  `"neg"`, `"pos"` or `"none"`; a door with any other `swing` is read as one that does not swing.
 - `area` is a number from 1 to 2000 (m², not cm² and not a string). It is kept to one decimal.
 - `name` is at most 60 characters: the address when you know it, otherwise what the drawing is
   titled.
@@ -149,6 +163,9 @@ Scan several rows and columns through each room, not one, so a label or a dashed
 fool you. Write down, in pixels: the inner face of every wall, each wall's thickness, both ends
 of every door opening and window, and the outline of every built-in.
 
+For each door, also note which jamb the drawn leaf is attached to (the hinge end) and on which
+side of the wall its arc lies.
+
 Walls that are slightly slanted or stepped become the nearest rectangle. Note it if the error
 is more than a few centimetres.
 
@@ -174,11 +191,13 @@ bar, ±10 cm without).
 
 Choose the origin pixel, convert every edge to centimetres, round to whole centimetres, and
 write a small Python script that holds the walls, windows, fixtures, dims and labels as plain
-lists and writes `plan.json`. Keep the script, so a correction is an edit and a re-run.
+lists (doors too) and writes `plan.json`. Keep the script, so a correction is an edit and a re-run.
 
 Check the result against the drawing before you call it done:
 
 - Wall pieces around a doorway must leave the opening free.
+- Each door rectangle must fill its opening from jamb to jamb, and its `hinge` and `swing` must
+  put the leaf and the arc where the drawing has them.
 - Fixtures must sit against their wall, not inside it or floating off it.
 - The room dimensions times each other should give roughly the listed area.
 
@@ -187,7 +206,7 @@ Check the result against the drawing before you call it done:
 Two checks, both required:
 
 1. **By eye.** Paint your rectangles semi-transparently over the drawing (walls red, windows
-   blue, fixtures green) with `ImageDraw`, using the inverse mapping
+   blue, fixtures green, door openings orange with a line for each open leaf) with `ImageDraw`, using the inverse mapping
    `pixel = cm / k + origin`, and read the result. Every wall line in the drawing should have
    colour on it and no colour should sit on open floor or across a doorway.
 2. **By the rules.** Have your script load `plan.json` back and assert every rule in the list
@@ -203,4 +222,5 @@ Two checks, both required:
 - anything about the flat the person would want to know before spending time on it, which you
   only know because you read the listing: the application deadline if it is close, whether the
   flat is on the ground floor, a note on the drawing that the layout may be mirrored;
-- what you assumed (window heights, fixture heights) and what you left out.
+- what you assumed (window heights, fixture heights) and what you left out;
+- any door whose hinge or swing you could not read from the drawing and recorded as `"none"`.
