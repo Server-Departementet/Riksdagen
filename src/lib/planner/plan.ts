@@ -170,6 +170,40 @@ function compact<T>(values: (T | null)[]): T[] {
   return out;
 }
 
+/** A list of furniture, as in a plan's `items`. */
+export function sanitizeItems(input: unknown): Item[] {
+  const items = compact(list(input, 200).map((r): Item | null => {
+    const rid = id(r.id), x = coord(r.x), y = coord(r.y);
+    if (rid === null || x === null || y === null) return null;
+    const a = r.a === 90 || r.a === 180 || r.a === 270 ? r.a : 0;
+    const g = id(r.g), stack = STACK_MODES.find((m) => m === r.stack);
+    return {
+      id: rid, name: str(r.name, 30),
+      w: Math.round(num(r.w, 5, 600, 60)), d: Math.round(num(r.d, 5, 600, 60)), h: Math.round(num(r.h, 1, 300, 75)),
+      // Plans saved before there were models only knew "open underneath", which was the table.
+      model: ITEM_MODELS.find((m) => m === r.model) ?? (r.open === true ? "table" : "block"), x, y, a,
+      color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : COLORS[0],
+      ...(g ? { g } : {}),
+      ...(stack ? { stack } : {}),
+      ...(typeof r.lift === "number" && Number.isFinite(r.lift) ? { lift: Math.round(clamp(r.lift, 0, 300)) } : {}),
+    };
+  }));
+  dropLoneGroups(items);
+  return items;
+}
+
+/** How many pieces "Mina möbler" can hold */
+export const MAX_FURNITURE = 100;
+
+/**
+ * A minister's own furniture ("Mina möbler"): the pieces they own, kept apart from any plan so they
+ * can be unpacked into each one. Same shape as a plan's items, minus everything about where a piece
+ * stands: position, rotation, group and height above the floor belong to a plan.
+ */
+export function sanitizeFurniture(input: unknown): Item[] {
+  return sanitizeItems(input).slice(0, MAX_FURNITURE).map(({ g: _g, lift: _lift, ...it }) => ({ ...it, x: 0, y: 0, a: 0 as const }));
+}
+
 export function sanitizePlan(input: unknown): PlanData {
   const src = isObject(input) ? input : {};
   const plan = emptyPlan();
@@ -208,23 +242,7 @@ export function sanitizePlan(input: unknown): PlanData {
     if (rid === null || x === null || y === null) return null;
     return { id: rid, x, y, text: str(r.text, 40) };
   }));
-  plan.items = compact(list(src.items, 200).map((r): Item | null => {
-    const rid = id(r.id), x = coord(r.x), y = coord(r.y);
-    if (rid === null || x === null || y === null) return null;
-    const a = r.a === 90 || r.a === 180 || r.a === 270 ? r.a : 0;
-    const g = id(r.g), stack = STACK_MODES.find((m) => m === r.stack);
-    return {
-      id: rid, name: str(r.name, 30),
-      w: Math.round(num(r.w, 5, 600, 60)), d: Math.round(num(r.d, 5, 600, 60)), h: Math.round(num(r.h, 1, 300, 75)),
-      // Plans saved before there were models only knew "open underneath", which was the table.
-      model: ITEM_MODELS.find((m) => m === r.model) ?? (r.open === true ? "table" : "block"), x, y, a,
-      color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : COLORS[0],
-      ...(g ? { g } : {}),
-      ...(stack ? { stack } : {}),
-      ...(typeof r.lift === "number" && Number.isFinite(r.lift) ? { lift: Math.round(clamp(r.lift, 0, 300)) } : {}),
-    };
-  }));
-  dropLoneGroups(plan.items);
+  plan.items = sanitizeItems(src.items);
   // Out of bounds means a typo or another unit, so it is dropped rather than clamped to a number nobody stated.
   if (typeof src.area === "number" && src.area >= MIN_AREA && src.area <= MAX_AREA) plan.area = Math.round(src.area * 10) / 10;
   return plan;

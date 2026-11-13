@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Fixture, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
+import type { Fixture, Item, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
 import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, STACK_MODES, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
 import { dimLength, enclosedArea, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
-  addItem, duplicateItems, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
+  addItem, duplicateItems, unpackFurniture, unpacked, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
   rotateItems, ungroupItems,
 } from "@/lib/planner/edit";
 import { deletePlan, fetchPlan, fetchPlans, listLocal, readLocal, removeLocal, savePlan, uploadImage, writeLocal } from "@/lib/planner/client-store";
@@ -18,6 +18,8 @@ import { Stage3d } from "@/components/planner/stage-3d";
 import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
 import { TraceDialog } from "@/components/planner/trace-dialog";
+import { FurnitureDialog } from "@/components/planner/furniture-dialog";
+import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
 import type { TraceOverview, TraceStatus } from "@/lib/planner/tracer/config";
 import { download, fileSlug, picture, planFile, toPng } from "@/components/planner/export";
@@ -77,6 +79,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [trace, setTrace] = useState<TraceStatus | null>(null);
   const [traceDialog, setTraceDialog] = useState(false);
   const [traceReport, setTraceReport] = useState("");
+  // "Mina möbler": the minister's own furniture, unpacked into their plans.
+  const [furniture, setFurniture] = useState<Item[]>([]);
+  const [furnitureDialog, setFurnitureDialog] = useState(false);
 
   // The latest values, for timers and for handlers that run several times between renders.
   const docRef = useRef<PlanDoc | null>(null);
@@ -281,6 +286,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           setTrace(next);
           if (next.status === "running") return;
           void loadTracer();
+    void fetch("/api/planlosning/furniture", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() as Promise<FurnitureResponse> : null))
+      .then((body) => { if (body) setFurniture(body.items); })
+      .catch(() => undefined); // offline: the unpack button just stays away
           await refresh();
           if (next.status === "done") {
             setTraceReport(next.note);
@@ -344,9 +353,33 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     return id;
   }
 
+  /** Replace "Mina möbler". Shown at once; the server copy follows. */
+  function saveFurniture(next: Item[]) {
+    const before = furniture;
+    setFurniture(next);
+    fetch("/api/planlosning/furniture", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: next }) })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setFurniture(((await res.json()) as FurnitureResponse).items);
+      })
+      .catch(() => { setFurniture(before); toast.error("Kunde inte spara Mina möbler. Försök igen."); });
+  }
+
+  /** Put the pieces of "Mina möbler" that the open plan lacks into its parking box. */
+  function unpack() {
+    const d = docRef.current;
+    if (!d || !isMine(idRef.current)) return;
+    const result = unpackFurniture(d.data, furniture);
+    if (!result.ids.length) return;
+    editor.checkpoint();
+    editor.setPlan(result.plan, true);
+    setSelIds(result.ids);
+    setMode("furnish"); setIs3d(false);
+  }
+
   function createEmpty() {
-    // Start with the furniture you already have, unplaced.
-    const donor = docRef.current && isMine(idRef.current)
+    // Start with the furniture you already have, unplaced: "Mina möbler" when there is such a list, else whatever an earlier plan holds.
+    const donor = furniture.length ? { items: furniture } : docRef.current && isMine(idRef.current)
       ? docRef.current.data
       : metasRef.current.filter((m) => m.ownerId === me.id).map((m) => readLocal(m.id)?.data).find((d) => d?.items.length);
     const data = emptyPlan();
@@ -531,6 +564,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const drawnArea = useMemo(() => (walls && windows ? enclosedArea({ ...emptyPlan(), walls, windows }) : null), [walls, windows]);
   const drawnText = drawnArea === null ? "" : `Ritad golvyta ca ${areaText(drawnArea / 10_000)}`;
   const drawnHelp = "Golvet innanför ytterväggarna med nuvarande skala, innerväggar oräknade. Skiljer det sig mycket från boarean stämmer inte skalan.";
+  /** Pieces of "Mina möbler" that the open plan, if it is the minister's own, doesn't have yet. */
+  const missing = mine && plan ? unpacked(plan, furniture).length : 0;
   /** How far above the floor the single selected piece stands. */
   const standing = (one && stack?.z.get(one.id)) ?? 0;
 
@@ -738,6 +773,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                 </li>
               ))}
             </ul>
+            {mine && <button type="button" className={`${buttonClass} self-start`} onClick={() => setFurnitureDialog(true)}>Mina möbler ({furniture.length})</button>}
             {mine && <AddForm onAdd={(piece) => {
               const d = docRef.current;
               if (!d) return;
@@ -784,7 +820,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           ? <>
             <Stage key={currentId} planId={currentId} plan={plan} readOnly={!mine} mode={mode} tool={tool} hidden={is3d}
               sel={sel} onSelect={setSelIds} staticSel={staticSel} onSelectStatic={setStaticSel} opts={opts} editor={editor}
-              scaleLine={scaleLine} onScaleLine={setScaleLine} scaleAreas={scaleAreas} onScaleAreas={setScaleAreas} svgRef={stage2d} />
+              scaleLine={scaleLine} onScaleLine={setScaleLine} scaleAreas={scaleAreas} onScaleAreas={setScaleAreas} unpackable={missing} onUnpack={unpack} svgRef={stage2d} />
             {is3d && <Stage3d plan={plan} view={view3} setView={setView3} sel={sel} svgRef={stage3d} />}
           </>
           : <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-600 font-normal p-6 text-center">
@@ -798,6 +834,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
         void refresh();
         toast.info("AI:n har börjat rita av planlösningen. Det tar en stund.");
       }} />}
+      {furnitureDialog && <FurnitureDialog furniture={furniture} planItems={mine && plan ? plan.items : null} selected={sel} modelNames={MODEL_NAMES} missing={missing}
+        onSave={saveFurniture} onUnpack={() => { unpack(); setFurnitureDialog(false); }} onClose={() => setFurnitureDialog(false)} />}
       {traceReport && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="AI-ritningen är klar">
           <div className="bg-white rounded-xl p-4 flex flex-col gap-3 w-full max-w-2xl max-h-full">

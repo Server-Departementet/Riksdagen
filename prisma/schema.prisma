@@ -20,6 +20,7 @@ model User {
   importQueue      ImportQueueItem[]
   floorPlans       FloorPlan[]
   planTraces       PlanTrace[]
+  furnitureSet     FurnitureSet?
 }
 
 // Takeout plays waiting for the server-side import. The import API only
@@ -229,4 +230,14 @@ model PlanTrace {
 
   @@index([ownerId, createdAt])
   @@index([status])
+}
+
+// "Mina möbler": the furniture a minister owns, kept apart from any plan and
+// unpacked into each of theirs on /planlosning. One row per minister.
+model FurnitureSet {
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String @id
+
+  items     Json // Item[] without positions, see sanitizeFurniture in src/lib/planner/plan.ts
+  updatedAt DateTime @updatedAt
 }

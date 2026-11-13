@@ -1,6 +1,6 @@
 import type { Dim, Fixture, Item, Label, PlanData, PlanWindow, Wall } from "@/lib/planner/plan";
 import { COLORS, clamp, dropLoneGroups, uid } from "@/lib/planner/plan";
-import { bounds, itemBox, parkBox } from "@/lib/planner/geometry";
+import { bounds, itemBox, parkBox, parkItems } from "@/lib/planner/geometry";
 
 /*
  * Every change to a plan, as a pure function returning a new plan. The planner
@@ -72,6 +72,27 @@ export function addItem(plan: PlanData, piece: { name: string; w: number; d: num
   };
   return { plan: withItems(plan, [...plan.items, it]), id: it.id };
 }
+
+/**
+ * Add the pieces of "Mina möbler" that the plan doesn't have yet, unplaced. A piece keeps its id from
+ * the set, which is how the plan knows it is already there: unpacking twice adds nothing, and a piece
+ * deleted from the plan can be unpacked again.
+ */
+export function unpackFurniture(plan: PlanData, furniture: Item[]): { plan: PlanData; ids: string[] } {
+  const have = new Set(plan.items.map((i) => i.id));
+  const added = furniture.filter((f) => !have.has(f.id)).map((f) => ({ ...f }));
+  if (!added.length) return { plan, ids: [] };
+  parkItems(plan, added);
+  // Below whatever is already waiting in the parking box, so nothing lands on top of it.
+  const park = parkBox(plan);
+  const waiting = plan.items.map(itemBox).filter((b) => b.x < park.x + park.w && b.x + b.w > park.x && b.y + b.h > park.y);
+  const below = waiting.length ? Math.max(...waiting.map((b) => b.y + b.h)) - park.y : 0;
+  for (const it of added) it.y += below;
+  return { plan: withItems(plan, [...plan.items, ...added]), ids: added.map((a) => a.id) };
+}
+
+/** The pieces of "Mina möbler" that are not in the plan. */
+export const unpacked = (plan: PlanData, furniture: Item[]) => { const have = new Set(plan.items.map((i) => i.id)); return furniture.filter((f) => !have.has(f.id)); };
 
 export function findStatic(plan: PlanData, ref: StaticRef | null): StaticElement | null {
   if (!ref) return null;

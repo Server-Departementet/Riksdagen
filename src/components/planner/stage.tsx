@@ -53,7 +53,7 @@ const straight = (ax: number, ay: number, x: number, y: number) => (Math.abs(x -
 
 export function Stage(
   {
-    planId, plan, readOnly, mode, tool, hidden, sel, onSelect, staticSel, onSelectStatic, opts, editor, scaleLine, onScaleLine, scaleAreas, onScaleAreas, svgRef,
+    planId, plan, readOnly, mode, tool, hidden, sel, onSelect, staticSel, onSelectStatic, opts, editor, scaleLine, onScaleLine, scaleAreas, onScaleAreas, unpackable, onUnpack, svgRef,
   }: {
     planId: string;
     plan: PlanData;
@@ -74,6 +74,9 @@ export function Stage(
     /** The floor marked out with the area tool, waiting for its real size */
     scaleAreas: Rect[];
     onScaleAreas: (areas: Rect[]) => void;
+    /** How many pieces of "Mina möbler" this plan doesn't have yet; the button to unpack them shows when there are any */
+    unpackable: number;
+    onUnpack: () => void;
     svgRef: RefObject<SVGSVGElement | null>;
   },
 ) {
@@ -109,8 +112,10 @@ export function Stage(
     const b = drawingBox(plan, mode === "draw" || plan.walls.length === 0);
     const park = parkBox(plan), showPark = !readOnly || plan.items.some((i) => !inFlat(plan, i));
     const all = bounds(showPark ? [b, park] : [b]) ?? b;
-    const m = 30;
-    return { scale: clamp(Math.min(box.w / (all.w + 2 * m), box.h / (all.h + 2 * m)), 0.15, 8), cx: all.x + all.w / 2, cy: all.y + all.h / 2 };
+    // Screen pixels kept free at the bottom, for the buttons that sit under the parking box and in the corner.
+    const m = 30, foot = showPark ? 48 : 0;
+    const scale = clamp(Math.min(box.w / (all.w + 2 * m), (box.h - foot) / (all.h + 2 * m)), 0.15, 8);
+    return { scale, cx: all.x + all.w / 2, cy: all.y + all.h / 2 + foot / 2 / scale };
   };
 
   useEffect(() => {
@@ -403,7 +408,7 @@ export function Stage(
   const staticProps = (kind: StaticKind, id: string) => (drawing && tool === "select" ? { "data-static": `${kind}:${id}`, style: { cursor: "move" } } : {});
 
   return (
-    <div ref={wrapRef} className="absolute inset-0" style={{ display: hidden ? "none" : "block", background: C.bg }}>
+    <div ref={wrapRef} className="absolute inset-0 overflow-hidden" style={{ display: hidden ? "none" : "block", background: C.bg }}>
       <svg
         ref={svgRef} xmlns="http://www.w3.org/2000/svg" viewBox={viewBox}
         className="block size-full select-none touch-none" style={{ cursor }}
@@ -495,6 +500,15 @@ export function Stage(
               : <circle cx={picked.x} cy={picked.y + 8 * px} r={3 * px} fill={C.accent} style={{ pointerEvents: "none" }} />}
         </g>}
       </svg>
+
+      {/* Sits under the parking box and follows it around, but stays a readable size at any zoom. */}
+      {size && showPark && !readOnly && mode === "furnish" && unpackable > 0 && (
+        <button type="button" onClick={onUnpack}
+          className="absolute px-2.5 py-1.5 rounded-md border border-gray-300 bg-white shadow font-semibold text-sm whitespace-nowrap hover:border-gray-500"
+          style={{ left: (park.x - view.cx) * view.scale + size.w / 2, top: (park.y + park.h - view.cy) * view.scale + size.h / 2 + 8 }}>
+          Packa upp mina möbler ({unpackable})
+        </button>
+      )}
 
       <div className="absolute right-3 bottom-3 flex gap-1.5">
         <button type="button" aria-label="Zooma ut" onClick={() => zoomCentre(1 / 1.3)} className="min-w-10 px-2.5 py-1.5 rounded-md border border-gray-300 bg-white shadow font-semibold">−</button>
