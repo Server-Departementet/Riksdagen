@@ -24,6 +24,7 @@ import { ListingField, ListingInfo } from "@/components/planner/listing";
 import { briefText, listingMeta, today } from "@/lib/planner/listing";
 import { DoorFields } from "@/components/planner/door-fields";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
+import { IkeaDialog } from "@/components/planner/ikea-dialog";
 import { VariantPicker } from "@/components/planner/variants";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
@@ -93,6 +94,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   // False until the list has arrived: an empty list would otherwise pass for "nothing left to unpack".
   const [furnitureKnown, setFurnitureKnown] = useState(false);
   const [furnitureDialog, setFurnitureDialog] = useState(false);
+  const [ikeaDialog, setIkeaDialog] = useState(false);
   const [copying, setCopying] = useState(false);
 
   // The latest values, for timers and for handlers that run several times between renders.
@@ -884,7 +886,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                 </li>
               ))}
             </ul>
-            {mine && <button type="button" className={`${buttonClass} self-start`} onClick={() => setFurnitureDialog(true)}>Mina möbler ({furniture.length})</button>}
+            {mine && <div className="flex flex-wrap gap-2">
+              <button type="button" className={buttonClass} onClick={() => setFurnitureDialog(true)}>Mina möbler ({furniture.length})</button>
+              <button type="button" className={buttonClass} onClick={() => setIkeaDialog(true)}>Från IKEA</button>
+            </div>}
             {mine && <AddForm onAdd={(piece) => {
               const d = docRef.current;
               if (!d) return;
@@ -949,6 +954,14 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
         setTrace(started);
         void refresh();
         toast.info("AI:n har börjat rita av planlösningen. Det tar en stund.");
+      }} />}
+      {ikeaDialog && <IkeaDialog modelNames={MODEL_NAMES} onClose={() => setIkeaDialog(false)} onAdd={(product) => {
+        const d = docRef.current;
+        if (!d) return;
+        const added = addItem(d.data, product);
+        editor.checkpoint();
+        editor.setPlan(added.plan, true);
+        setSelIds([added.id]);
       }} />}
       {furnitureDialog && <FurnitureDialog furniture={furniture} planItems={mine && plan ? plan.items : null} selected={sel} modelNames={MODEL_NAMES} missing={missing}
         onSave={saveFurniture} onUnpack={() => { unpack(); setFurnitureDialog(false); }} onClose={() => setFurnitureDialog(false)} />}

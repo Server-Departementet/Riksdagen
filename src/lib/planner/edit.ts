@@ -63,11 +63,11 @@ export const nudgeItems = (plan: PlanData, ids: ReadonlySet<string>, dx: number,
   mapChosen(plan, ids, (it) => ({ ...it, x: it.x + dx, y: it.y + dy }));
 
 /** New pieces land in the parking box, stepping down so several in a row don't stack exactly. */
-export function addItem(plan: PlanData, piece: { name: string; w: number; d: number; h: number }): { plan: PlanData; id: string } {
+export function addItem(plan: PlanData, piece: { name: string; w: number; d: number; h: number; model?: Item["model"] }): { plan: PlanData; id: string } {
   const park = parkBox(plan), n = plan.items.length;
   const it: Item = {
     id: uid(), name: piece.name.slice(0, 30), w: clamp(Math.round(piece.w), 5, 600), d: clamp(Math.round(piece.d), 5, 600),
-    h: clamp(Math.round(piece.h), 1, 300), model: "block", a: 0, color: COLORS[n % COLORS.length] ?? COLORS[0],
+    h: clamp(Math.round(piece.h), 1, 300), model: piece.model ?? "block", a: 0, color: COLORS[n % COLORS.length] ?? COLORS[0],
     x: park.x + park.w / 2, y: park.y + 30 + (n % 8) * 12 + piece.d / 2,
   };
   return { plan: withItems(plan, [...plan.items, it]), id: it.id };
