@@ -10,7 +10,7 @@ import {
   addItem, duplicateItems, unpackFurniture, unpacked, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
   rotateItems, ungroupItems,
 } from "@/lib/planner/edit";
-import { deletePlan, fetchPlan, fetchPlans, listLocal, readLocal, removeLocal, savePlan, uploadImage, writeLocal } from "@/lib/planner/client-store";
+import { copyPlan, deletePlan, fetchPlan, fetchPlans, listLocal, readLocal, removeLocal, savePlan, uploadImage, writeLocal } from "@/lib/planner/client-store";
 import type { View3d } from "@/lib/planner/scene3d";
 import type { Editor, Line, Mode, Tool, ViewOptions } from "@/components/planner/stage";
 import { Stage } from "@/components/planner/stage";
@@ -83,6 +83,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   // "Mina möbler": the minister's own furniture, unpacked into their plans.
   const [furniture, setFurniture] = useState<Item[]>([]);
   const [furnitureDialog, setFurnitureDialog] = useState(false);
+  const [copying, setCopying] = useState(false);
 
   // The latest values, for timers and for handlers that run several times between renders.
   const docRef = useRef<PlanDoc | null>(null);
@@ -437,6 +438,35 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
     toast.success("Bilden är uppladdad. Sätt skalan härnäst.");
   }
 
+  /** Copy the open plan, whoever owns it, into a new plan of this minister's own, and open that. */
+  async function copy() {
+    const id = idRef.current;
+    if (!id || copying) return;
+    const own = isMine(id), owner = metasRef.current.find((m) => m.id === id)?.ownerName;
+    setCopying(true);
+    try {
+      // The server copies what it has stored, so our own unsaved edits have to get there first.
+      if (own) {
+        clearTimeout(timer.current);
+        if (!await push(id)) throw new Error("offline");
+      }
+      const res = await copyPlan(id);
+      if (res.status === "full") { toast.error("Du har redan så många planlösningar som får plats. Ta bort någon först."); return; }
+      if (res.status === "missing") { toast.error("Planlösningen finns inte längre."); void refresh(); return; }
+      const made = res.plan;
+      // Listed before it is opened: open() goes by the list to tell that the copy is ours to edit.
+      setMetas([{ id: made.id, name: made.name, ownerId: me.id, ownerName: me.name, editedAt: made.editedAt }, ...metasRef.current.filter((m) => m.id !== made.id)]);
+      void open(made.id);
+      toast.success(own ? "Kopian är skapad." : `Kopian är din. ${owner ?? "Ägaren"}s möbler följde inte med – ställ in dina egna med Packa upp mina möbler.`);
+    }
+    catch {
+      toast.error("Kunde inte kopiera planlösningen. Försök igen.");
+    }
+    finally {
+      setCopying(false);
+    }
+  }
+
   async function importFile(file: File) {
     let parsed: ReturnType<typeof parsePlanFile> = null;
     try { parsed = parsePlanFile(JSON.parse(await file.text())); }
@@ -591,11 +621,15 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             <button type="button" className={buttonClass} onClick={() => fileInput.current?.click()}>Importera</button>
             {tracer?.configured && <button type="button" className={buttonClass} disabled={trace?.status === "running"} onClick={() => setTraceDialog(true)}>Rita av med AI</button>}
             {doc && <button type="button" className={buttonClass} onClick={() => void exportFile()}>Exportera</button>}
+            {doc && meta && mine && <button type="button" className={buttonClass} disabled={copying} title="Ny planlösning med samma ritning, bild och möbler" onClick={() => void copy()}>{copying ? "Kopierar…" : "Skapa en kopia"}</button>}
           </div>
           <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importFile(f); }} />
           {meta && (mine
             ? <p className="text-sm text-gray-600 font-normal" role="status">{SYNC_TEXT[sync]}</p>
-            : <p className="text-sm text-gray-600 font-normal">{meta.ownerName}s planlösning. Du kan titta men inte ändra. Exportera och importera den för att få en egen kopia.</p>)}
+            : <>
+              <p className="text-sm text-gray-600 font-normal">{meta.ownerName}s planlösning. Du kan titta men inte ändra. Kopiera den för att få en egen att möblera: ritningen och bilden följer med, {meta.ownerName}s möbler gör det inte.</p>
+              {doc && <button type="button" className={`${primaryClass} self-start`} disabled={copying} title="Ny planlösning hos dig med samma ritning och bild, utan möbler" onClick={() => void copy()}>{copying ? "Kopierar…" : "Kopiera till mina"}</button>}
+            </>)}
           {trace?.status === "running" && (
             <p className="text-sm font-normal border border-orange-200 bg-orange-50 rounded-md px-2 py-1.5" role="status">
               <span className="font-semibold">AI:n ritar av en planlösning</span> · steg {trace.step}
