@@ -7,7 +7,7 @@ import { DEFAULT_HEAD, DEFAULT_SILL, clamp, uid } from "@/lib/planner/plan";
 import type { Guide } from "@/lib/planner/geometry";
 import {
   bounds, dimLength, drawingBox, fitWindowToWall, flatBox, gaps, groupOf, imageRect, inFlat, isHit, itemBox, obstacles,
-  parkBox, rectFrom, snapBox, snapPoint, snapTolerance,
+  parkBox, rectFrom, snapBox, snapPoint, snapTolerance, stacking,
 } from "@/lib/planner/geometry";
 import type { StaticElement, StaticKind, StaticRef } from "@/lib/planner/edit";
 import { findStatic, patchStatic } from "@/lib/planner/edit";
@@ -386,6 +386,7 @@ export function Stage(
 
   const px = 1 / view.scale; // one screen pixel, in cm
   const drawing = mode === "draw" && !readOnly;
+  const stack = stacking(plan);
   const chosen = plan.items.filter((i) => sel.has(i.id));
   const chosenBox = bounds(chosen.map(itemBox));
   const flat = flatBox(plan), park = parkBox(plan), image = imageRect(plan);
@@ -440,8 +441,8 @@ export function Stage(
 
         {/* Everything that is about editing rather than the plan: left out of exports */}
         <g data-noexport="" style={{ pointerEvents: "none" }}>
-          {!drawing && plan.items.filter((it) => sel.has(it.id) || isHit(plan, it)).map((it) => {
-            const b = itemBox(it), hit = isHit(plan, it);
+          {!drawing && plan.items.map((it) => ({ it, hit: isHit(plan, it, stack) })).filter(({ it, hit }) => hit || sel.has(it.id)).map(({ it, hit }) => {
+            const b = itemBox(it);
             return <rect key={it.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={3} fill="none"
               stroke={hit ? C.bad : C.text} strokeWidth={hit ? 3.5 : 3} strokeDasharray={hit ? "7 4" : undefined} />;
           })}

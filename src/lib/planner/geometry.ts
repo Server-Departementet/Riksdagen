@@ -31,10 +31,53 @@ export const solids = (plan: PlanData): Rect[] => [...plan.walls, ...plan.fixtur
 export const obstacles = (plan: PlanData, skip: Item[]): Rect[] =>
   [...solids(plan), ...plan.items.filter((o) => !skip.includes(o)).map(itemBox)];
 
+/** How furniture is stacked: the height each piece stands at, and which pairs of things are stacked rather than colliding. */
+export type Stacking = { z: Map<string, number>; pairs: Set<string> };
+const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+/** How much of a piece's footprint has to lie on something for it to count as standing on it, not bumping into it. */
+const STACK_SHARE = 0.5;
+/**
+ * Whether something overlapping an open table is under it or on it can only be guessed from its height:
+ * what stands on the floor under a desk (drawer unit, pedestal) nearly reaches the top, what stands on a
+ * desk (lamp, screen) is lower than that. From this share of the table's height up to the table's height, it is under.
+ */
+const UNDER_SHARE = 0.7;
+
+/**
+ * Pieces that overlap a lot are taken to be stacked: a lamp on a table, a microwave on the kitchen
+ * bench, a table on a rug. The piece with the smaller footprint goes on top; of two equal ones, the
+ * later in the list. Something almost as high as an open table (a drawer unit) stands under it
+ * instead. Fixed fittings can be stood on; walls can't.
+ */
+export function stacking(plan: PlanData): Stacking {
+  const z = new Map<string, number>(), pairs = new Set<string>();
+  const area = (r: Rect) => r.w * r.h;
+  const shared = (a: Rect, b: Rect) =>
+    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  // `under` is the height of the free space beneath an open piece.
+  const placed: { id: string; box: Rect; floor: number; top: number; under: number }[] =
+    plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, floor: 0, top: f.height, under: 0 }));
+  const bySize = plan.items.map((it) => ({ it, box: itemBox(it) })).sort((a, b) => area(b.box) - area(a.box));
+  for (const { it, box } of bySize) {
+    let floor = 0;
+    for (const p of placed) {
+      if (shared(box, p.box) < STACK_SHARE * area(box)) continue;
+      pairs.add(pairKey(it.id, p.id));
+      floor = Math.max(floor, it.h < p.under && it.h >= UNDER_SHARE * p.under ? p.floor : p.top);
+    }
+    z.set(it.id, floor);
+    placed.push({ id: it.id, box, floor, top: floor + it.h, under: it.open ? it.h : 0 });
+  }
+  return { z, pairs };
+}
+
 // Pieces in one group may overlap on purpose (a drawer unit under a desk), so they don't flag each other.
-export function isHit(plan: PlanData, it: Item): boolean {
-  const b = itemBox(it);
-  return obstacles(plan, groupOf(plan.items, it)).some((o) => overlap(b, o));
+// Neither do pieces that are stacked.
+export function isHit(plan: PlanData, it: Item, stack: Stacking = stacking(plan)): boolean {
+  const b = itemBox(it), mates = groupOf(plan.items, it);
+  return plan.walls.some((w) => overlap(b, w))
+    || plan.fixtures.some((f) => overlap(b, f) && !stack.pairs.has(pairKey(it.id, `fixture:${f.id}`)))
+    || plan.items.some((o) => !mates.includes(o) && overlap(b, itemBox(o)) && !stack.pairs.has(pairKey(it.id, o.id)));
 }
 
 export const imageRect = (plan: PlanData): Rect | null =>

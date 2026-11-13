@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Fixture, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect } from "@/lib/planner/plan";
 import { COLORS, MAX_NAME_LENGTH, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
-import { dimLength, isHit, parkItems, rescale, unionArea } from "@/lib/planner/geometry";
+import { dimLength, isHit, parkItems, rescale, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
   addItem, duplicateItems, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
@@ -474,7 +474,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   ].filter((g) => g.list.length);
 
   const oneGroup = chosen.length > 1 && chosen.every((i) => i.g && i.g === chosen[0]?.g);
-  const hits = plan ? chosen.some((i) => isHit(plan, i)) : false;
+  const stack = plan ? stacking(plan) : null;
+  const hits = plan && stack ? chosen.some((i) => isHit(plan, i, stack)) : false;
 
   return (
     <div className="grid w-full h-(--screen-height) grid-cols-[320px_1fr] max-md:grid-cols-1 max-md:grid-rows-[56%_1fr] text-gray-900">
@@ -623,7 +624,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                     <span className="size-3 rounded-xs flex-none" style={{ background: i.color }} />
                     <span className="truncate">{i.name}</span>
                     {i.g && <span className="text-xs text-gray-500 border border-gray-300 rounded-full px-1.5 font-normal">grupp</span>}
-                    {isHit(plan, i) && <span className="text-xs text-red-700 font-normal">överlappar</span>}
+                    {(stack?.z.get(i.id) ?? 0) > 0 && <span className="text-xs text-gray-500 border border-gray-300 rounded-full px-1.5 font-normal">staplad</span>}
+                    {isHit(plan, i, stack ?? undefined) && <span className="text-xs text-red-700 font-normal">överlappar</span>}
                     <span className="ml-auto text-gray-500 tabular-nums font-normal whitespace-nowrap">{i.w} × {i.d}</span>
                   </button>
                 </li>
@@ -664,7 +666,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           Shift-klick väljer flera · G grupperar · U delar upp<br />
           R vrider · D kopierar · Del tar bort · piltangenter flyttar 1 cm (Shift 10)<br />
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />
-          Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.
+          Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.<br />
+          Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är nästan lika hög som bordet.
         </p>}
       </aside>
 

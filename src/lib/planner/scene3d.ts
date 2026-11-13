@@ -1,5 +1,5 @@
 import type { PlanData, Rect } from "@/lib/planner/plan";
-import { flatBox, inFlat, itemBox } from "@/lib/planner/geometry";
+import { flatBox, inFlat, itemBox, stacking } from "@/lib/planner/geometry";
 
 /*
  * The crude 3D view: everything is an upright box. The camera is orthographic,
@@ -92,17 +92,19 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
   for (const f of plan.fixtures) {
     for (const part of without(f, [...walls, ...plan.windows])) out.push({ ...part, z0: 0, z1: f.height, color: "#f1ece2" });
   }
+  const stack = stacking(plan);
   for (const it of plan.items) {
     if (!inFlat(plan, it)) continue;
-    const b = itemBox(it), common = { color: it.color, id: it.id };
+    // Stacked pieces stand on whatever is under them.
+    const b = itemBox(it), common = { color: it.color, id: it.id }, z = stack.z.get(it.id) ?? 0;
     if (it.open && it.h > 12 && Math.min(b.w, b.h) > 16) {
       // Table-like: a 4 cm top on four legs, so things can be seen (and placed) underneath.
-      out.push({ ...b, z0: it.h - 4, z1: it.h, ...common, label: it.name });
+      out.push({ ...b, z0: z + it.h - 4, z1: z + it.h, ...common, label: it.name });
       for (const [lx, ly] of [[b.x + 2, b.y + 2], [b.x + b.w - 6, b.y + 2], [b.x + 2, b.y + b.h - 6], [b.x + b.w - 6, b.y + b.h - 6]] as Point[]) {
-        out.push({ x: lx, y: ly, w: 4, h: 4, z0: 0, z1: it.h - 4, ...common });
+        out.push({ x: lx, y: ly, w: 4, h: 4, z0: z, z1: z + it.h - 4, ...common });
       }
     }
-    else out.push({ ...b, z0: 0, z1: it.h, ...common, label: it.name });
+    else out.push({ ...b, z0: z, z1: z + it.h, ...common, label: it.name });
   }
   return out;
 }
