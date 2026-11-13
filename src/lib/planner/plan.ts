@@ -11,7 +11,11 @@ export type Wall = Rect & { id: string };
 /** Drawn across a wall. `sill` and `head` are heights above the floor, for the 3D view. */
 export type PlanWindow = Rect & { id: string; sill: number; head: number };
 /** Built-in things furniture can't overlap: kitchen units, wardrobes, fridge. */
-export type Fixture = Rect & { id: string; label: string; height: number };
+/**
+ * `height` is the fitting's own height. `lift` is how far above the floor it starts, for what hangs on
+ * the wall (wall cabinets, a hat shelf): the floor under it is free for anything that fits.
+ */
+export type Fixture = Rect & { id: string; label: string; height: number; lift?: number };
 /** A measurement line. Shows its own length unless `text` says otherwise. */
 export type Dim = { id: string; x1: number; y1: number; x2: number; y2: number; text: string; flip: boolean };
 export type Label = { id: string; x: number; y: number; text: string };
@@ -230,7 +234,8 @@ export function sanitizePlan(input: unknown): PlanData {
   }));
   plan.fixtures = compact(list(src.fixtures, 100).map((r) => {
     const base = rect(r);
-    return base && { ...base, label: str(r.label, 30), height: Math.round(num(r.height, 1, 400, 210)) };
+    const lift = Math.round(num(r.lift, 0, 300, 0));
+    return base && { ...base, label: str(r.label, 30), height: Math.round(num(r.height, 1, 400, 210)), ...(lift > 0 ? { lift } : {}) };
   }));
   plan.dims = compact(list(src.dims, 100).map((r) => {
     const rid = id(r.id), x1 = coord(r.x1), y1 = coord(r.y1), x2 = coord(r.x2), y2 = coord(r.y2);

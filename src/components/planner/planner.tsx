@@ -55,7 +55,8 @@ const TOOL_HELP: Record<Tool, string> = {
 };
 const MODEL_NAMES: Record<ItemModel, string> = { "block": "Block", "table": "Bord", "chair": "Matstol", "office-chair": "Kontorsstol", "cylinder": "Cylinder" };
 const STACK_NAMES: Record<StackMode, string> = { floor: "Alltid på golvet", top: "Ovanpå", under: "Under" };
-const FIXTURE_PRESETS: readonly (readonly [string, number])[] = [["Kök", 90], ["Garderob", 210], ["Kyl/frys", 195], ["Städskåp", 210]];
+// Name, own height, and height above the floor for what hangs on the wall.
+const FIXTURE_PRESETS: readonly (readonly [string, number, number])[] = [["Kök", 90, 0], ["Garderob", 210, 0], ["Kyl/frys", 195, 0], ["Städskåp", 210, 0], ["Överskåp", 70, 140], ["Hatthylla", 30, 170]];
 
 export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: string }; plans: PlanMeta[]; initialPlanId: string | null }) {
   const [metas, setMetaState] = useState(plans);
@@ -680,10 +681,12 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
               <div className="grid grid-cols-2 gap-2">
                 <TextField label="Namn" value={(picked as Fixture).label} maxLength={30} onStart={editor.checkpoint} onChange={(label) => editor.setPlan(patchStatic(plan, staticSel, { label }), true)} />
                 <NumField label="Höjd (cm)" value={(picked as Fixture).height} min={1} max={400} onStart={editor.checkpoint} onChange={(height) => editor.setPlan(patchStatic(plan, staticSel, { height }), true)} />
+                <NumField label="Höjd över golvet (cm)" value={(picked as Fixture).lift ?? 0} min={0} max={300} onStart={editor.checkpoint} onChange={(lift) => editor.setPlan(patchStatic(plan, staticSel, { lift }), true)} />
               </div>
+              {((picked as Fixture).lift ?? 0) > 0 && <p className="text-xs text-gray-500 font-normal">Sitter på väggen: möbler som får plats under kan stå där.</p>}
               <div className="flex flex-wrap gap-1.5">
-                {FIXTURE_PRESETS.map(([label, height]) => (
-                  <button key={label} type="button" className={buttonClass} onClick={() => change((p) => patchStatic(p, staticSel, { label, height }))}>{label}</button>
+                {FIXTURE_PRESETS.map(([label, height, lift]) => (
+                  <button key={label} type="button" className={buttonClass} onClick={() => change((p) => patchStatic(p, staticSel, { label, height, lift }))}>{label}</button>
                 ))}
               </div>
             </>}

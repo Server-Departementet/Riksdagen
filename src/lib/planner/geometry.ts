@@ -79,11 +79,13 @@ export function stacking(plan: PlanData): Stacking {
   const shared = (a: Rect, b: Rect) =>
     Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
   // `rests` is what the thing stands on, or under. Fixtures have no `it` and always stand on the floor.
-  type Thing = { id: string; box: Rect; h: number; it?: Item; rests: { on: Thing; under: boolean }[] };
-  const fixtures: Thing[] = plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, h: f.height, rests: [] }));
-  const pieces: Thing[] = plan.items.map((it) => ({ id: it.id, box: itemBox(it), h: it.h, it, rests: [] })).sort((a, b) => area(b.box) - area(a.box));
+  // `lift` is set for what is fixed above the floor: a piece with a height of its own, a wall-hung fitting.
+  type Thing = { id: string; box: Rect; h: number; it?: Item; lift?: number; rests: { on: Thing; under: boolean }[] };
+  const fixtures: Thing[] = plan.fixtures.map((f) => ({ id: `fixture:${f.id}`, box: f, h: f.height, ...(f.lift ? { lift: f.lift } : {}), rests: [] }));
+  const pieces: Thing[] = plan.items.map((it) => ({ id: it.id, box: itemBox(it), h: it.h, it, ...(it.lift !== undefined ? { lift: it.lift } : {}), rests: [] }))
+    .sort((a, b) => area(b.box) - area(a.box));
   /** The height of the free space beneath a thing: below a table's top, and below anything fixed above the floor. */
-  const room = (p: Thing) => (p.it?.lift ?? 0) + (p.it?.model === "table" ? p.h : 0);
+  const room = (p: Thing) => (p.lift ?? 0) + (p.it?.model === "table" ? p.h : 0);
   /** A floor covering: a piece this low, lying on the floor. */
   const rug = (t: Thing) => !!t.it && t.it.lift === undefined && t.h <= RUG_HEIGHT;
   const told = (t: Thing) => t.it?.stack === "top" || t.it?.stack === "under";
@@ -97,7 +99,10 @@ export function stacking(plan: PlanData): Stacking {
     const pushedIn = free > 0 && on > 0.25 && (it.stack === "under" || (chair && it.stack !== "top"));
     if (!pushedIn && on < STACK_SHARE * area(t.box)) return false;
     pairs.add(pairKey(t.id, p.id));
-    t.rests.push({ on: p, under: it.stack !== "top" && (pushedIn || (it.h < free && it.h >= UNDER_SHARE * free)) });
+    // Under a table only what nearly reaches its top counts as standing under it (a lamp is on the table).
+    // Under something fixed above the floor, whatever fits is under it: nobody stands a stool on a wall cabinet.
+    const fits = p.lift !== undefined ? it.h <= p.lift : it.h < free && it.h >= UNDER_SHARE * free;
+    t.rests.push({ on: p, under: it.stack !== "top" && (pushedIn || fits) });
     return true;
   };
   pieces.forEach((t, i) => {
@@ -121,14 +126,14 @@ export function stacking(plan: PlanData): Stacking {
   const busy = new Set<string>();
   const level = (t: Thing): number => {
     const known = z.get(t.id);
-    if (!t.it || known !== undefined) return known ?? 0;
+    if (!t.it || known !== undefined) return known ?? t.lift ?? 0;
     let floor = t.it.lift ?? 0;
     busy.add(t.id);
     for (const { on, under } of t.rests) {
       // Settings can make pieces rest on each other in a circle. The link that would close the circle is left out.
       if (busy.has(on.id)) continue;
       // Under a table is where the table stands; under a piece fixed above the floor is the floor.
-      floor = Math.max(floor, under ? (on.it?.lift === undefined ? level(on) : 0) : level(on) + on.h);
+      floor = Math.max(floor, under ? (on.lift === undefined ? level(on) : 0) : level(on) + on.h);
     }
     busy.delete(t.id);
     z.set(t.id, floor);
@@ -136,8 +141,9 @@ export function stacking(plan: PlanData): Stacking {
   };
   for (const t of pieces) level(t);
 
-  for (const t of pieces) {
-    if (t.it?.lift === undefined) continue;
+  // Whatever is fixed above the floor only collides with what shares its height.
+  for (const t of [...fixtures, ...pieces]) {
+    if (t.lift === undefined) continue;
     for (const o of [...fixtures, ...pieces]) {
       if (o === t || shared(t.box, o.box) <= 0) continue;
       if (level(t) >= level(o) + o.h || level(o) >= level(t) + t.h) pairs.add(pairKey(t.id, o.id));

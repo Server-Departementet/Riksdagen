@@ -536,7 +536,8 @@ function FixtureShape({ fixture: f, hit }: { fixture: Fixture; hit: HitProps }) 
   // A long label in a tall, narrow unit reads better turned on its side.
   const turned = f.h > f.w && f.label.length * 7 > f.w;
   return <g {...hit}>
-    <rect x={f.x} y={f.y} width={f.w} height={f.h} fill={C.fix} stroke={C.fixLine} strokeWidth={1} />
+    {/* Dashed and paler when it hangs on the wall: the floor under it is free. */}
+    <rect x={f.x} y={f.y} width={f.w} height={f.h} fill={C.fix} fillOpacity={f.lift ? 0.45 : 1} stroke={C.fixLine} strokeWidth={1} strokeDasharray={f.lift ? "5 4" : undefined} />
     {f.label && <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fill={C.muted} transform={turned ? `rotate(-90 ${cx} ${cy})` : undefined}
       style={{ fontWeight: 400, pointerEvents: "none" }}>{f.label}</text>}
   </g>;

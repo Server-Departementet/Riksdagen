@@ -101,7 +101,7 @@ function boxes(plan: PlanData, wallH: number): Box3[] {
   }
   // Fittings drawn a little into a wall give way to it, for the same reason the walls are pulled apart.
   for (const f of plan.fixtures) {
-    for (const part of without(f, [...walls, ...plan.windows])) out.push({ ...part, z0: 0, z1: f.height, color: "#f1ece2" });
+    for (const part of without(f, [...walls, ...plan.windows])) out.push({ ...part, z0: f.lift ?? 0, z1: (f.lift ?? 0) + f.height, color: "#f1ece2" });
   }
   const stack = stacking(plan);
   for (const it of plan.items) {
