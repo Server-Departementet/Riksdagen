@@ -12,11 +12,12 @@ import {
 import type { StaticElement, StaticKind, StaticRef } from "@/lib/planner/edit";
 import { findStatic, patchStatic } from "@/lib/planner/edit";
 import { imageUrl } from "@/lib/planner/client-store";
+import { NorthArrow, WindowFacings } from "@/components/planner/north";
 
 export type Mode = "furnish" | "draw";
 export type Tool = "select" | "wall" | "window" | "fixture" | "dim" | "label" | "scale" | "area";
 export type Line = { x1: number; y1: number; x2: number; y2: number };
-export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean };
+export type ViewOptions = { snap: boolean; dims: boolean; gaps: boolean; overlay: boolean; overlayOpacity: number; multi: boolean; sun: boolean };
 
 /** How the stage changes the plan. The planner owns the plan, its undo history and saving. */
 export type Editor = {
@@ -429,6 +430,7 @@ export function Stage(
           {plan.area !== undefined && (
             <text x={frame.x} y={frame.y + frame.h + 15} fontSize={12} fill={C.muted} style={{ fontWeight: 400, pointerEvents: "none" }}>Boarea {areaText(plan.area)}</text>
           )}
+          <NorthArrow plan={plan} />
         </g>
 
         {showPark && <g data-noexport="">
@@ -437,6 +439,7 @@ export function Stage(
         </g>}
 
         {opts.dims && <g>{plan.dims.map((d) => <DimShape key={d.id} dim={d} hit={staticProps("dims", d.id)} />)}</g>}
+        {opts.sun && <WindowFacings plan={plan} />}
 
         {image && plan.image && (opts.overlay || drawing) && (
           <image data-noexport="" href={imageUrl(planId, plan.image.rev)} x={image.x} y={image.y} width={image.w} height={image.h}

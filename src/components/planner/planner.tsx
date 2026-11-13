@@ -18,6 +18,7 @@ import { Stage3d } from "@/components/planner/stage-3d";
 import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
 import { TraceDialog } from "@/components/planner/trace-dialog";
+import { NorthField, SunInfo } from "@/components/planner/north";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
@@ -73,7 +74,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const [scaleAreas, setScaleAreas] = useState<Rect[]>([]);
   const [is3d, setIs3d] = useState(false);
   const [view3, setView3] = useState<View3d>({ yaw: -35, pitch: 48, zoom: 1, px: 0, py: 0, wallH: 130 });
-  const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false });
+  const [opts, setOpts] = useState<ViewOptions>({ snap: true, dims: true, gaps: true, overlay: false, overlayOpacity: 55, multi: false, sun: true });
   const [cropFile, setCropFile] = useState<File | null>(null);
   // The AI tracer: what the server offers, the trace being followed, and the report of the last finished one.
   const [tracer, setTracer] = useState<TraceOverview | null>(null);
@@ -660,6 +661,8 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <p className="text-sm font-normal">Boarea {areaText(plan.area)}{drawnText && <span className="text-gray-600" title={drawnHelp}> · {drawnText.toLowerCase()}</span>}</p>
         )}
 
+        {plan && !mine && <SunInfo plan={plan} />}
+
         {doc && plan && mine && <>
           <div className="flex gap-2 items-end">
             <div className="flex-1 min-w-0">
@@ -675,6 +678,9 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
             </div>
             {plan.area !== undefined && drawnText && <p className="text-sm text-gray-600 font-normal pb-1.5" title={drawnHelp}>{drawnText}</p>}
           </div>
+          <NorthField value={plan.bearing} onStart={editor.checkpoint}
+            onChange={(bearing) => { const { bearing: _old, ...rest } = plan; editor.setPlan(bearing === undefined ? rest : { ...rest, bearing }, true); }} />
+          <SunInfo plan={plan} />
           <Segments value={mode} options={[["furnish", "Möblera"], ["draw", "Rita planlösning"]]}
             onChange={(m) => { setMode(m); setTool("select"); setStaticSel(null); setScaleLine(null); setScaleAreas([]); if (m === "draw") setIs3d(false); }} />
         </>}
@@ -848,6 +854,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           {mine && <Check label="Fäst mot väggar och möbler" checked={opts.snap} onChange={(snap) => setOpts({ ...opts, snap })} />}
           <Check label="Visa mått" checked={opts.dims} onChange={(dims) => setOpts({ ...opts, dims })} />
           <Check label="Visa avstånd runt markerad möbel" checked={opts.gaps} onChange={(gaps) => setOpts({ ...opts, gaps })} />
+          {plan.bearing !== undefined && !is3d && <Check label="Visa väderstreck vid fönstren" checked={opts.sun} onChange={(sun) => setOpts({ ...opts, sun })} />}
           {plan.image && !drawing && <>
             <Check label="Visa planritningen ovanpå" checked={opts.overlay} onChange={(overlay) => setOpts({ ...opts, overlay })} />
             {opts.overlay && <OpacitySlider value={opts.overlayOpacity} onChange={(v) => setOpts({ ...opts, overlayOpacity: v })} />}

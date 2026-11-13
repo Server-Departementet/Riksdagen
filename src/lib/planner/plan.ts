@@ -94,6 +94,13 @@ export type PlanData = {
    * it is what the flat is said to be, never worked out from the drawing.
    */
   area?: number;
+  /**
+   * Which way the plan is turned: the compass bearing that "up" on the plan (towards smaller y) points to, in whole
+   * degrees clockwise from north, 0–359. 0: north is up. 90: up is east, so north is to the left. 180: north is
+   * down. 270: up is west, north is to the right. A north arrow drawn on the plan therefore points (360 − bearing)°
+   * clockwise from up. Left out when nobody has said which way north is: nothing about the sun is shown then.
+   */
+  bearing?: number;
 };
 
 /** What the plan list knows about each plan */
@@ -140,6 +147,9 @@ export const MIN_AREA = 1;
 export const MAX_AREA = 2000;
 /** An area in m² as Swedes write it: "38 m²", "38,5 m²". */
 export const areaText = (m2: number) => `${m2.toLocaleString("sv-SE", { maximumFractionDigits: 1 })} m²`;
+
+/** PlanData.bearing is a whole number of degrees from 0 to this. */
+export const MAX_BEARING = 359;
 
 export const DEFAULT_SILL = 90;
 export const DEFAULT_HEAD = 210;
@@ -266,6 +276,8 @@ export function sanitizePlan(input: unknown): PlanData {
   plan.items = sanitizeItems(src.items);
   // Out of bounds means a typo or another unit, so it is dropped rather than clamped to a number nobody stated.
   if (typeof src.area === "number" && src.area >= MIN_AREA && src.area <= MAX_AREA) plan.area = Math.round(src.area * 10) / 10;
+  // 360 is north again. Anything else out of range is no compass bearing, so the direction stays unknown.
+  if (typeof src.bearing === "number" && src.bearing >= 0 && src.bearing <= 360) plan.bearing = Math.round(src.bearing) % 360;
   return plan;
 }
 

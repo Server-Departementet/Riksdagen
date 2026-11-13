@@ -37,6 +37,7 @@ Write these into `/mnt/session/outputs/`. That folder is all the planner reads.
   "data": {
     "v": 1,
     "area": 24.5,
+    "bearing": 270,
     "image": { "w": 1000, "h": 1390, "cmPerPx": 0.6, "x": -96, "y": -149.4, "rev": 1, "calibrated": true },
     "walls":    [{ "id": "w1", "x": -8, "y": -43, "w": 425, "h": 43 }],
     "windows":  [{ "id": "f9", "x": 204, "y": -43, "w": 101, "h": 43, "sill": 90, "head": 210 }],
@@ -84,6 +85,16 @@ Conventions for `plan.json`:
   the flat's total. Never fill it with an area you worked out from your own measurements, and
   not with a single room's area when the flat has more rooms: leave `area` out when no total is
   stated. The planner shows it beside the plan.
+- **Bearing** says which way north is, and is set **only when the sheet shows it**: a north
+  arrow or compass rose on the plan, or on a site plan on the same sheet that is turned the same
+  way as the flat's plan (if the site plan is turned differently and you cannot tell by how
+  much, leave it out). It is the compass bearing that *up on the picture* points to, in whole
+  degrees clockwise from north. Measure the angle `a` of the north arrow clockwise from straight
+  up on the picture; then `bearing = (360 - a) % 360`. Arrow straight up: `0`. Arrow pointing
+  right: `270` (up is west). Arrow pointing down: `180`. Arrow pointing left: `90` (up is east).
+  Arrow pointing up and to the right at 45°: `315`. Do not guess it from the address, a street
+  name, a map you looked up, or words in a listing such as "balkong i söderläge": leave
+  `bearing` out when no arrow is drawn. The planner uses it to tell which way each window faces.
 
 The planner's parser silently drops anything that breaks these rules, so keep to them:
 
@@ -95,6 +106,8 @@ The planner's parser silently drops anything that breaks these rules, so keep to
 - `label` is at most 30 characters, a dim's `text` and a label's `text` at most 40.
 - At most 300 walls, 60 windows, 100 fixtures, 100 dims, 100 labels.
 - `area` is a number from 1 to 2000 (m², not cm² and not a string). It is kept to one decimal.
+- `bearing` is a number from 0 to 360 (degrees, not a string such as `"NV"`). It is kept to
+  whole degrees.
 - `name` is at most 60 characters: the address when you know it, otherwise what the drawing is
   titled.
 

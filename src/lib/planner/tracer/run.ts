@@ -28,6 +28,7 @@ const RUBRIC = `# Floor plan trace
 - /mnt/session/outputs/plan.json exists, is valid JSON, and has "format": "riksdagen-planlosning", a "name" and a "data" object with walls, windows, fixtures, dims, labels and an empty items list.
 - data.image has the picture's real pixel size as w and h, a positive cmPerPx, and calibrated true.
 - If the listing or the drawing states the flat's total floor area, data.area is that number in m²; otherwise data.area is absent.
+- If the sheet shows a north arrow that applies to the flat's plan, data.bearing is the compass bearing of "up" on the picture in degrees clockwise from north (north arrow pointing up: 0, right: 270, down: 180, left: 90); otherwise data.bearing is absent.
 - Every wall line of the flat in the drawing is covered by a wall rectangle, and no wall rectangle lies across a door opening or on open floor.
 - Every kitchen unit, fridge/freezer and wardrobe drawn in the plan is a fixture that sits against its wall.
 - Every window in the drawing is a window rectangle lying in its wall.
