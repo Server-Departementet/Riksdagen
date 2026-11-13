@@ -774,7 +774,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           R vrider · D kopierar · Del tar bort · piltangenter flyttar 1 cm (Shift 10)<br />
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />
           Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.<br />
-          Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är en stol eller nästan lika hög som bordet.
+          Mattor (högst 3 cm höga) står allt annat ovanpå. Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är en stol eller nästan lika hög som bordet.
           Stämmer det inte går det att ställa in för varje möbel under Markerat, liksom en egen höjd över golvet för sådant som sitter på väggen.
         </p>}
       </aside>

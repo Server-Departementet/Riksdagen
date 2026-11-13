@@ -52,6 +52,8 @@ export type Stacking = { z: Map<string, number>; pairs: Set<string> };
 const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 /** How much of a piece's footprint has to lie on something for it to count as standing on it, not bumping into it. */
 const STACK_SHARE = 0.5;
+/** Pieces up to this high (cm) are taken to be rugs and mats, which furniture stands on rather than bumps into. */
+const RUG_HEIGHT = 3;
 /**
  * Whether something overlapping an open table is under it or on it can only be guessed from its height:
  * what stands on the floor under a desk (drawer unit, pedestal) nearly reaches the top, what stands on a
@@ -82,6 +84,8 @@ export function stacking(plan: PlanData): Stacking {
   const pieces: Thing[] = plan.items.map((it) => ({ id: it.id, box: itemBox(it), h: it.h, it, rests: [] })).sort((a, b) => area(b.box) - area(a.box));
   /** The height of the free space beneath a thing: below a table's top, and below anything fixed above the floor. */
   const room = (p: Thing) => (p.it?.lift ?? 0) + (p.it?.model === "table" ? p.h : 0);
+  /** A floor covering: a piece this low, lying on the floor. */
+  const rug = (t: Thing) => !!t.it && t.it.lift === undefined && t.h <= RUG_HEIGHT;
   const told = (t: Thing) => t.it?.stack === "top" || t.it?.stack === "under";
 
   /** Make `t` stand on or under `p` if t's footprint and settings say so. */
@@ -99,6 +103,15 @@ export function stacking(plan: PlanData): Stacking {
   pieces.forEach((t, i) => {
     for (const p of fixtures) rest(t, p);
     for (const p of pieces.slice(0, i)) {
+      // A rug is never in the way: whatever touches it stands on it, whichever of the two is bigger
+      // and however little of the piece is on it. Two rugs fall through to the ordinary rule.
+      if (rug(t) !== rug(p)) {
+        const [mat, other] = rug(t) ? [t, p] : [p, t];
+        if (shared(mat.box, other.box) <= 0.25) continue;
+        pairs.add(pairKey(mat.id, other.id));
+        if (other.it?.stack !== "floor" && other.it?.lift === undefined) other.rests.push({ on: mat, under: false });
+        continue;
+      }
       // Of two pieces the smaller is the one that goes on or under the other, unless only the bigger was told where to stand.
       const [first, second] = told(p) && !told(t) ? [p, t] : [t, p];
       if (!rest(first, second) && told(p)) rest(second, first);
