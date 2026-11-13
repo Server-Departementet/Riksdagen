@@ -523,6 +523,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           <Card title="Rita">
             <Segments value={tool} options={TOOLS} onChange={(t) => { setTool(t); setScaleLine(null); if (t !== "select") setStaticSel(null); }} />
             <p className="text-sm text-gray-600 font-normal">{TOOL_HELP[tool]}</p>
+            <p className="text-xs text-gray-500 font-normal">Flytta vyn utan att byta verktyg: dra med mitten- eller högerknappen, eller håll Mellanslag och dra.</p>
           </Card>
 
           {picked && staticSel && <Card title="Markerat">
@@ -641,7 +642,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
         </Card>}
 
         {plan && mine && <p className="text-xs text-gray-500 font-normal leading-relaxed max-md:hidden">
-          Dra möbler för att flytta · dra i tom yta för att panorera · scrolla eller nyp för att zooma<br />
+          Dra möbler för att flytta · dra i tom yta, eller med mitten-/högerknappen, för att panorera · scrolla eller nyp för att zooma<br />
           Shift-klick väljer flera · G grupperar · U delar upp<br />
           R vrider · D kopierar · Del tar bort · piltangenter flyttar 1 cm (Shift 10)<br />
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />

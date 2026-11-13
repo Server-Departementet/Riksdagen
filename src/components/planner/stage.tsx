@@ -83,6 +83,23 @@ export function Stage(
   const drag = useRef<Drag | null>(null);
   const pinch = useRef<number | null>(null);
   const fitted = useRef(false);
+  const space = useRef(false);
+
+  useEffect(() => {
+    // Space held = pan with the left button. Left alone while typing or when a button has focus, where Space means something else.
+    const busy = (evt: KeyboardEvent) => !!(evt.target as Element | null)?.matches?.("input, textarea, select, button");
+    const down = (evt: KeyboardEvent) => {
+      if (evt.code !== "Space" || busy(evt)) return;
+      evt.preventDefault(); // the page would scroll
+      space.current = true;
+    };
+    const up = (evt: KeyboardEvent) => { if (evt.code === "Space") space.current = false; };
+    const blur = () => { space.current = false; };
+    document.addEventListener("keydown", down);
+    document.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => { document.removeEventListener("keydown", down); document.removeEventListener("keyup", up); window.removeEventListener("blur", blur); };
+  }, []);
 
   const fitView = (box: { w: number; h: number }) => {
     // The image only counts while it is being traced or is all there is.
@@ -169,6 +186,13 @@ export function Stage(
     }
     const target = evt.target as Element, p = world(evt);
     const pan = () => { drag.current = { kind: "pan", x: evt.clientX, y: evt.clientY, moved: false }; };
+
+    // The middle or right button, or the left one with Space held, always moves the view, whatever tool
+    // is active. Marked as moved from the start so that letting go doesn't count as a click on empty floor.
+    if (evt.button === 1 || evt.button === 2 || space.current) {
+      drag.current = { kind: "pan", x: evt.clientX, y: evt.clientY, moved: true };
+      return;
+    }
 
     if (mode === "draw" && !readOnly) {
       if (tool === "scale") {
@@ -376,6 +400,8 @@ export function Stage(
         ref={svgRef} xmlns="http://www.w3.org/2000/svg" viewBox={viewBox}
         className="block size-full select-none touch-none" style={{ cursor }}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}
+        // The middle button would start the browser's auto-scroll and the right one open its menu; both pan here.
+        onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }} onContextMenu={(e) => e.preventDefault()}
       >
         {/* The plan itself */}
         <g>
