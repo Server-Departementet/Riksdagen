@@ -32,6 +32,7 @@ const RUBRIC = `# Floor plan trace
 - Every wall line of the flat in the drawing is covered by a wall rectangle, and no wall rectangle lies across a door opening or on open floor.
 - Every kitchen unit, fridge/freezer and wardrobe drawn in the plan is a fixture that sits against its wall.
 - Every window in the drawing is a window rectangle lying in its wall.
+- Every doorway in the drawing is a door rectangle in data.doors filling the gap between its wall pieces, with "hinge" ("start" or "end") and "swing" ("neg" or "pos") matching the leaf and arc drawn, or "swing": "none" for a sliding door, an open doorway or a swing the drawing does not show.
 - The scale was set from a scale bar or from standard 60 cm modules, and was cross-checked against at least two of: listed area, door openings, window modules. The numbers are in the report.
 - All ids are unique within their list, and no rectangle has a width or height below 1.
 - /mnt/session/outputs/report.md exists, is in Swedish, and states the main measurements, how the scale was set with its tolerance, and what was assumed or left out.
@@ -259,8 +260,8 @@ async function collect(client: Anthropic, sessionId: string, planId: string, own
   }
   const rawData = file.data as Record<string, unknown>;
   const data: PlanData = sanitizePlan(rawData);
-  const dropped = (["walls", "windows", "fixtures", "dims", "labels"] as const)
-    .map((k) => (Array.isArray(rawData[k]) ? rawData[k].length : 0) - data[k].length).reduce((a, b) => a + b, 0);
+  const dropped = (["walls", "windows", "doors", "fixtures", "dims", "labels"] as const)
+    .map((k) => (Array.isArray(rawData[k]) ? rawData[k].length : 0) - (data[k]?.length ?? 0)).reduce((a, b) => a + b, 0);
   data.items = [];
 
   const plan = await prisma.floorPlan.findFirst({ where: { id: planId, ownerId }, select: { image: true } });

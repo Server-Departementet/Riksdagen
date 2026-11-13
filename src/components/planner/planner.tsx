@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Dim, Fixture, Item, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
+import type { Dim, Door, Fixture, Item, ItemModel, PlanData, PlanDoc, PlanMeta, PlanResponse, PlanWindow, Rect, StackMode } from "@/lib/planner/plan";
 import { COLORS, ITEM_MODELS, MAX_AREA, MAX_NAME_LENGTH, MIN_AREA, STACK_MODES, areaText, cleanName, emptyPlan, parsePlanFile, uid } from "@/lib/planner/plan";
-import { dimAxis, dimCorrection, dimLength, enclosedArea, isHit, parkItems, rescale, rescaleXY, stacking, unionArea } from "@/lib/planner/geometry";
+import { blocksDoor, dimAxis, dimCorrection, dimLength, enclosedArea, isHit, parkItems, rescale, rescaleXY, stacking, unionArea } from "@/lib/planner/geometry";
 import type { StaticRef } from "@/lib/planner/edit";
 import {
   addItem, duplicateItems, unpackFurniture, unpacked, findStatic, groupItems, nudgeItems, nudgeStatic, patchItems, patchStatic, removeItems, removeStatic,
@@ -19,6 +19,7 @@ import type { CroppedImage } from "@/components/planner/crop-dialog";
 import { CropDialog } from "@/components/planner/crop-dialog";
 import { TraceDialog } from "@/components/planner/trace-dialog";
 import { NorthField, SunInfo } from "@/components/planner/north";
+import { DoorFields } from "@/components/planner/door-fields";
 import { FurnitureDialog } from "@/components/planner/furniture-dialog";
 import type { FurnitureResponse } from "@/app/api/planlosning/furniture/route";
 import { PlanPresence } from "@/components/planner/presence";
@@ -44,11 +45,12 @@ const SYNC_TEXT: Record<Sync, string> = {
   offline: "Ingen kontakt med servern – sparat i den här webbläsaren", error: "Kunde inte hämta planlösningen",
 };
 
-const TOOLS: readonly (readonly [Tool, string])[] = [["select", "Markera"], ["wall", "Vägg"], ["window", "Fönster"], ["fixture", "Fast inredning"], ["dim", "Mått"], ["label", "Text"]];
+const TOOLS: readonly (readonly [Tool, string])[] = [["select", "Markera"], ["wall", "Vägg"], ["window", "Fönster"], ["door", "Dörr"], ["fixture", "Fast inredning"], ["dim", "Mått"], ["label", "Text"]];
 const TOOL_HELP: Record<Tool, string> = {
   select: "Klicka på något för att markera det. Dra för att flytta, dra i hörnen för att ändra storlek.",
   wall: "Dra ut en rektangel över varje väggbit på ritningen.",
   window: "Dra över väggen där fönstret sitter. Fönstret läggs in i väggen.",
+  door: "Dra över dörröppningen i väggen, från gångjärnssidan och ut åt det håll dörren slår upp. Dörren läggs in i väggen; möbler i dess väg får en varning.",
   fixture: "Dra ut det som sitter fast: köksbänk, garderober, kyl och frys. Möbler kan inte ställas där.",
   dim: "Dra mellan två punkter för att sätta ut ett mått.",
   label: "Klicka där texten ska stå, till exempel rummets namn.",
@@ -608,9 +610,10 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
   const oneGroup = chosen.length > 1 && chosen.every((i) => i.g && i.g === chosen[0]?.g);
   const stack = plan ? stacking(plan) : null;
   const hits = plan && stack ? chosen.some((i) => isHit(plan, i, stack)) : false;
+  const inDoorway = plan && stack ? chosen.some((i) => blocksDoor(plan, i, stack)) : false;
   // Beside the stated area, what the drawing itself comes to: far apart means the scale is off.
-  const walls = plan?.walls, windows = plan?.windows;
-  const drawnArea = useMemo(() => (walls && windows ? enclosedArea({ ...emptyPlan(), walls, windows }) : null), [walls, windows]);
+  const walls = plan?.walls, windows = plan?.windows, doors = plan?.doors;
+  const drawnArea = useMemo(() => (walls && windows ? enclosedArea({ ...emptyPlan(), walls, windows, ...(doors ? { doors } : {}) }) : null), [walls, windows, doors]);
   const drawnText = drawnArea === null ? "" : `Ritad golvyta ca ${areaText(drawnArea / 10_000)}`;
   const drawnHelp = "Golvet innanför ytterväggarna med nuvarande skala, innerväggar oräknade. Skiljer det sig mycket från boarean stämmer inte skalan.";
   /** Pieces of "Mina möbler" that the open plan, if it is the minister's own, doesn't have yet. */
@@ -716,7 +719,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           </Card>
 
           {picked && staticSel && <Card title="Markerat">
-            {"w" in picked && staticSel.kind !== "windows" && <div className="grid grid-cols-2 gap-2">
+            {"w" in picked && staticSel.kind !== "windows" && staticSel.kind !== "doors" && <div className="grid grid-cols-2 gap-2">
               <NumField label="Bredd (cm)" value={picked.w} min={1} max={5000} onStart={editor.checkpoint} onChange={(w) => editor.setPlan(patchStatic(plan, staticSel, { w }), true)} />
               <NumField label="Djup (cm)" value={picked.h} min={1} max={5000} onStart={editor.checkpoint} onChange={(h) => editor.setPlan(patchStatic(plan, staticSel, { h }), true)} />
             </div>}
@@ -735,6 +738,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                   onChange={(v) => editor.setPlan(patchStatic(plan, staticSel, along ? { h: v } : { w: v }), true)} />
               </div>;
             })()}
+            {staticSel.kind === "doors" && <DoorFields door={picked as Door} onStart={editor.checkpoint} onChange={(patch) => editor.setPlan(patchStatic(plan, staticSel, patch), true)} />}
             {staticSel.kind === "fixtures" && <>
               <div className="grid grid-cols-2 gap-2">
                 <TextField label="Namn" value={(picked as Fixture).label} maxLength={30} onStart={editor.checkpoint} onChange={(label) => editor.setPlan(patchStatic(plan, staticSel, { label }), true)} />
@@ -811,6 +815,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
               </div>
             </>}
             {hits && <p className="text-sm text-red-700 font-semibold">Överlappar en vägg, fast inredning eller en annan möbel</p>}
+            {inDoorway && <p className="text-sm text-amber-700 font-semibold">Blockerar en dörr: står i dörröppningen eller där dörren slår upp</p>}
             <Check label="Välj flera (tryck lägger till eller tar bort)" checked={opts.multi} onChange={(multi) => setOpts({ ...opts, multi })} />
           </Card>
 
@@ -830,6 +835,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
                       {i.lift === undefined ? "staplad" : `${i.lift} cm upp`}
                     </span>}
                     {isHit(plan, i, stack ?? undefined) && <span className="text-xs text-red-700 font-normal">överlappar</span>}
+                    {blocksDoor(plan, i, stack ?? undefined) && <span className="text-xs text-amber-700 font-normal whitespace-nowrap">blockerar en dörr</span>}
                     <span className="ml-auto text-gray-500 tabular-nums font-normal whitespace-nowrap">{i.w} × {i.d}</span>
                   </button>
                 </li>
@@ -876,6 +882,7 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           R vrider · D kopierar · Del tar bort · piltangenter flyttar 1 cm (Shift 10)<br />
           Alt medan du drar: fäster inte · Ctrl+Z ångrar<br />
           Röd streckad ram = överlappar en vägg, fast inredning eller en annan möbel.<br />
+          Brun streckad ram = blockerar en dörr: står i öppningen eller där dörren slår upp.<br />
           Mattor (högst 3 cm höga) står allt annat ovanpå. Möbler som överlappar till minst hälften staplas: den mindre hamnar ovanpå, eller under ett bord om den är en stol eller nästan lika hög som bordet.
           Stämmer det inte går det att ställa in för varje möbel under Markerat, liksom en egen höjd över golvet för sådant som sitter på väggen.
         </p>}
