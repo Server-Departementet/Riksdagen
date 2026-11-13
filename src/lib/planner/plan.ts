@@ -1,7 +1,8 @@
 /*
  * The flat planner's document format, shared by the browser and the API routes.
  * Everything is in centimetres. The plan image, when there is one, sits at
- * (image.x, image.y) and is image.w × image.h pixels at image.cmPerPx.
+ * (image.x, image.y) and is image.w × image.h pixels at image.cmPerPx
+ * (its height times image.stretch, when the picture's two directions differ in scale).
  * All shapes are axis-aligned rectangles; furniture turns in 90° steps.
  */
 
@@ -62,7 +63,14 @@ export type Item = {
 export type PlanImage = {
   w: number;
   h: number;
+  /** Centimetres per pixel, horizontally. Vertically too unless `stretch` says otherwise. */
   cmPerPx: number;
+  /**
+   * The vertical scale as a multiple of the horizontal one, MIN_STRETCH–MAX_STRETCH: a pixel is `cmPerPx` wide and
+   * `cmPerPx * stretch` high. For a picture that is squeezed in one direction, set by correcting the drawing's width
+   * and height separately. Left out when the picture has one scale, as every picture had before this existed.
+   */
+  stretch?: number;
   x: number;
   y: number;
   /** Changes with every upload, to get past the browser cache */
@@ -120,6 +128,12 @@ export const MAX_PLANS_PER_MINISTER = 30;
 export const MAX_PLAN_JSON_BYTES = 400_000;
 export const MAX_IMAGE_BYTES = 5_000_000;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+/** Bounds of PlanImage.stretch */
+export const MIN_STRETCH = 0.2;
+export const MAX_STRETCH = 5;
+/** A stretch as stored: within bounds, and absent (undefined) when it is as good as none. */
+export const cleanStretch = (v: number): number | undefined => (Math.abs(v - 1) < 1e-6 ? undefined : clamp(v, MIN_STRETCH, MAX_STRETCH));
 
 /** Bounds of PlanData.area, in m² */
 export const MIN_AREA = 1;
@@ -216,11 +230,13 @@ export function sanitizePlan(input: unknown): PlanData {
     const i = src.image;
     const w = num(i.w, 1, 10_000, 0), h = num(i.h, 1, 10_000, 0), cmPerPx = num(i.cmPerPx, 0.001, 1000, 0);
     if (w && h && cmPerPx) {
+      const stretch = typeof i.stretch === "number" && Number.isFinite(i.stretch) && i.stretch > 0 ? cleanStretch(i.stretch) : undefined;
       plan.image = {
         w: Math.round(w), h: Math.round(h), cmPerPx,
         x: coord(i.x) ?? 0, y: coord(i.y) ?? 0,
         rev: Math.round(num(i.rev, 0, Number.MAX_SAFE_INTEGER, 0)),
         calibrated: i.calibrated === true,
+        ...(stretch === undefined ? {} : { stretch }),
       };
     }
   }
