@@ -29,9 +29,23 @@ export const tracerLimits = () => ({
   maxCostCents: Math.max(1, int(env.PLAN_TRACER_MAX_COST_CENTS, 500)),
   /** Give up on a trace after this long */
   maxMinutes: Math.max(1, int(env.PLAN_TRACER_MAX_MINUTES, 30)),
+  /**
+   * How many times a separate grader may check the result against the rubric (each check is a second
+   * model reading the files, and a failed one sends the agent back to revise). 0 starts the trace with a
+   * plain message and no grader: cheaper, and then only the agent's own checks stand behind the plan.
+   */
+  graderIterations: Math.min(20, int(env.PLAN_TRACER_GRADER_ITERATIONS, 2)),
 });
 
-export const tracerIds = () => ({ agentId: env.PLAN_TRACER_AGENT_ID ?? "", environmentId: env.PLAN_TRACER_ENVIRONMENT_ID ?? "" });
+/** The measuring toolkit's name in the sandbox: mounted files land under /mnt/session/uploads/. */
+export const TOOLKIT_FILE = "planmeasure.py";
+
+export const tracerIds = () => ({
+  agentId: env.PLAN_TRACER_AGENT_ID ?? "",
+  environmentId: env.PLAN_TRACER_ENVIRONMENT_ID ?? "",
+  /** The uploaded scripts/plan-tracer/planmeasure.py, printed by setup.ts. Empty: the agent measures with its own code. */
+  toolkitFileId: env.PLAN_TRACER_TOOLKIT_FILE_ID ?? "",
+});
 
 /** Whether the server has what it needs to start a trace: an API key and the ids setup.ts printed. */
 export const tracerConfigured = () => !!(env.ANTHROPIC_API_KEY && env.PLAN_TRACER_AGENT_ID && env.PLAN_TRACER_ENVIRONMENT_ID);
