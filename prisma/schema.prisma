@@ -21,6 +21,8 @@ model User {
   floorPlans       FloorPlan[]
   planTraces       PlanTrace[]
   furnitureSet     FurnitureSet?
+  planComments     PlanComment[]
+  planReactions    PlanReaction[]
 }
 
 // Takeout plays waiting for the server-side import. The import API only
@@ -240,4 +242,37 @@ model FurnitureSet {
 
   items     Json // Item[] without positions, see sanitizeFurniture in src/lib/planner/plan.ts
   updatedAt DateTime @updatedAt
+}
+
+// Short comments ministers leave on each other's (and their own) plans on
+// /planlosning. Plain text, never edited; the author or the plan's owner may
+// delete one.
+model PlanComment {
+  id Int @id @default(autoincrement())
+  /// The FloorPlan commented on. No FK: plan ids are made in the browser, and deleting a plan
+  /// should not have to know about comments. Rows of plans that are gone are ignored, and swept
+  /// by the comments API whenever someone posts (src/lib/planner/comments-server.ts).
+  planId   String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  body      String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([planId, id]) // Listing a plan's comments in order
+  @@index([authorId, createdAt]) // The per-minister rate limit
+}
+
+// A minister's emoji reaction to a plan: at most one each, replaced or removed
+// when they pick again.
+model PlanReaction {
+  planId String // No FK, as for PlanComment
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  /// A key from REACTIONS in src/lib/planner/comments.ts ("up", "heart", ...), not the emoji
+  /// itself: utf8mb4_unicode_ci does not tell emoji apart.
+  emoji String @db.VarChar(16)
+
+  @@id([planId, userId])
+  @@index([userId])
 }
