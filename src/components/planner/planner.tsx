@@ -546,14 +546,25 @@ export function Planner({ me, plans, initialPlanId }: { me: { id: string; name: 
           </Card>
 
           {picked && staticSel && <Card title="Markerat">
-            {"w" in picked && <div className="grid grid-cols-2 gap-2">
+            {"w" in picked && staticSel.kind !== "windows" && <div className="grid grid-cols-2 gap-2">
               <NumField label="Bredd (cm)" value={picked.w} min={1} max={5000} onStart={editor.checkpoint} onChange={(w) => editor.setPlan(patchStatic(plan, staticSel, { w }), true)} />
               <NumField label="Djup (cm)" value={picked.h} min={1} max={5000} onStart={editor.checkpoint} onChange={(h) => editor.setPlan(patchStatic(plan, staticSel, { h }), true)} />
             </div>}
-            {staticSel.kind === "windows" && <div className="grid grid-cols-2 gap-2">
-              <NumField label="Bröstning (cm)" value={(picked as PlanWindow).sill} min={0} max={300} onStart={editor.checkpoint} onChange={(sill) => editor.setPlan(patchStatic(plan, staticSel, { sill }), true)} />
-              <NumField label="Överkant (cm)" value={(picked as PlanWindow).head} min={1} max={400} onStart={editor.checkpoint} onChange={(head) => editor.setPlan(patchStatic(plan, staticSel, { head }), true)} />
-            </div>}
+            {staticSel.kind === "windows" && (() => {
+              // A window's own measures, whichever way its wall runs: how long it is along the wall, how tall
+              // the glass is and how far above the floor it starts. Moving the sill keeps the height.
+              const win = picked as PlanWindow, along = win.w >= win.h, height = win.head - win.sill;
+              return <div className="grid grid-cols-2 gap-2">
+                <NumField label="Bredd (cm)" value={along ? win.w : win.h} min={1} max={5000} onStart={editor.checkpoint}
+                  onChange={(v) => editor.setPlan(patchStatic(plan, staticSel, along ? { w: v } : { h: v }), true)} />
+                <NumField label="Höjd (cm)" value={height} min={1} max={400 - win.sill} onStart={editor.checkpoint}
+                  onChange={(v) => editor.setPlan(patchStatic(plan, staticSel, { head: win.sill + v }), true)} />
+                <NumField label="Bröstning, över golv (cm)" value={win.sill} min={0} max={Math.min(300, 400 - height)} onStart={editor.checkpoint}
+                  onChange={(sill) => editor.setPlan(patchStatic(plan, staticSel, { sill, head: sill + height }), true)} />
+                <NumField label="Väggtjocklek (cm)" value={along ? win.h : win.w} min={1} max={200} onStart={editor.checkpoint}
+                  onChange={(v) => editor.setPlan(patchStatic(plan, staticSel, along ? { h: v } : { w: v }), true)} />
+              </div>;
+            })()}
             {staticSel.kind === "fixtures" && <>
               <div className="grid grid-cols-2 gap-2">
                 <TextField label="Namn" value={(picked as Fixture).label} maxLength={30} onStart={editor.checkpoint} onChange={(label) => editor.setPlan(patchStatic(plan, staticSel, { label }), true)} />
